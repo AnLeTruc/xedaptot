@@ -5,8 +5,9 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+
+//Routes
+const authRouter = require('./routes/auth').default;
 
 var app = express();
 
@@ -21,7 +22,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 setupSwagger(app);
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api/auth', authRouter);
 
 module.exports = app;

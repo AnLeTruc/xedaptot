@@ -31,6 +31,7 @@ if (!admin.apps.length) {
 }
 
 const auth = admin.auth();
+
 module.exports = {
     admin,
     auth,
