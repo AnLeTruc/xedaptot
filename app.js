@@ -6,7 +6,7 @@ var logger = require('morgan');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
-const { generalLimter, authLimiter } = require('./middleware/rateLimiter');
+const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 //Routes
 const authRouter = require('./routes/auth').default;
