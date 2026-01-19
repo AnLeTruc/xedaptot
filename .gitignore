@@ -19,3 +19,6 @@ Thumbs.db
 
 # Firebase
 *.json
+
+# Public test files
+public/
