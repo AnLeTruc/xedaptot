@@ -199,7 +199,7 @@ const options = {
 };
 
 //Swagger spec
-const specs = swaggerJsdoc(options);
+const specs = require('../docs/openapi.json');
 
 const swaggerUiOptions = {
     explorer: true,
@@ -211,7 +211,6 @@ const swaggerUiOptions = {
     ,
 
     customSiteTitle: 'Xedaptot API Docs',
-    customfavIcon: '/favicon.ico',
 
     swaggerOptions: {
         persisAuthorization: true,
