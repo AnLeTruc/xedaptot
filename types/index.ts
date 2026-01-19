@@ -39,3 +39,5 @@ export interface AuthRequest extends Request {
     };
 };
 
+//Brand
+export * from './brand';
