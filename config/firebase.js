@@ -20,9 +20,21 @@ if (!admin.apps.length) {
     }
 
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+
+    // Debug: log first and last 50 chars to understand the format
+    console.log('Private key starts with:', privateKey.substring(0, 50));
+    console.log('Private key ends with:', privateKey.substring(privateKey.length - 50));
+
+    // Remove surrounding quotes if present (single or double)
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+        (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
         privateKey = privateKey.slice(1, -1);
     }
+
+    // Handle different newline formats
+    // Case 1: Literal \\n (double escaped)
+    privateKey = privateKey.replace(/\\\\n/g, '\n');
+    // Case 2: Literal \n (single escaped) 
     privateKey = privateKey.replace(/\\n/g, '\n');
 
     admin.initializeApp({
