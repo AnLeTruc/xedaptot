@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 
 //General limter for all routes
-export const generalLimiter = rateLimit({
+export const generalLimter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     message: {
