@@ -21,7 +21,6 @@ const brandSchema = new Schema<IBrandDocument>(
 );
 
 //Index
-brandSchema.index({ name: 1 });
 brandSchema.index({ isActive: 1 });
 
 const Brand = mongoose.model<IBrandDocument>('Brand', brandSchema);

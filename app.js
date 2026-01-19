@@ -10,6 +10,7 @@ const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 //Routes
 const authRouter = require('./routes/auth').default;
+const brandRouter = require('./routes/brand').default;
 
 var app = express();
 
@@ -38,5 +39,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 setupSwagger(app);
 
 app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/brand', brandRouter);
 
 module.exports = app;
