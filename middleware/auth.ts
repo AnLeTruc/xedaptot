@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../types/index.js';
-import User from '../models/User.js';
+import { AuthRequest } from '../types';
+import User from '../models/User';
 
 //Firebase 
 const { auth } = require('../config/firebase');

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { firebaseAuth } from '../controllers/authController.js';
-import { verifyToken, requireUser } from '../middleware/auth.js';
+import { firebaseAuth } from '../controllers/authController';
+import { verifyToken, requireUser } from '../middleware/auth';
 
 const router = Router();
 
