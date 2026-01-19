@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, UserRole } from '../types';
+import { AuthRequest, UserRole } from '../types/index.js';
 
 export const requireRole = (...allowedRoles: UserRole[]) => {
     return (
