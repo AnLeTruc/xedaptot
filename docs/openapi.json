@@ -63,7 +63,7 @@
       "post": {
         "tags": ["Auth"],
         "summary": "Register/Sign in with Firebase ID Token",
-        "description": "Send Firebase ID Token via Authorization header. Server verifies token using firebase-admin and upserts user.",
+        "description": "Send Firebase ID Token via Authorization header to register or sign in a user.",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
