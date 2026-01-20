@@ -13,6 +13,10 @@ const brandSchema = new Schema<IBrandDocument>(
             type: String,
             trim: true
         },
+        imageUrl: {
+            type: String,
+            trim: true
+        },
         isActive: {
             type: Boolean,
             default: true,

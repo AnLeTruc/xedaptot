@@ -109,9 +109,13 @@
             "type": "string",
             "example": "Taiwan"
           },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://example.com/giant-logo.png"
+          },
           "isActive": {
             "type": "boolean",
-            "format": "true"
+            "example": true
           },
           "createdAt": {
             "type": "string",
@@ -235,6 +239,10 @@
                   "country": {
                     "type": "string",
                     "example": "Taiwan"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "example": "https://example.com/giant-logo.png"
                   }
                 }
               }

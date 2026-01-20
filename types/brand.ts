@@ -4,6 +4,7 @@ import { Document } from "mongoose";
 export interface IBrand {
     name: string;
     country?: string;
+    imageUrl?: string;
     isActive: boolean;
 }
 
