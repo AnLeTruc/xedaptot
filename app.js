@@ -39,6 +39,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 setupSwagger(app);
 
 app.use('/api/auth', authLimiter, authRouter);
-app.use('/api/brand', brandRouter);
+app.use('/api/brands', brandRouter);
 
 module.exports = app;
