@@ -122,4 +122,42 @@ export const updateBrand = async (
     }
 };
 
+//Delete brand
+export const deleteBrand = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid brand ID format'
+            });
+            return;
+        }
+
+        const deleteBrand = await Brand.findByIdAndDelete(id);
+
+        if (!deleteBrand) {
+            res.status(404).json({
+                success: false,
+                message: 'Brand not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Brand deleted successfully',
+            data: deleteBrand
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete brand'
+        });
+    }
+};
 
