@@ -15,7 +15,14 @@
     }
   ],
   "tags": [
-    { "name": "Auth", "description": "Authentication endpoints" }
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints"
+    },
+    {
+      "name": "Category",
+      "description": "Category endpoints"
+    }
   ],
   "components": {
     "securitySchemes": {
@@ -30,21 +37,46 @@
       "ApiResponseSuccessAuth": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "message": { "type": "string", "example": "User registered successfully" },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "User registered successfully"
+          },
           "data": {
             "type": "object",
             "properties": {
-              "id": { "type": "string", "example": "64d1b5b5b5b5b5b5b5b5b5b5" },
-              "email": { "type": "string", "example": "user@gmail.com" },
-              "fullName": { "type": "string", "example": "Nguyen Van A" },
-              "avatarUrl": { "type": "string", "example": "https://example.com/avatar.jpg" },
+              "id": {
+                "type": "string",
+                "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+              },
+              "email": {
+                "type": "string",
+                "example": "user@gmail.com"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "Nguyen Van A"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "example": "https://example.com/avatar.jpg"
+              },
               "roles": {
                 "type": "array",
-                "items": { "type": "string" },
-                "example": ["BUYER"]
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "BUYER"
+                ]
               },
-              "isVerified": { "type": "boolean", "example": false }
+              "isVerified": {
+                "type": "boolean",
+                "example": false
+              }
             }
           }
         }
@@ -52,8 +84,14 @@
       "ApiResponseError": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean", "example": false },
-          "message": { "type": "string", "example": "Unauthorized" }
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Unauthorized"
+          }
         }
       }
     }
@@ -61,16 +99,24 @@
   "paths": {
     "/auth/firebase": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Register/Sign in with Firebase ID Token",
         "description": "Send Firebase ID Token via Authorization header to register or sign in a user.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseSuccessAuth" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSuccessAuth"
+                }
               }
             }
           },
@@ -78,7 +124,9 @@
             "description": "Unauthorized / token invalid",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseError" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
               }
             }
           }
