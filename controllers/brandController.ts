@@ -63,4 +63,63 @@ export const createBrand = async (
     }
 };
 
+//Update brand
+export const updateBrand = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+        const { name, country, imageUrl, isActive } = req.body;
+
+        // Validate ObjectId format
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid brand ID format'
+            });
+            return;
+        }
+
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name.trim();
+        if (country !== undefined) updateData.country = country.trim();
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl.trim();
+        if (isActive !== undefined) updateData.isActive = isActive;
+
+        const brand = await Brand.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!brand) {
+            res.status(404).json({
+                success: false,
+                message: 'Brand not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Brand updated successfully',
+            data: brand
+        });
+    } catch (error: any) {
+        if (error.code === 11000) {
+            res.status(400).json({
+                success: false,
+                message: 'Brand name already exists'
+            });
+            return;
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update brand'
+        });
+    }
+};
+
 
