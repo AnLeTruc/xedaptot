@@ -39,3 +39,14 @@ export interface AuthRequest extends Request {
     };
 };
 
+
+
+export interface ICategory {
+    name: string;
+    description: string;
+    isActive: boolean;
+}
+export interface ICategoryDocument extends ICategory, Document {
+    createdAt: Date;
+    updatedAt: Date;
+}
