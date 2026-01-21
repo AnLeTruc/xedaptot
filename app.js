@@ -10,6 +10,8 @@ const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 //Routes
 const authRouter = require('./routes/auth').default;
+const brandRouter = require('./routes/brand').default;
+const categoryRouter = require('./routes/category').default;
 
 var app = express();
 
@@ -19,8 +21,8 @@ const corsOptions = {
     origin: [
         'http://localhost:3000',
         'http://localhost:5000',
-        'https://xedaptot.onrender.com'
-        //Production url
+        'https://xedaptot.onrender.com',
+        'http://localhost:5173'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -38,5 +40,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 setupSwagger(app);
 
 app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/brands', brandRouter);
+app.use('/api/categories', categoryRouter);
 
 module.exports = app;

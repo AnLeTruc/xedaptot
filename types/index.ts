@@ -39,3 +39,17 @@ export interface AuthRequest extends Request {
     };
 };
 
+//Brand
+export * from './brand';
+
+
+export interface ICategory {
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    isActive: boolean;
+}
+export interface ICategoryDocument extends ICategory, Document {
+    createdAt: Date;
+    updatedAt: Date;
+}
