@@ -52,6 +52,11 @@ const userSchema = new Schema<IUserDocument>(
             type: Boolean,
             default: true,
         },
+        authProvider: {
+            type: String,
+            enum: ['google', 'email'],
+            required: [true, 'Auth provider is required'],
+        },
     },
     {
         timestamps: true,

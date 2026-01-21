@@ -20,6 +20,7 @@ export interface IUser {
     reputationScore: number;
     isVerified: boolean;
     isActive: boolean;
+    authProvider: 'google' | 'email';
 }
 
 //Interface Mongoose Document
