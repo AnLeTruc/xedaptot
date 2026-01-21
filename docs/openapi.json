@@ -18,10 +18,6 @@
     {
       "name": "Auth",
       "description": "Authentication endpoints"
-    },
-    {
-      "name": "Brand",
-      "description": "Brand management"
     }
   ],
   "components": {
@@ -91,54 +87,6 @@
           "message": {
             "type": "string",
             "example": "Unauthorized"
-          }
-        }
-      },
-      "Brand": {
-        "type": "object",
-        "properties": {
-          "_id": {
-            "type": "string",
-            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
-          },
-          "name": {
-            "type": "string",
-            "example": "Giant"
-          },
-          "country": {
-            "type": "string",
-            "example": "Taiwan"
-          },
-          "imageUrl": {
-            "type": "string",
-            "example": "https://example.com/giant-logo.png"
-          },
-          "isActive": {
-            "type": "boolean",
-            "example": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "BrandListResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Brand"
-            }
           }
         }
       }
