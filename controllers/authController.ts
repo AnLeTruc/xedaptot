@@ -4,6 +4,17 @@ import User from '../models/User';
 
 const { auth } = require('../config/firebase');
 
+// Helper: Map Firebase provider
+const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'facebook' => {
+    switch (signInProvider) {
+        case 'google.com':
+            return 'google';
+        case 'password':
+        default:
+            return 'email';
+    }
+};
+
 //Register/Sign in with firebase
 export const firebaseAuth = async (
     req: AuthRequest,
@@ -24,51 +35,69 @@ export const firebaseAuth = async (
         const decodedToken = await auth.verifyIdToken(token);
         const { uid, email, name, picture } = decodedToken;
 
-        const user = await User.findOneAndUpdate(
-            {
-                firebaseUId: uid
-            },
-            {
-                $set: {
-                    email: email || '',
-                    fullName: name || '',
-                    avatarUrl: picture || '',
-                },
+        const signInProvider = decodedToken.firebase?.sign_in_provider || 'password';
+        const authProvider = mapFirebaseProvider(signInProvider);
 
-                $setOnInsert: {
-                    firebaseUId: uid,
-                    roles: ['BUYER'],
-                    reputationScore: 0,
-                    isVerified: false,
-                    isActive: true,
-                },
-            },
-            {
-                upsert: true,
-                new: true,
-                runValidators: true
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser) {
+            if (existingUser.firebaseUId !== uid) {
+                res.status(400).json({
+                    success: false,
+                    message: `Email already registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+                });
+                return;
             }
-        );
+            existingUser.fullName = name || existingUser.fullName;
+            existingUser.avatarUrl = picture || existingUser.avatarUrl;
+            await existingUser.save();
 
-        res.status(200).json({
+            res.status(200).json({
+                success: true,
+                message: 'User logged in successfully',
+                data: {
+                    id: existingUser._id,
+                    email: existingUser.email,
+                    fullName: existingUser.fullName,
+                    avatarUrl: existingUser.avatarUrl,
+                    roles: existingUser.roles,
+                    isVerified: existingUser.isVerified,
+                    authProvider: existingUser.authProvider
+                },
+            });
+            return;
+        }
+
+        const newUser = await User.create({
+            firebaseUId: uid,
+            email: email || '',
+            fullName: name || '',
+            avatarUrl: picture || '',
+            roles: ['BUYER'],
+            reputationScore: 0,
+            isVerified: false,
+            isActive: true,
+            authProvider
+        });
+
+        res.status(201).json({
             success: true,
-            message: user.createdAt.getTime() === user.updatedAt.getTime()
-                ? 'User registered successfully'
-                : 'User updated successfully',
+            message: 'User registered successfully',
             data: {
-                id: user._id,
-                email: user.email,
-                fullName: user.fullName,
-                avatarUrl: user.avatarUrl,
-                roles: user.roles,
-                isVerified: user.isVerified,
+                id: newUser._id,
+                email: newUser.email,
+                fullName: newUser.fullName,
+                avatarUrl: newUser.avatarUrl,
+                roles: newUser.roles,
+                isVerified: newUser.isVerified,
+                authProvider: newUser.authProvider
             },
         });
     } catch (error: any) {
         console.error('Firebase auth error:', error);
         res.status(401).json({
             success: false,
-            message: 'authorization failed'
+            message: 'Authorization failed'
         });
     }
 };
@@ -164,6 +193,171 @@ export const updateProfile = async (
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+};
+
+// Firebase REST API base URL
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
+
+// Email Register - Tạo user mới với email/password
+export const emailRegister = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { email, password, fullName } = req.body;
+
+        if (!email || !password) {
+            res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
+            return;
+        }
+
+        if (password.length < 6) {
+            res.status(400).json({
+                success: false,
+                message: 'Password must be at least 6 characters'
+            });
+            return;
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            res.status(400).json({
+                success: false,
+                message: `Email already registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+            });
+            return;
+        }
+
+        const response = await fetch(`${FIREBASE_AUTH_URL}:signUp?key=${FIREBASE_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                returnSecureToken: true
+            })
+        });
+
+        const data: any = await response.json();
+
+        if (!response.ok) {
+            res.status(400).json({
+                success: false,
+                message: data.error?.message || 'Failed to create account'
+            });
+            return;
+        }
+
+        const newUser = await User.create({
+            firebaseUId: data.localId,
+            email: email,
+            fullName: fullName || '',
+            roles: ['BUYER'],
+            reputationScore: 0,
+            isVerified: false,
+            isActive: true,
+            authProvider: 'email'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            data: {
+                id: newUser._id,
+                email: newUser.email,
+                fullName: newUser.fullName,
+                roles: newUser.roles,
+                authProvider: newUser.authProvider,
+                idToken: data.idToken,
+                refreshToken: data.refreshToken,
+                expiresIn: data.expiresIn
+            }
+        });
+    } catch (error: any) {
+        console.error('Email register error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Registration failed'
+        });
+    }
+};
+
+// Email Login
+export const emailLogin = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
+            return;
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser && existingUser.authProvider !== 'email') {
+            res.status(400).json({
+                success: false,
+                message: `This email is registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+            });
+            return;
+        }
+
+        const response = await fetch(`${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                returnSecureToken: true
+            })
+        });
+
+        const data: any = await response.json();
+
+        if (!response.ok) {
+            const errorMessage = data.error?.message === 'INVALID_LOGIN_CREDENTIALS'
+                ? 'Invalid email or password'
+                : data.error?.message || 'Login failed';
+
+            res.status(401).json({
+                success: false,
+                message: errorMessage
+            });
+            return;
+        }
+
+        const user = await User.findOne({ firebaseUId: data.localId });
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                id: user?._id,
+                email: data.email,
+                fullName: user?.fullName,
+                roles: user?.roles,
+                authProvider: user?.authProvider,
+                idToken: data.idToken,
+                refreshToken: data.refreshToken,
+                expiresIn: data.expiresIn
+            }
+        });
+    } catch (error: any) {
+        console.error('Email login error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Login failed'
         });
     }
 };
