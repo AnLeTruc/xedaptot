@@ -7,10 +7,8 @@ export const getAllCategories = async (
     res: Response
 ): Promise<void> => {
     try {
-        // Query params: ?isActive=true&search=xe
         const { isActive, search } = req.query;
 
-        // Build filter
         const filter: any = {};
         if (isActive !== undefined) {
             filter.isActive = isActive === 'true';
@@ -72,7 +70,7 @@ export const createCategory = async (
     res: Response
 ): Promise<void> => {
     try {
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, imageUrl } = req.body;
 
         // Validate required field
         if (!name) {
@@ -96,6 +94,7 @@ export const createCategory = async (
         const category = await Category.create({
             name,
             description,
+            imageUrl,
             isActive: isActive ?? true
         });
 
@@ -119,7 +118,7 @@ export const updateCategory = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
-        const { name, description, isActive } = req.body;
+        const { name, description, isActive, imageUrl } = req.body;
 
         // Check if category exists
         const category = await Category.findById(id);
@@ -146,7 +145,7 @@ export const updateCategory = async (
         // Update
         const updatedCategory = await Category.findByIdAndUpdate(
             id,
-            { name, description, isActive },
+            { name, description, isActive, imageUrl },
             { new: true, runValidators: true }
         );
 

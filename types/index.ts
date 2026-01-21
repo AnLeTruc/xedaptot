@@ -43,7 +43,8 @@ export interface AuthRequest extends Request {
 
 export interface ICategory {
     name: string;
-    description: string;
+    description?: string;
+    imageUrl?: string;
     isActive: boolean;
 }
 export interface ICategoryDocument extends ICategory, Document {

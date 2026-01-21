@@ -12,8 +12,8 @@ import { requireAdmin } from '../middleware/rbac';
 const router = Router();
 
 // Public routes
-router.get('/', getAllCategories);           // GET /api/categories
-router.get('/:id', getCategoryById);         // GET /api/categories/:id
+router.get('/', getAllCategories);           // GET /api/category
+router.get('/:id', getCategoryById);         // GET /api/category/:id
 
 // Protected routes (chỉ Admin)
 router.post('/', createCategory);

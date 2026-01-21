@@ -15,6 +15,10 @@ const categorySchema = new Schema<ICategoryDocument>(
             trim: true,
             maxlength: [500, 'Description cannot exceed 500 characters']
         },
+        imageUrl: {
+            type: String,
+            trim: true
+        },
         isActive: {
             type: Boolean,
             default: true
