@@ -201,7 +201,7 @@ export const updateProfile = async (
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 
-// Email Register - Tạo user mới với email/password
+// Email Register 
 export const emailRegister = async (
     req: AuthRequest,
     res: Response
@@ -361,3 +361,64 @@ export const emailLogin = async (
         });
     }
 };
+
+//Refresh Token
+export const refreshToken = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            res.status(400).json({
+                success: false,
+                message: 'Refresh token is required'
+            });
+            return;
+        }
+
+        //Firebase exchange refresh token
+        const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                })
+            }
+        );
+
+        const data: any = await response.json();
+
+        if (!response.ok) {
+            res.status(401).json({
+                success: false,
+                message: data.error?.message || 'Failed to refresh token'
+            });
+            return;
+        }
+
+        //Return new token
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            data: {
+                idToken: data.id_token,
+                refreshToken: data.refresh_token,
+                expiresIn: data.expires_in,
+                userId: data.user_id
+            }
+        });
+    } catch (error: any) {
+        console.error('Refresh token error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to refresh token'
+        });
+    }
+};
+
