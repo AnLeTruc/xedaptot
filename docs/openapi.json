@@ -409,6 +409,119 @@
         }
       }
     },
+    "/auth/refresh-token": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh Access Token",
+        "description": "Refresh token to get new access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "Refresh token received from login/register response",
+                    "example": "AMf-vBzXabc123..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Token refreshed successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "idToken": {
+                          "type": "string",
+                          "description": "New Firebase ID Token - use this for Authorization header"
+                        },
+                        "refreshToken": {
+                          "type": "string",
+                          "description": "New refresh token - save this for next refresh"
+                        },
+                        "expiresIn": {
+                          "type": "string",
+                          "description": "Token expiry time in seconds",
+                          "example": "3600"
+                        },
+                        "userId": {
+                          "type": "string",
+                          "description": "Firebase User ID"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Refresh token is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "INVALID_REFRESH_TOKEN"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/profile": {
       "get": {
         "tags": [
