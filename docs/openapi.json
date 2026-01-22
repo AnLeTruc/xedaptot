@@ -26,6 +26,10 @@
     {
       "name": "Category",
       "description": "Category management"
+    },
+    {
+      "name": "Upload",
+      "description": "File upload endpoints"
     }
   ],
   "components": {
@@ -956,6 +960,179 @@
           },
           "404": {
             "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/upload/single": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Upload single image",
+        "description": "Upload a single image to Cloudinary (general purpose)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file (jpg, png, gif, webp). Max 5MB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Image uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "filename": {
+                          "type": "string"
+                        },
+                        "size": {
+                          "type": "integer"
+                        },
+                        "mimetype": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded or invalid file type"
+          }
+        }
+      }
+    },
+    "/upload/avatar": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Upload avatar image",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avatar uploaded"
+          },
+          "400": {
+            "description": "Upload failed"
+          }
+        }
+      }
+    },
+    "/upload/products": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Upload multiple product images",
+        "description": "Upload up to 10 images at once",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Images uploaded"
+          },
+          "400": {
+            "description": "Upload failed"
+          }
+        }
+      }
+    },
+    "/upload": {
+      "delete": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Delete image from Cloudinary",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "imageUrl"
+                ],
+                "properties": {
+                  "imageUrl": {
+                    "type": "string",
+                    "example": "https://res.cloudinary.com/xxx/image/upload/v123/xedaptot/general/image.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image deleted"
+          },
+          "400": {
+            "description": "Invalid URL"
+          },
+          "500": {
+            "description": "Delete failed"
           }
         }
       }
