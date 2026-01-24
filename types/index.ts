@@ -21,6 +21,9 @@ export interface IUser {
     isVerified: boolean;
     isActive: boolean;
     authProvider: 'google' | 'email';
+    // Email Verification Fields
+    emailVerificationToken?: string;
+    emailVerificationExpires?: Date;
 }
 
 //Interface Mongoose Document
@@ -42,7 +45,7 @@ export interface AuthRequest extends Request {
 
 //Brand
 export * from './brand';
-
+export * from './bicycle';
 
 export interface ICategory {
     name: string;
