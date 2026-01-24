@@ -350,3 +350,42 @@ export const updateBicycle = async (
 
 
 // DELETE /api/bicycles/:id
+export const deleteBicycle = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const bicycle = await Bicycle.findById(id);
+        if (!bicycle) {
+            res.status(404).json({
+                success: false,
+                message: 'Bicycle not found'
+            })
+            return;
+        }
+
+        // Kiểm tra quyền
+        if (!req.user || bicycle.seller._id.toString() !== req.user?._id.toString()) {
+            res.status(403).json({
+                success: false,
+                message: 'You are not authorized to delete this bicycle'
+            })
+            return;
+        }
+
+        // Xóa bicycle
+        await Bicycle.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Bicycle deleted successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
