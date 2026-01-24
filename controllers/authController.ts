@@ -1,8 +1,137 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types';
 import User from '../models/User';
+import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
+import { sendVerificationEmail } from '../service/emailService';
 
 const { auth } = require('../config/firebase');
+
+//Send verification mail
+export const sendEmailVerification = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+
+            return;
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+
+            return;
+        }
+
+        //Checking verify
+        if (user.isVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Email already verified'
+            });
+
+            return;
+        }
+
+        //Create token
+        const token = generateVerificationToken();
+        const expires = generateTokenExpiry();
+
+        //Update user
+        user.emailVerificationToken = token;
+        user.emailVerificationExpires = expires;
+        await user.save();
+
+        //Send mail
+        const emailSent = await sendVerificationEmail(
+            user.email,
+            token,
+            user.fullName || ''
+        );
+
+        if (!emailSent) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send verification email'
+            });
+
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Verification email sent successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send verification email'
+        });
+    }
+};
+
+//Verify Email
+export const verifyEmail = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { token } = req.query;
+
+        if (!token || typeof token !== 'string') {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid verification token'
+            });
+            return;
+        }
+
+        const user = await User.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: new Date() }
+        }).select(
+            '+emailVerificationToken +emailVerificationExpires'
+        );
+
+        if (!user) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid verification token'
+            });
+
+            return;
+        }
+
+        //Update user
+        user.isVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpires = undefined;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,  // << SỬA: phải là true, không phải false
+            message: 'Email verified successfully'
+        });
+    } catch (error: any) {
+        console.error('Verify email error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to verify email'
+        });
+    }
+};
 
 // Helper: Map Firebase provider
 const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'facebook' => {
@@ -201,7 +330,7 @@ export const updateProfile = async (
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 const FIREBASE_AUTH_URL = 'https://identitytoolkit.googleapis.com/v1/accounts';
 
-// Email Register - Tạo user mới với email/password
+// Email Register 
 export const emailRegister = async (
     req: AuthRequest,
     res: Response
@@ -361,3 +490,64 @@ export const emailLogin = async (
         });
     }
 };
+
+//Refresh Token
+export const refreshToken = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            res.status(400).json({
+                success: false,
+                message: 'Refresh token is required'
+            });
+            return;
+        }
+
+        //Firebase exchange refresh token
+        const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                })
+            }
+        );
+
+        const data: any = await response.json();
+
+        if (!response.ok) {
+            res.status(401).json({
+                success: false,
+                message: data.error?.message || 'Failed to refresh token'
+            });
+            return;
+        }
+
+        //Return new token
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            data: {
+                idToken: data.id_token,
+                refreshToken: data.refresh_token,
+                expiresIn: data.expires_in,
+                userId: data.user_id
+            }
+        });
+    } catch (error: any) {
+        console.error('Refresh token error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to refresh token'
+        });
+    }
+};
+
