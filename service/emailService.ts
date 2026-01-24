@@ -7,18 +7,52 @@ interface EmailOptions {
     html: string
 }
 
-//Send mail function
+//Send mail function using Brevo API (no SMTP ports blocked)
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
-        // Brevo-optimized configuration
-        const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
-        const smtpSecure = process.env.SMTP_SECURE === 'true';
+        const brevoApiKey = process.env.BREVO_API_KEY;
+        const emailUser = process.env.EMAIL_USER;
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            throw new Error('EMAIL_USER and EMAIL_PASS must be configured');
+        // If Brevo API key exists, use HTTP API (recommended for production)
+        if (brevoApiKey) {
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'api-key': brevoApiKey
+                },
+                body: JSON.stringify({
+                    sender: {
+                        name: 'Xedaptot Team',
+                        email: emailUser || 'noreply@xedaptot.com'
+                    },
+                    to: [{ email: options.to }],
+                    subject: options.subject,
+                    htmlContent: options.html
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json() as { message?: string };
+                throw new Error(`Brevo API error: ${errorData.message || response.statusText}`);
+            }
+
+            const data = await response.json() as { messageId?: string };
+            console.log('Email sent via Brevo API:', data.messageId);
+            return true;
+        }
+
+        // Fallback to SMTP (for local development or if API key not set)
+        const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 2525;
+        const smtpSecure = process.env.SMTP_SECURE === 'true';
+        const emailPass = process.env.EMAIL_PASS;
+
+        if (!emailUser || !emailPass) {
+            throw new Error('EMAIL_USER and EMAIL_PASS (or BREVO_API_KEY) must be configured');
         }
 
         const transporter = nodemailer.createTransport({
@@ -26,8 +60,8 @@ export const sendMail = async (
             port: smtpPort,
             secure: smtpSecure,
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
+                user: emailUser,
+                pass: emailPass
             },
             connectionTimeout: 10000,
             greetingTimeout: 10000,
@@ -36,20 +70,24 @@ export const sendMail = async (
             maxConnections: 5,
             maxMessages: 100,
             rateDelta: 1000,
-            rateLimit: 5
+            rateLimit: 5,
+            tls: {
+                rejectUnauthorized: false
+            }
         });
 
         const info = await transporter.sendMail({
-            from: `"Xedaptot Team" <${process.env.EMAIL_USER}>`,
+            from: `"Xedaptot Team" <${emailUser}>`,
             to: options.to,
             subject: options.subject,
             html: options.html
         });
 
-        console.log('✓ Email sent:', info.messageId);
+        console.log('Email sent via SMTP:', info.messageId);
         return true;
-    } catch (error: any) {
-        console.error('✗ Email error:', error.message || error);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('Email error:', errorMessage);
         return false;
     }
 }
