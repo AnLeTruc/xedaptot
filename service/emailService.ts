@@ -12,25 +12,44 @@ export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
+        // Brevo-optimized configuration
+        const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
+        const smtpSecure = process.env.SMTP_SECURE === 'true';
+
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            throw new Error('EMAIL_USER and EMAIL_PASS must be configured');
+        }
+
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpSecure,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
-            }
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 5
         });
 
         const info = await transporter.sendMail({
-            from: '"Xedaptot Team" <' + process.env.EMAIL_USER + '>',
+            from: `"Xedaptot Team" <${process.env.EMAIL_USER}>`,
             to: options.to,
             subject: options.subject,
             html: options.html
         });
 
-        console.log('Email sent successfully:', info.messageId);
+        console.log('✓ Email sent:', info.messageId);
         return true;
-    } catch (error) {
-        console.error('Error sending email:', error);
+    } catch (error: any) {
+        console.error('✗ Email error:', error.message || error);
         return false;
     }
 }
