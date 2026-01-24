@@ -131,3 +131,108 @@ export const getBicycleById = async (
 
 
 
+// POST /api/bicycles
+export const createBicycle = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const {
+            title,
+            description,
+            price,
+            originalPrice,
+            condition,
+            usageMonths,
+            categoryId,
+            brandId,
+            specifications,
+            location,
+            images       // upload sau 
+        } = req.body;
+
+        // validate 
+        if (!title || !price || !condition || !categoryId) {
+            res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
+            })
+            return;
+        }
+
+
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'Please login to post a bicycle'
+            })
+            return;
+        }
+
+        // Lấy thông tin category
+        const categoryDoc = await Category.findById(categoryId);
+        if (!categoryDoc) {
+            res.status(400).json({
+                success: false,
+                message: 'Category not found'
+            })
+            return;
+        }
+
+
+
+        // Lấy thông tin brand (nếu có)
+        let brandData = undefined;
+        if (brandId) {
+            const brandDoc = await Brand.findById(brandId);
+            if (!brandDoc) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Brand not found'
+                })
+                return;
+            }
+            brandData = {
+                _id: brandDoc._id,
+                name: brandDoc.name,
+            }
+        }
+
+
+        // TẠO BICYCLE
+        const bicycle = await Bicycle.create({
+            title,
+            description,
+            price,
+            originalPrice,
+            condition,
+            usageMonths,
+            status: 'PENDING',
+            category: {
+                _id: categoryId,
+                name: categoryDoc.name
+            },
+            brand: brandData,
+            seller: {
+                _id: req.user._id,
+                fullName: req.user.fullName,
+                avatarUrl: req.user.avatarUrl,
+                reputationScore: req.user.reputationScore || 0
+            },
+            specifications,
+            location,
+            images: images
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Bicycle posted successfully. Waiting for approval.',
+            data: bicycle
+        })
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
