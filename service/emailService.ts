@@ -7,19 +7,16 @@ interface EmailOptions {
     html: string
 }
 
-//Send mail function using Nodemailer with port 2525 (works on Render)
+//Send mail function using Nodemailer with SMTP
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
         const emailUser = process.env.EMAIL_USER;
         const emailPass = process.env.EMAIL_PASS;
-        const emailProvider = (process.env.EMAIL_PROVIDER || '').toLowerCase();
 
-        const defaultSmtpHost = emailProvider === 'gmail' ? 'smtp.gmail.com' : undefined;
-        const defaultSmtpPort = emailProvider === 'gmail' ? 465 : 2525;
-        const smtpHost = process.env.SMTP_HOST || defaultSmtpHost;
-        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : defaultSmtpPort;
+        const smtpHost = process.env.SMTP_HOST;
+        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 2525;
         const smtpSecure = process.env.SMTP_SECURE
             ? process.env.SMTP_SECURE === 'true'
             : smtpPort === 465;
@@ -28,34 +25,51 @@ export const sendMail = async (
         if (emailUser && emailPass && smtpHost) {
             console.log(`Attempting SMTP connection to ${smtpHost}:${smtpPort}...`);
 
-            const transporter = nodemailer.createTransport({
-                host: smtpHost,
-                port: smtpPort,
-                secure: smtpSecure,
-                auth: {
-                    user: emailUser,
-                    pass: emailPass
-                },
-                // connectionTimeout: 10000,
-                // greetingTimeout: 10000,
-                // socketTimeout: 15000,
-                tls: {
-                    rejectUnauthorized: false
+            const createTransporter = (host: string, port: number, secure: boolean) =>
+                nodemailer.createTransport({
+                    host,
+                    port,
+                    secure,
+                    auth: {
+                        user: emailUser,
+                        pass: emailPass
+                    },
+                    tls: {
+                        rejectUnauthorized: false
+                    }
+                });
+
+            const sendWithTransporter = async (host: string, port: number, secure: boolean) => {
+                const transporter = createTransporter(host, port, secure);
+                return transporter.sendMail({
+                    from: `"Xedaptot Team" <${emailUser}>`,
+                    to: options.to,
+                    subject: options.subject,
+                    html: options.html
+                });
+            };
+
+            try {
+                const info = await sendWithTransporter(smtpHost, smtpPort, smtpSecure);
+                console.log('Email sent via SMTP:', info.messageId);
+                return true;
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                const isTimeout = /timeout/i.test(message);
+                const isGmail = smtpHost.toLowerCase() === 'smtp.gmail.com';
+
+                if (isTimeout && isGmail && smtpPort === 587) {
+                    console.warn('SMTP timeout on port 587. Retrying Gmail SMTP on port 465...');
+                    const info = await sendWithTransporter(smtpHost, 465, true);
+                    console.log('Email sent via SMTP (fallback):', info.messageId);
+                    return true;
                 }
-            });
 
-            const info = await transporter.sendMail({
-                from: `"Xedaptot Team" <${emailUser}>`,
-                to: options.to,
-                subject: options.subject,
-                html: options.html
-            });
-
-            console.log('Email sent via SMTP:', info.messageId);
-            return true;
+                throw error;
+            }
         }
 
-        throw new Error('SMTP not configured. Set EMAIL_USER, EMAIL_PASS, and SMTP_HOST (or set EMAIL_PROVIDER=gmail).');
+        throw new Error('SMTP not configured. Set EMAIL_USER, EMAIL_PASS, and SMTP_HOST.');
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Email error:', errorMessage);
