@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
 //Interface
 interface EmailOptions {
@@ -7,69 +7,36 @@ interface EmailOptions {
     html: string
 }
 
-//Send mail function using Nodemailer with SMTP
+//Send mail function using SendGrid API
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
-        const emailUser = process.env.EMAIL_USER;
-        const emailPass = process.env.EMAIL_PASS;
+        const sendgridApiKey = process.env.SENDGRID_API_KEY;
+        const emailFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
-        const smtpHost = process.env.SMTP_HOST;
-        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 2525;
-        const smtpSecure = process.env.SMTP_SECURE
-            ? process.env.SMTP_SECURE === 'true'
-            : smtpPort === 465;
-
-        // SMTP only (Nodemailer)
-        if (emailUser && emailPass && smtpHost) {
-            console.log(`Attempting SMTP connection to ${smtpHost}:${smtpPort}...`);
-
-            const createTransporter = (host: string, port: number, secure: boolean) =>
-                nodemailer.createTransport({
-                    host,
-                    port,
-                    secure,
-                    auth: {
-                        user: emailUser,
-                        pass: emailPass
-                    },
-                    tls: {
-                        rejectUnauthorized: false
-                    }
-                });
-
-            const sendWithTransporter = async (host: string, port: number, secure: boolean) => {
-                const transporter = createTransporter(host, port, secure);
-                return transporter.sendMail({
-                    from: `"Xedaptot Team" <${emailUser}>`,
-                    to: options.to,
-                    subject: options.subject,
-                    html: options.html
-                });
-            };
-
-            try {
-                const info = await sendWithTransporter(smtpHost, smtpPort, smtpSecure);
-                console.log('Email sent via SMTP:', info.messageId);
-                return true;
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                const isTimeout = /timeout/i.test(message);
-                const isGmail = smtpHost.toLowerCase() === 'smtp.gmail.com';
-
-                if (isTimeout && isGmail && smtpPort === 587) {
-                    console.warn('SMTP timeout on port 587. Retrying Gmail SMTP on port 465...');
-                    const info = await sendWithTransporter(smtpHost, 465, true);
-                    console.log('Email sent via SMTP (fallback):', info.messageId);
-                    return true;
-                }
-
-                throw error;
-            }
+        if (!sendgridApiKey) {
+            throw new Error('SendGrid not configured. Set SENDGRID_API_KEY.');
         }
 
-        throw new Error('SMTP not configured. Set EMAIL_USER, EMAIL_PASS, and SMTP_HOST.');
+        if (!emailFrom) {
+            throw new Error('Missing EMAIL_FROM. Set EMAIL_FROM to a verified sender.');
+        }
+
+        sgMail.setApiKey(sendgridApiKey);
+
+        await sgMail.send({
+            from: {
+                email: emailFrom,
+                name: 'Xedaptot Team'
+            },
+            to: options.to,
+            subject: options.subject,
+            html: options.html
+        });
+
+        console.log('Email sent via SendGrid.');
+        return true;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Email error:', errorMessage);

@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
-import { sendVerificationEmail } from '../service/emailService';
+import { sendMail, sendVerificationEmail } from '../service/emailService';
 
 const { auth } = require('../config/firebase');
 
@@ -80,6 +80,7 @@ export const sendEmailVerification = async (
         });
     }
 };
+
 
 //Verify Email
 export const verifyEmail = async (
