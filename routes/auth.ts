@@ -7,8 +7,7 @@ import {
     emailLogin,
     refreshToken,
     verifyEmail,
-    sendEmailVerification
-
+    sendEmailVerification,
 } from '../controllers/authController';
 import { verifyToken, requireUser } from '../middleware/auth';
 

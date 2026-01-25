@@ -32,55 +32,14 @@ const options = {
                     description: 'JWT Authorization header using the Bearer scheme',
                 },
             },
-
-            // Shemas
             schemas: {
                 Error: {
                     type: 'object',
                     properties: {
-                        success: {
-                            type: 'boolean',
-                            example: false
-                        },
-                        message: {
-                            type: 'string',
-                            example: 'Error message'
-                        },
+                        success: { type: 'boolean', example: false },
+                        message: { type: 'string', example: 'Error message' },
                     },
                 },
-
-                //Pagination
-                Pagination: {
-                    type: 'object',
-                    properties: {
-                        page: {
-                            type: 'integer',
-                            example: 1
-                        },
-                        limit: {
-                            type: 'integer',
-                            example: 10
-                        },
-                        total: {
-                            type: 'integer',
-                            example: 100
-                        },
-                        totalPages: {
-                            type: 'integer',
-                            example: 10
-                        },
-                        hasNext: {
-                            type: 'boolean',
-                            example: true
-                        },
-                        hasPrev: {
-                            type: 'boolean',
-                            example: false
-                        },
-                    },
-                },
-
-                //Schema
                 User: {
                     type: 'object',
                     properties: {
