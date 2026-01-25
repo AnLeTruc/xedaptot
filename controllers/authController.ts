@@ -255,6 +255,8 @@ export const getProfile = async (
                 email: user.email,
                 fullName: user.fullName,
                 phone: user.phone,
+                gender: user.gender,
+                dateOfBirth: user.dateOfBirth,
                 address: user.address,
                 avatarUrl: user.avatarUrl,
                 roles: user.roles,
@@ -287,11 +289,11 @@ export const updateProfile = async (
             return;
         }
 
-        const { fullName, phone, avatarUrl, address } = req.body;
+        const { fullName, phone, avatarUrl, address, gender, dateOfBirth } = req.body;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { fullName, phone, avatarUrl, address },
+            { fullName, phone, avatarUrl, address, gender, dateOfBirth },
             { new: true, runValidators: true }
         );
 
@@ -310,6 +312,8 @@ export const updateProfile = async (
                 email: updatedUser.email,
                 fullName: updatedUser.fullName,
                 phone: updatedUser.phone,
+                gender: updatedUser.gender,
+                dateOfBirth: updatedUser.dateOfBirth,
                 address: updatedUser.address,
                 avatarUrl: updatedUser.avatarUrl,
                 roles: updatedUser.roles,
