@@ -9,6 +9,8 @@ export interface IUser {
     email: string;
     fullName?: string;
     phone?: string;
+    gender?: 'male' | 'female' | 'other';
+    dateOfBirth?: Date;
     address?: {
         street?: string;
         city?: string;

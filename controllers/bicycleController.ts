@@ -389,3 +389,62 @@ export const deleteBicycle = async (
         });
     }
 }
+
+
+
+
+
+export const getBicycleStatus = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const { status } = req.body;
+
+        const validStatuses = ['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'];
+        if (!status || !validStatuses.includes(status)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be: PENDING, APPROVED, SOLD, HIDDEN, or REJECTED'
+            });
+            return;
+        }
+
+        const bicycle = await Bicycle.findById(id);
+        if (!bicycle) {
+            res.status(404).json({
+                success: false,
+                message: 'Bicycle not found'
+            })
+            return;
+        }
+
+        // Phân quyền
+        const isOwner = req.user?._id.toString() == bicycle.seller._id.toString();
+        const isAdmin = req.user?.roles?.includes('ADMIN');
+
+        if (!isOwner && !isAdmin) {
+            res.status(403).json({
+                success: false,
+                message: 'You are not authorized to update this bicycle'
+            })
+            return;
+        }
+
+        bicycle.status = status;
+        await bicycle.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Bicycle status updated successfully',
+            data: bicycle
+        })
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
