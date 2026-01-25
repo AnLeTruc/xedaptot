@@ -7,84 +7,55 @@ interface EmailOptions {
     html: string
 }
 
-//Send mail function using Brevo API (no SMTP ports blocked)
+//Send mail function using Nodemailer with port 2525 (works on Render)
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
-        const brevoApiKey = process.env.BREVO_API_KEY;
         const emailUser = process.env.EMAIL_USER;
+        const emailPass = process.env.EMAIL_PASS;
+        const emailProvider = (process.env.EMAIL_PROVIDER || '').toLowerCase();
 
-        // If Brevo API key exists, use HTTP API (recommended for production)
-        if (brevoApiKey) {
-            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'api-key': brevoApiKey
+        const defaultSmtpHost = emailProvider === 'gmail' ? 'smtp.gmail.com' : undefined;
+        const defaultSmtpPort = emailProvider === 'gmail' ? 465 : 2525;
+        const smtpHost = process.env.SMTP_HOST || defaultSmtpHost;
+        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : defaultSmtpPort;
+        const smtpSecure = process.env.SMTP_SECURE
+            ? process.env.SMTP_SECURE === 'true'
+            : smtpPort === 465;
+
+        // SMTP only (Nodemailer)
+        if (emailUser && emailPass && smtpHost) {
+            console.log(`Attempting SMTP connection to ${smtpHost}:${smtpPort}...`);
+
+            const transporter = nodemailer.createTransport({
+                host: smtpHost,
+                port: smtpPort,
+                secure: smtpSecure,
+                auth: {
+                    user: emailUser,
+                    pass: emailPass
                 },
-                body: JSON.stringify({
-                    sender: {
-                        name: 'Xedaptot Team',
-                        email: emailUser || 'noreply@xedaptot.com'
-                    },
-                    to: [{ email: options.to }],
-                    subject: options.subject,
-                    htmlContent: options.html
-                })
+                // connectionTimeout: 10000,
+                // greetingTimeout: 10000,
+                // socketTimeout: 15000,
+                tls: {
+                    rejectUnauthorized: false
+                }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json() as { message?: string };
-                throw new Error(`Brevo API error: ${errorData.message || response.statusText}`);
-            }
+            const info = await transporter.sendMail({
+                from: `"Xedaptot Team" <${emailUser}>`,
+                to: options.to,
+                subject: options.subject,
+                html: options.html
+            });
 
-            const data = await response.json() as { messageId?: string };
-            console.log('Email sent via Brevo API:', data.messageId);
+            console.log('Email sent via SMTP:', info.messageId);
             return true;
         }
 
-        // Fallback to SMTP (for local development or if API key not set)
-        const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-        const smtpPort = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 2525;
-        const smtpSecure = process.env.SMTP_SECURE === 'true';
-        const emailPass = process.env.EMAIL_PASS;
-
-        if (!emailUser || !emailPass) {
-            throw new Error('EMAIL_USER and EMAIL_PASS (or BREVO_API_KEY) must be configured');
-        }
-
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpSecure,
-            auth: {
-                user: emailUser,
-                pass: emailPass
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000,
-            pool: true,
-            maxConnections: 5,
-            maxMessages: 100,
-            rateDelta: 1000,
-            rateLimit: 5,
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-
-        const info = await transporter.sendMail({
-            from: `"Xedaptot Team" <${emailUser}>`,
-            to: options.to,
-            subject: options.subject,
-            html: options.html
-        });
-
-        console.log('Email sent via SMTP:', info.messageId);
-        return true;
+        throw new Error('SMTP not configured. Set EMAIL_USER, EMAIL_PASS, and SMTP_HOST (or set EMAIL_PROVIDER=gmail).');
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('Email error:', errorMessage);
