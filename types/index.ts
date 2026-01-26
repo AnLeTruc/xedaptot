@@ -11,12 +11,7 @@ export interface IUser {
     phone?: string;
     gender?: 'male' | 'female' | 'other';
     dateOfBirth?: Date;
-    address?: {
-        street?: string;
-        city?: string;
-        district?: string;
-        ward?: string;
-    };
+    addresses?: IAddress[];
     avatarUrl?: string;
     roles: UserRole[];
     reputationScore: number;
@@ -26,6 +21,17 @@ export interface IUser {
     // Email Verification Fields
     emailVerificationToken?: string;
     emailVerificationExpires?: Date;
+}
+
+
+export interface IAddress {
+    _id?: string;
+    label: string;           // "Nhà", "Công ty",...
+    street?: string;
+    ward?: string;
+    district?: string;
+    city: string;
+    isDefault: boolean;
 }
 
 //Interface Mongoose Document

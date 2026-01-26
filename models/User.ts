@@ -24,19 +24,33 @@ const userSchema = new Schema<IUserDocument>(
             type: String,
             trim: true,
         },
-        gender: {
-            type: String,
-            enum: ['male', 'female', 'other'],
-        },
-        dateOfBirth: {
-            type: Date,
-        },
-        address: {
-            street: String,
-            city: String,
-            districts: String,
-            ward: String,
-        },
+        addresses: [{
+            label: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            street: {
+                type: String,
+                trim: true
+            },
+            ward: {
+                type: String,
+                trim: true
+            },
+            district: {
+                type: String,
+                trim: true
+            },
+            city: {
+                type: String,
+                required: true
+            },
+            isDefault: {
+                type: Boolean,
+                default: false
+            }
+        }],
         avatarUrl: {
             type: String,
             trim: true

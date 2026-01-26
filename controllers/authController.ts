@@ -258,7 +258,7 @@ export const getProfile = async (
                 phone: user.phone,
                 gender: user.gender,
                 dateOfBirth: user.dateOfBirth,
-                address: user.address,
+                addresses: user.addresses,
                 avatarUrl: user.avatarUrl,
                 roles: user.roles,
                 reputationScore: user.reputationScore,
@@ -290,11 +290,11 @@ export const updateProfile = async (
             return;
         }
 
-        const { fullName, phone, avatarUrl, address, gender, dateOfBirth } = req.body;
+        const { fullName, phone, avatarUrl, addresses, gender, dateOfBirth } = req.body;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { fullName, phone, avatarUrl, address, gender, dateOfBirth },
+            { fullName, phone, avatarUrl, addresses, gender, dateOfBirth },
             { new: true, runValidators: true }
         );
 
@@ -315,7 +315,7 @@ export const updateProfile = async (
                 phone: updatedUser.phone,
                 gender: updatedUser.gender,
                 dateOfBirth: updatedUser.dateOfBirth,
-                address: updatedUser.address,
+                addresses: updatedUser.addresses,
                 avatarUrl: updatedUser.avatarUrl,
                 roles: updatedUser.roles,
                 reputationScore: updatedUser.reputationScore,
@@ -552,6 +552,74 @@ export const refreshToken = async (
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to refresh token'
+        });
+    }
+};
+
+
+export const addAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+            return;
+        }
+
+        const { label, street, ward, district, city, isDefault } = req.body;
+
+        if (!label || !city) {
+            res.status(400).json({
+                success: false,
+                message: 'Label and city are required'
+            });
+            return;
+        }
+
+        if (isDefault) {
+            const user = await User.findById(userId);
+
+            if (user?.addresses && user.addresses.length > 0) {
+                await User.updateOne(
+                    { _id: userId },
+                    { $set: { 'addresses.$[].isDefault': false } }
+                );
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: {
+                    addresses: {
+                        label,
+                        street,
+                        ward,
+                        district,
+                        city,
+                        isDefault: isDefault || false
+                    }
+                }
+            },
+            { new: true }
+        );
+        res.status(201).json({
+            success: true,
+            message: 'Address added successfully',
+            data: updatedUser?.addresses
+        })
+
+    } catch (error: any) {
+        console.error('Add address error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to add address'
         });
     }
 };
