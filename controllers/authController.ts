@@ -624,3 +624,59 @@ export const addAddress = async (
     }
 };
 
+
+
+
+// PUT /api/auth/addresses/:id 
+export const updateAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            })
+            return;
+        }
+
+        const { label, street, ward, district, city } = req.body;
+
+        const updateAddress = await User.findOneAndUpdate(
+            { _id: userId, 'addresses._id': id },
+            {
+                $set: {
+                    'addresses.$.label': label,
+                    'addresses.$.street': street,
+                    'addresses.$.ward': ward,
+                    'addresses.$.district': district,
+                    'addresses.$.city': city
+                }
+            },
+            { new: true }
+        );
+
+        if (!updateAddress) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Address updated successfully',
+            data: updateAddress?.addresses
+        })
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update address'
+        })
+    }
+}
