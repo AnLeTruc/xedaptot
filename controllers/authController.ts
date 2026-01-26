@@ -750,3 +750,53 @@ export const deleteAddress = async (
         })
     }
 }
+
+
+
+// PUT /api/auth/addresses/:id/default - Đặt làm mặc định
+export const setDefaultAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        await User.updateOne(
+            { _id: userId },
+            { $set: { 'addresses.$[].isDefault': false } }
+        );
+
+
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: userId, 'addresses._id': id },
+            { $set: { 'addresses.$.isDefault': true } },
+            { new: true }
+        );
+        if (!updatedUser) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Default address set successfully',
+            data: updatedUser.addresses
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to set default address'
+        })
+    }
+}
