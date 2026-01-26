@@ -26,6 +26,10 @@
     {
       "name": "Category",
       "description": "Category management"
+    },
+    {
+      "name": "Bicycle",
+      "description": "Bicycle listing management"
     }
   ],
   "components": {
@@ -114,6 +118,335 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Bicycle": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "title": {
+            "type": "string",
+            "example": "Giant ATX 2022"
+          },
+          "description": {
+            "type": "string",
+            "example": "Xe còn mới, ít sử dụng"
+          },
+          "price": {
+            "type": "number",
+            "example": 7500000
+          },
+          "originalPrice": {
+            "type": "number",
+            "example": 12000000
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "usageMonths": {
+            "type": "number",
+            "example": 6
+          },
+          "viewCount": {
+            "type": "number",
+            "example": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "SOLD",
+              "HIDDEN",
+              "REJECTED"
+            ]
+          },
+          "isInspected": {
+            "type": "boolean",
+            "example": false
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "example": false
+          },
+          "category": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "brand": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "seller": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "avatarUrl": {
+                "type": "string"
+              },
+              "reputationScore": {
+                "type": "number"
+              }
+            }
+          },
+          "specifications": {
+            "type": "object",
+            "properties": {
+              "yearManufactured": {
+                "type": "number"
+              },
+              "frameSize": {
+                "type": "string"
+              },
+              "frameMaterial": {
+                "type": "string"
+              },
+              "wheelSize": {
+                "type": "string"
+              },
+              "gearCount": {
+                "type": "number"
+              },
+              "brakeType": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "number"
+              }
+            }
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Point"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "[longitude, latitude]"
+                  }
+                }
+              }
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "mediaType": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video"
+                  ]
+                },
+                "isPrimary": {
+                  "type": "boolean"
+                },
+                "displayOrder": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BicycleInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "price",
+          "condition",
+          "categoryId"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "originalPrice": {
+            "type": "number"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "usageMonths": {
+            "type": "number"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "brandId": {
+            "type": "string"
+          },
+          "specifications": {
+            "type": "object"
+          },
+          "location": {
+            "type": "object"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "mediaType": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video"
+                  ]
+                },
+                "isPrimary": {
+                  "type": "boolean"
+                },
+                "displayOrder": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BicycleUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "originalPrice": {
+            "type": "number"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LIKE_NEW",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "usageMonths": {
+            "type": "number"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "brandId": {
+            "type": "string"
+          },
+          "specifications": {
+            "type": "object"
+          },
+          "location": {
+            "type": "object"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "mediaType": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video"
+                  ]
+                },
+                "isPrimary": {
+                  "type": "boolean"
+                },
+                "displayOrder": {
+                  "type": "number"
+                }
+              }
+            }
           }
         }
       }
@@ -561,9 +894,40 @@
                           "type": "string",
                           "example": "0901234567"
                         },
-                        "address": {
+                        "gender": {
                           "type": "string",
-                          "example": "123 Street, City"
+                          "enum": [
+                            "male",
+                            "female",
+                            "other"
+                          ],
+                          "example": "male"
+                        },
+                        "dateOfBirth": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "1998-01-01T00:00:00.000Z"
+                        },
+                        "address": {
+                          "type": "object",
+                          "properties": {
+                            "street": {
+                              "type": "string",
+                              "example": "123 Nguyen Hue"
+                            },
+                            "ward": {
+                              "type": "string",
+                              "example": "Ben Nghe"
+                            },
+                            "districts": {
+                              "type": "string",
+                              "example": "1"
+                            },
+                            "city": {
+                              "type": "string",
+                              "example": "Ho Chi Minh"
+                            }
+                          }
                         },
                         "avatarUrl": {
                           "type": "string",
@@ -627,13 +991,44 @@
                     "type": "string",
                     "example": "0909876543"
                   },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "other"
+                    ],
+                    "example": "female"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "1999-02-01T00:00:00.000Z"
+                  },
                   "avatarUrl": {
                     "type": "string",
                     "example": "https://example.com/new-avatar.jpg"
                   },
                   "address": {
-                    "type": "string",
-                    "example": "456 New Street, City"
+                    "type": "object",
+                    "properties": {
+                      "street": {
+                        "type": "string",
+                        "example": "456 Nguyen Trai"
+                      },
+                      "ward": {
+                        "type": "string",
+                        "example": "Ward 5"
+                      },
+                      "districts": {
+                        "type": "string",
+                        "example": "5"
+                      },
+                      "city": {
+                        "type": "string",
+                        "example": "Ho Chi Minh"
+                      }
+                    }
                   }
                 }
               }
@@ -668,8 +1063,34 @@
                         "phone": {
                           "type": "string"
                         },
+                        "gender": {
+                          "type": "string",
+                          "enum": [
+                            "male",
+                            "female",
+                            "other"
+                          ]
+                        },
+                        "dateOfBirth": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
                         "address": {
-                          "type": "string"
+                          "type": "object",
+                          "properties": {
+                            "street": {
+                              "type": "string"
+                            },
+                            "ward": {
+                              "type": "string"
+                            },
+                            "districts": {
+                              "type": "string"
+                            },
+                            "city": {
+                              "type": "string"
+                            }
+                          }
                         },
                         "avatarUrl": {
                           "type": "string"
@@ -702,6 +1123,420 @@
           },
           "404": {
             "description": "User not found"
+          }
+        }
+      }
+    },
+    "/auth/send-verification-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Send verification email",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification email sent successfully"
+          },
+          "400": {
+            "description": "Email already verified"
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Failed to send verification email"
+          }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify email with token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verified successfully"
+          },
+          "400": {
+            "description": "Invalid verification token"
+          },
+          "500": {
+            "description": "Failed to verify email"
+          }
+        }
+      }
+    },
+    "/bicycles": {
+      "get": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Get all bicycles",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "LIKE_NEW",
+                "GOOD",
+                "FAIR",
+                "POOR"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "-createdAt"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "totalPages": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Bicycle"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Create new bicycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BicycleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bicycle created"
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/bicycles/{id}": {
+      "get": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Get bicycle by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Bicycle"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bicycle not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Update bicycle by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BicycleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bicycle updated"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Bicycle not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Delete bicycle by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bicycle deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Bicycle not found"
+          }
+        }
+      }
+    },
+    "/bicycles/{id}/status": {
+      "put": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Update bicycle status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "APPROVED",
+                      "SOLD",
+                      "HIDDEN",
+                      "REJECTED"
+                    ],
+                    "example": "APPROVED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bicycle status updated successfully"
+          },
+          "400": {
+            "description": "Invalid status"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Not authorized to update this bicycle"
+          },
+          "404": {
+            "description": "Bicycle not found"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
