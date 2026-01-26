@@ -680,3 +680,73 @@ export const updateAddress = async (
         })
     }
 }
+
+
+
+// DELETE /api/auth/addresses/:id
+export const deleteAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        const addressToDelete = user.addresses?.find(
+            (addr: any) => addr._id.toString() === id
+        );
+
+        if (!addressToDelete) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+
+        await User.findByIdAndUpdate(userId, {
+            $pull: {
+                addresses: { _id: id }
+            }
+        });
+
+        if (addressToDelete.isDefault) {
+            await User.updateOne(
+                { _id: userId, 'addresses.0': { $exists: true } },
+                { $set: { 'addresses.0.isDefault': true } }
+            );
+        }
+
+        const updatedUser = await User.findById(userId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Address deleted successfully',
+            data: updatedUser?.addresses
+        });
+
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to delete address'
+        })
+    }
+}
