@@ -13,7 +13,6 @@ export interface IUserPackageSnapshot {
 }
 
 export interface IUserPackage {
-    _id: Types.ObjectId;
     userId: Types.ObjectId;
     packageId: Types.ObjectId;
     package: IUserPackageSnapshot;
