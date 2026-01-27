@@ -86,6 +86,31 @@ const userSchema = new Schema<IUserDocument>(
             enum: ['google', 'email'],
             required: [true, 'Auth provider is required'],
         },
+        passwordResetCodeHash: {
+            type: String,
+            select: false
+        },
+        passwordResetExpires: {
+            type: Date,
+            select: false
+        },
+        passwordResetAttempts: {
+            type: Number,
+            select: false,
+            default: 0
+        },
+        passwordResetVerifiedAt: {
+            type: Date,
+            select: false
+        },
+        passwordResetTokenHash:{
+            type: String,
+            select: false
+        },
+        passwordResetTokenExpires:{
+            type: Date,
+            select: false
+        }
     },
     {
         timestamps: true,
