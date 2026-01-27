@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
+import TempMedia from '../models/TempMedia';
 import { AuthRequest } from '../types';
 
 
@@ -148,10 +149,57 @@ export const createBicycle = async (
             brandId,
             specifications,
             location,
-            images       // upload sau 
+            images
         } = req.body;
 
-        // validate 
+        const imagesList = images || [];
+        const thumbnails = imagesList.filter((img: any) => img.isPrimary === true && img.mediaType === 'image');
+        const subImages = imagesList.filter((img: any) => img.isPrimary === false && img.mediaType === 'image');
+        const videos = imagesList.filter((img: any) => img.mediaType === 'video');
+
+        const totalImages = thumbnails.length + subImages.length;
+        const totalVideos = videos.length;
+
+        if (thumbnails.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'At least 1 primary image (thumbnail) is required.'
+            });
+            return;
+        }
+
+        if (subImages.length < 2) {
+            res.status(400).json({
+                success: false,
+                message: 'At least 2 additional images are required.'
+            });
+            return;
+        }
+
+        if (totalVideos < 1) {
+            res.status(400).json({
+                success: false,
+                message: 'At least 1 video is required.'
+            });
+            return;
+        }
+
+        if (totalImages > 10) {
+            res.status(400).json({
+                success: false,
+                message: 'Maximum 10 images are allowed.'
+            });
+            return;
+        }
+
+        if (totalVideos > 2) {
+            res.status(400).json({
+                success: false,
+                message: 'Maximum 2 videos are allowed.'
+            });
+            return;
+        }
+
         if (!title || !price || !condition || !categoryId) {
             res.status(400).json({
                 success: false,
@@ -169,7 +217,6 @@ export const createBicycle = async (
             return;
         }
 
-        // Lấy thông tin category
         const categoryDoc = await Category.findById(categoryId);
         if (!categoryDoc) {
             res.status(400).json({
@@ -179,9 +226,6 @@ export const createBicycle = async (
             return;
         }
 
-
-
-        // Lấy thông tin brand (nếu có)
         let brandData = undefined;
         if (brandId) {
             const brandDoc = await Brand.findById(brandId);
@@ -199,7 +243,6 @@ export const createBicycle = async (
         }
 
 
-        // TẠO BICYCLE
         const bicycle = await Bicycle.create({
             title,
             description,
@@ -216,13 +259,19 @@ export const createBicycle = async (
             seller: {
                 _id: req.user._id,
                 fullName: req.user.fullName,
-                avatarUrl: req.user.avatarUrl,
+                avatarUrl: req.user.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
                 reputationScore: req.user.reputationScore || 0
             },
             specifications,
             location,
             images: images
         });
+
+        // Delete from TempMedia
+        if (images && images.length > 0) {
+            const urls = images.map((img: any) => img.url);
+            await TempMedia.deleteMany({ url: { $in: urls } });
+        }
 
         res.status(201).json({
             success: true,
