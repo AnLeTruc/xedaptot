@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
+import TempMedia from '../models/TempMedia';
 import { AuthRequest } from '../types';
 
 
@@ -242,7 +243,6 @@ export const createBicycle = async (
         }
 
 
-        // TẠO BICYCLE
         const bicycle = await Bicycle.create({
             title,
             description,
@@ -266,6 +266,12 @@ export const createBicycle = async (
             location,
             images: images
         });
+
+        // Delete from TempMedia
+        if (images && images.length > 0) {
+            const urls = images.map((img: any) => img.url);
+            await TempMedia.deleteMany({ url: { $in: urls } });
+        }
 
         res.status(201).json({
             success: true,
