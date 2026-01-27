@@ -898,10 +898,11 @@ export const verifyResetCode = async (
 
     const maxAttempts = 5;
     if((user.passwordResetAttempts ?? 0) >= maxAttempts){
-        res.status(400).json({
+        res.status(429).json({
             success: false,
             message: 'Maximum reset attempts exceeded. Please request a new code.'
         })
+        return;
     };
 
     const inputHash = hashResetCode (user.email, String(code));
