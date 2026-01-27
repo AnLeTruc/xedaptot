@@ -7,6 +7,10 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { startCleanupJob } = require('./services/cleanupService');
+
+// Start Cronjob
+startCleanupJob();
 
 //Routes
 const authRouter = require('./routes/auth').default;
@@ -14,10 +18,11 @@ const userRouter = require('./routes/user').default;
 const brandRouter = require('./routes/brand').default;
 const categoryRouter = require('./routes/category').default;
 const bicycleRouter = require('./routes/bicycle').default;
+const uploadRouter = require('./routes/uploadRoutes').default;
 
 var app = express();
 
-// Trust proxy for Render/production behind reverse proxy
+// Trust proxy for Render
 app.set('trust proxy', 1);
 
 connectDB();
@@ -49,5 +54,6 @@ app.use('/api/users', userRouter);
 app.use('/api/brands', brandRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
+app.use('/api/upload', uploadRouter);
 
 module.exports = app;

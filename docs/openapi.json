@@ -34,6 +34,10 @@
     {
       "name": "Bicycle",
       "description": "Bicycle listing management"
+    },
+    {
+      "name": "Upload",
+      "description": "Image/Video upload management"
     }
   ],
   "components": {
@@ -457,6 +461,60 @@
     }
   },
   "paths": {
+    "/upload": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Upload an image or video",
+        "description": "Upload a file to Cloudinary and return the URL. Supports images and videos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file to upload"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Upload successful"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded or invalid file type"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/auth/firebase": {
       "post": {
         "tags": [
@@ -1120,13 +1178,33 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "_id": { "type": "string" },
-                              "label": { "type": "string", "example": "Nhà" },
-                              "street": { "type": "string", "example": "123 Nguyen Hue" },
-                              "ward": { "type": "string", "example": "Ben Nghe" },
-                              "district": { "type": "string", "example": "1" },
-                              "city": { "type": "string", "example": "Ho Chi Minh" },
-                              "isDefault": { "type": "boolean", "example": true }
+                              "_id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string",
+                                "example": "Nhà"
+                              },
+                              "street": {
+                                "type": "string",
+                                "example": "123 Nguyen Hue"
+                              },
+                              "ward": {
+                                "type": "string",
+                                "example": "Ben Nghe"
+                              },
+                              "district": {
+                                "type": "string",
+                                "example": "1"
+                              },
+                              "city": {
+                                "type": "string",
+                                "example": "Ho Chi Minh"
+                              },
+                              "isDefault": {
+                                "type": "boolean",
+                                "example": true
+                              }
                             }
                           }
                         },
@@ -1198,12 +1276,24 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "label": { "type": "string" },
-                        "street": { "type": "string" },
-                        "ward": { "type": "string" },
-                        "district": { "type": "string" },
-                        "city": { "type": "string" },
-                        "isDefault": { "type": "boolean" }
+                        "label": {
+                          "type": "string"
+                        },
+                        "street": {
+                          "type": "string"
+                        },
+                        "ward": {
+                          "type": "string"
+                        },
+                        "district": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        }
                       }
                     }
                   },
@@ -1275,13 +1365,27 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "_id": { "type": "string" },
-                              "label": { "type": "string" },
-                              "street": { "type": "string" },
-                              "ward": { "type": "string" },
-                              "district": { "type": "string" },
-                              "city": { "type": "string" },
-                              "isDefault": { "type": "boolean" }
+                              "_id": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "street": {
+                                "type": "string"
+                              },
+                              "ward": {
+                                "type": "string"
+                              },
+                              "district": {
+                                "type": "string"
+                              },
+                              "city": {
+                                "type": "string"
+                              },
+                              "isDefault": {
+                                "type": "boolean"
+                              }
                             }
                           }
                         },
@@ -1343,12 +1447,30 @@
                   "city"
                 ],
                 "properties": {
-                  "label": { "type": "string", "example": "Nhà" },
-                  "street": { "type": "string", "example": "123 Nguyen Hue" },
-                  "ward": { "type": "string", "example": "Ben Nghe" },
-                  "district": { "type": "string", "example": "1" },
-                  "city": { "type": "string", "example": "Ho Chi Minh" },
-                  "isDefault": { "type": "boolean", "example": true }
+                  "label": {
+                    "type": "string",
+                    "example": "Nhà"
+                  },
+                  "street": {
+                    "type": "string",
+                    "example": "123 Nguyen Hue"
+                  },
+                  "ward": {
+                    "type": "string",
+                    "example": "Ben Nghe"
+                  },
+                  "district": {
+                    "type": "string",
+                    "example": "1"
+                  },
+                  "city": {
+                    "type": "string",
+                    "example": "Ho Chi Minh"
+                  },
+                  "isDefault": {
+                    "type": "boolean",
+                    "example": true
+                  }
                 }
               }
             }
@@ -1362,20 +1484,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "message": { "type": "string", "example": "Address added successfully" },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Address added successfully"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "_id": { "type": "string" },
-                          "label": { "type": "string" },
-                          "street": { "type": "string" },
-                          "ward": { "type": "string" },
-                          "district": { "type": "string" },
-                          "city": { "type": "string" },
-                          "isDefault": { "type": "boolean" }
+                          "_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "street": {
+                            "type": "string"
+                          },
+                          "ward": {
+                            "type": "string"
+                          },
+                          "district": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -1409,7 +1551,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -1419,11 +1563,21 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "label": { "type": "string" },
-                  "street": { "type": "string" },
-                  "ward": { "type": "string" },
-                  "district": { "type": "string" },
-                  "city": { "type": "string" }
+                  "label": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "ward": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -1437,20 +1591,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "message": { "type": "string", "example": "Address updated successfully" },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Address updated successfully"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "_id": { "type": "string" },
-                          "label": { "type": "string" },
-                          "street": { "type": "string" },
-                          "ward": { "type": "string" },
-                          "district": { "type": "string" },
-                          "city": { "type": "string" },
-                          "isDefault": { "type": "boolean" }
+                          "_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "street": {
+                            "type": "string"
+                          },
+                          "ward": {
+                            "type": "string"
+                          },
+                          "district": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -1459,8 +1633,12 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "404": { "description": "Address not found" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Address not found"
+          }
         }
       },
       "delete": {
@@ -1478,7 +1656,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1489,20 +1669,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "message": { "type": "string", "example": "Address deleted successfully" },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Address deleted successfully"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "_id": { "type": "string" },
-                          "label": { "type": "string" },
-                          "street": { "type": "string" },
-                          "ward": { "type": "string" },
-                          "district": { "type": "string" },
-                          "city": { "type": "string" },
-                          "isDefault": { "type": "boolean" }
+                          "_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "street": {
+                            "type": "string"
+                          },
+                          "ward": {
+                            "type": "string"
+                          },
+                          "district": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -1511,8 +1711,12 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "404": { "description": "Address not found" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Address not found"
+          }
         }
       }
     },
@@ -1532,7 +1736,9 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1543,20 +1749,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "message": { "type": "string", "example": "Default address set successfully" },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Default address set successfully"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "_id": { "type": "string" },
-                          "label": { "type": "string" },
-                          "street": { "type": "string" },
-                          "ward": { "type": "string" },
-                          "district": { "type": "string" },
-                          "city": { "type": "string" },
-                          "isDefault": { "type": "boolean" }
+                          "_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "street": {
+                            "type": "string"
+                          },
+                          "ward": {
+                            "type": "string"
+                          },
+                          "district": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -1565,8 +1791,12 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "404": { "description": "Address not found" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Address not found"
+          }
         }
       }
     },
