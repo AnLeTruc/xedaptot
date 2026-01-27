@@ -20,6 +20,10 @@
       "description": "Authentication endpoints"
     },
     {
+      "name": "Users",
+      "description": "User profile and address management"
+    },
+    {
       "name": "Brand",
       "description": "Brand management"
     },
@@ -855,10 +859,213 @@
         }
       }
     },
-    "/auth/profile": {
-      "get": {
+    "/auth/forgot-password": {
+      "post": {
         "tags": [
           "Auth"
+        ],
+        "summary": "Forgot password (send code)",
+        "description": "Send reset code to the email address.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "If the email exists, a reset code is sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "If that email address is in our system, we have sent a password reset code to it."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing email"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/auth/verify-reset-code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify reset code",
+        "description": "Verify the code and return a one-time resetToken for password reset.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "code"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6,
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Reset code verified successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "resetToken": {
+                          "type": "string",
+                          "description": "One-time reset token (hex string)",
+                          "example": "e3b0c44298fc1c149afbf4c8996fb924..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid/expired code"
+          },
+          "429": {
+            "description": "Too many attempts"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password (using resetToken)",
+        "description": "Reset password for email/password accounts using resetToken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "resetToken",
+                  "newPassword"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  },
+                  "resetToken": {
+                    "type": "string",
+                    "description": "Reset token returned by /auth/verify-reset-code",
+                    "example": "e3b0c44298fc1c149afbf4c8996fb924..."
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "newPassword123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password reset successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid/expired reset token or validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/users/profile": {
+      "get": {
+        "tags": [
+          "Users"
         ],
         "summary": "Get current user profile",
         "description": "Get profile of the authenticated user",
@@ -908,24 +1115,18 @@
                           "format": "date-time",
                           "example": "1998-01-01T00:00:00.000Z"
                         },
-                        "address": {
-                          "type": "object",
-                          "properties": {
-                            "street": {
-                              "type": "string",
-                              "example": "123 Nguyen Hue"
-                            },
-                            "ward": {
-                              "type": "string",
-                              "example": "Ben Nghe"
-                            },
-                            "districts": {
-                              "type": "string",
-                              "example": "1"
-                            },
-                            "city": {
-                              "type": "string",
-                              "example": "Ho Chi Minh"
+                        "addresses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "label": { "type": "string", "example": "Nhà" },
+                              "street": { "type": "string", "example": "123 Nguyen Hue" },
+                              "ward": { "type": "string", "example": "Ben Nghe" },
+                              "district": { "type": "string", "example": "1" },
+                              "city": { "type": "string", "example": "Ho Chi Minh" },
+                              "isDefault": { "type": "boolean", "example": true }
                             }
                           }
                         },
@@ -968,7 +1169,7 @@
       },
       "put": {
         "tags": [
-          "Auth"
+          "Users"
         ],
         "summary": "Update user profile",
         "description": "Update profile of the authenticated user",
@@ -991,6 +1192,21 @@
                     "type": "string",
                     "example": "0909876543"
                   },
+                  "addresses": {
+                    "type": "array",
+                    "description": "Replace the full addresses array (optional)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": { "type": "string" },
+                        "street": { "type": "string" },
+                        "ward": { "type": "string" },
+                        "district": { "type": "string" },
+                        "city": { "type": "string" },
+                        "isDefault": { "type": "boolean" }
+                      }
+                    }
+                  },
                   "gender": {
                     "type": "string",
                     "enum": [
@@ -1008,27 +1224,6 @@
                   "avatarUrl": {
                     "type": "string",
                     "example": "https://example.com/new-avatar.jpg"
-                  },
-                  "address": {
-                    "type": "object",
-                    "properties": {
-                      "street": {
-                        "type": "string",
-                        "example": "456 Nguyen Trai"
-                      },
-                      "ward": {
-                        "type": "string",
-                        "example": "Ward 5"
-                      },
-                      "districts": {
-                        "type": "string",
-                        "example": "5"
-                      },
-                      "city": {
-                        "type": "string",
-                        "example": "Ho Chi Minh"
-                      }
-                    }
                   }
                 }
               }
@@ -1075,20 +1270,18 @@
                           "type": "string",
                           "format": "date-time"
                         },
-                        "address": {
-                          "type": "object",
-                          "properties": {
-                            "street": {
-                              "type": "string"
-                            },
-                            "ward": {
-                              "type": "string"
-                            },
-                            "districts": {
-                              "type": "string"
-                            },
-                            "city": {
-                              "type": "string"
+                        "addresses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "label": { "type": "string" },
+                              "street": { "type": "string" },
+                              "ward": { "type": "string" },
+                              "district": { "type": "string" },
+                              "city": { "type": "string" },
+                              "isDefault": { "type": "boolean" }
                             }
                           }
                         },
@@ -1124,6 +1317,256 @@
           "404": {
             "description": "User not found"
           }
+        }
+      }
+    },
+    "/users/addresses": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Add address",
+        "description": "Add a new address for the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "city"
+                ],
+                "properties": {
+                  "label": { "type": "string", "example": "Nhà" },
+                  "street": { "type": "string", "example": "123 Nguyen Hue" },
+                  "ward": { "type": "string", "example": "Ben Nghe" },
+                  "district": { "type": "string", "example": "1" },
+                  "city": { "type": "string", "example": "Ho Chi Minh" },
+                  "isDefault": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Address added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Address added successfully" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "street": { "type": "string" },
+                          "ward": { "type": "string" },
+                          "district": { "type": "string" },
+                          "city": { "type": "string" },
+                          "isDefault": { "type": "boolean" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/users/addresses/{id}": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update address",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string" },
+                  "street": { "type": "string" },
+                  "ward": { "type": "string" },
+                  "district": { "type": "string" },
+                  "city": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Address updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Address updated successfully" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "street": { "type": "string" },
+                          "ward": { "type": "string" },
+                          "district": { "type": "string" },
+                          "city": { "type": "string" },
+                          "isDefault": { "type": "boolean" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Address not found" }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete address",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Address deleted successfully" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "street": { "type": "string" },
+                          "ward": { "type": "string" },
+                          "district": { "type": "string" },
+                          "city": { "type": "string" },
+                          "isDefault": { "type": "boolean" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Address not found" }
+        }
+      }
+    },
+    "/users/addresses/{id}/default": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Set default address",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default address set successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Default address set successfully" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "street": { "type": "string" },
+                          "ward": { "type": "string" },
+                          "district": { "type": "string" },
+                          "city": { "type": "string" },
+                          "isDefault": { "type": "boolean" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Address not found" }
         }
       }
     },

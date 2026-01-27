@@ -10,6 +10,7 @@ const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 //Routes
 const authRouter = require('./routes/auth').default;
+const userRouter = require('./routes/user').default;
 const brandRouter = require('./routes/brand').default;
 const categoryRouter = require('./routes/category').default;
 const bicycleRouter = require('./routes/bicycle').default;
@@ -44,6 +45,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 setupSwagger(app);
 
 app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/users', userRouter);
 app.use('/api/brands', brandRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
