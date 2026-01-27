@@ -21,6 +21,14 @@ export interface IUser {
     // Email Verification Fields
     emailVerificationToken?: string;
     emailVerificationExpires?: Date;
+    // Password Reset Fields
+    passwordResetCodeHash?: string;
+    passwordResetExpires?: Date;
+    passwordResetAttempts?: number;
+    passwordResetVerifiedAt?: Date;
+    passwordResetTokenHash?: string;
+    passwordResetTokenExpires?: Date;
+
 }
 
 

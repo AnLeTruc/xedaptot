@@ -3,6 +3,8 @@ import { AuthRequest } from '../types';
 import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
 import { sendMail, sendVerificationEmail } from '../service/emailService';
+import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
+import crypto from 'crypto';
 
 const { auth } = require('../config/firebase');
 
@@ -232,9 +234,6 @@ export const firebaseAuth = async (
     }
 };
 
-
-
-
 export const getProfile = async (
     req: AuthRequest,
     res: Response
@@ -273,7 +272,6 @@ export const getProfile = async (
         })
     }
 }
-
 
 export const updateProfile = async (
     req: AuthRequest,
@@ -556,7 +554,6 @@ export const refreshToken = async (
     }
 };
 
-
 export const addAddress = async (
     req: AuthRequest,
     res: Response
@@ -624,9 +621,6 @@ export const addAddress = async (
     }
 };
 
-
-
-
 // PUT /api/auth/addresses/:id 
 export const updateAddress = async (
     req: AuthRequest,
@@ -680,8 +674,6 @@ export const updateAddress = async (
         })
     }
 }
-
-
 
 // DELETE /api/auth/addresses/:id
 export const deleteAddress = async (
@@ -751,8 +743,6 @@ export const deleteAddress = async (
     }
 }
 
-
-
 // PUT /api/auth/addresses/:id/default - Đặt làm mặc định
 export const setDefaultAddress = async (
     req: AuthRequest,
@@ -800,3 +790,215 @@ export const setDefaultAddress = async (
         })
     }
 }
+
+//Send code reset password to mail
+export const forgotPassword = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email} = req.body;
+
+    if (!email) {
+        res.status(400).json({
+            success: false,
+            message: 'Email is required'
+        })
+        return;
+    };
+
+    const genericOk = () =>
+        res.status(200).json({
+            success: true,
+            message: 'If that email address is in our system, we have sent a password reset code to it.'
+        });
+
+    const user = await User.findOne({
+        email: String(email).toLowerCase()
+    })
+    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts');
+
+    if( !user) {
+        genericOk();
+        return;
+    }
+    if (user.authProvider !== 'email') {
+        genericOk();
+        return;
+    }
+
+    const code = generate6DigitCode();
+
+    user.passwordResetCodeHash = hashResetCode(email, code);
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); //10 minutes
+    user.passwordResetAttempts = 0;
+    user.passwordResetVerifiedAt = undefined;
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    await user.save();
+
+    await sendMail({
+        to: user.email,
+        subject: '[Xedaptot] Password reset code',
+        html: `
+            <p>Your password reset code is:</p>
+            <h2>${code}</h2>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn’t request this, ignore this email.</p>
+        `
+    });
+
+    genericOk();
+    return;
+};
+
+//Verify reset token
+export const verifyResetCode = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email, code} = req.body;
+
+    if(!email || !code){
+        res.status(400).json({
+            success: false, 
+            message: 'Email and code are required'
+        })
+        return;
+    };
+
+    const user = await User.findOne({
+        email: String(email).toLowerCase()
+    })
+    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
+
+    if(!user || user.authProvider !== 'email'){
+        res.status(400).json({
+            success: false,
+            message: 'Invalid code'
+        });
+        return;
+    };
+
+    if(!user.passwordResetCodeHash || !user.passwordResetExpires){
+        res.status(400).json({
+            success: false,
+            message: 'No reset code found. Please request a new code.'
+        })
+        return;
+    };
+
+    if (user.passwordResetExpires.getTime() <= Date.now()){
+        res.status(400).json({
+            success: false,
+            message: 'Reset code has expired. Please request a new code.'
+        })
+        return;
+    };
+
+    const maxAttempts = 5;
+    if((user.passwordResetAttempts ?? 0) >= maxAttempts){
+        res.status(400).json({
+            success: false,
+            message: 'Maximum reset attempts exceeded. Please request a new code.'
+        })
+    };
+
+    const inputHash = hashResetCode (user.email, String(code));
+    const ok = timingSafeEqualHex(user.passwordResetCodeHash, inputHash);
+
+    user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
+
+    if(!ok){
+        await user.save();
+        res.status(400).json({
+            success: false,
+            message: 'Invalid code'
+        })
+        return;
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetVerifiedAt = new Date();
+    user.passwordResetTokenHash = hashResetToken(resetToken);
+    user.passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Reset code verified successfully',
+        data: { resetToken}
+    })
+
+    return;
+};
+
+//Reset password
+export const resetPassword = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email, resetToken, newPassword} = req.body;
+
+    if (!email || !resetToken || !newPassword){
+        res.status(400).json({
+            success: false,
+            message: 'Email, reset token and new password are required'
+        })
+        return;
+    };
+
+    if (String(newPassword).length < 6) {
+        res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        return;
+    };
+
+    const user = await User.findOne({ email: String(email).toLowerCase() })
+    .select('+passwordResetTokenHash +passwordResetTokenExpires');
+
+    if (!user || user.authProvider !== 'email') {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return; 
+    }
+
+    if (!user.passwordResetTokenHash || !user.passwordResetTokenExpires) {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return; 
+    }
+
+    if (user.passwordResetTokenExpires.getTime() <= Date.now()) {
+        res.status(400).json({ success: false, message: 'Reset token expired' });
+        return; 
+    }
+
+    const inputHash = hashResetToken(String(resetToken));
+    if (!timingSafeEqualHex(user.passwordResetTokenHash, inputHash)) {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return;
+    }
+
+
+    //Update firebase password
+    await auth.updateUser(user.firebaseUId, {
+        password: String(newPassword)
+    })
+
+    //Clear reset fields
+    user.passwordResetCodeHash = undefined;
+    user.passwordResetExpires = undefined;
+    user.passwordResetAttempts = 0;
+    user.passwordResetVerifiedAt = undefined;
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Password reset successfully'
+    });
+
+    return;
+}
+
