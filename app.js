@@ -7,6 +7,10 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { startCleanupJob } = require('./services/cleanupService');
+
+// Start Cronjob
+startCleanupJob();
 
 //Routes
 const authRouter = require('./routes/auth').default;
@@ -18,7 +22,7 @@ const uploadRouter = require('./routes/uploadRoutes').default;
 
 var app = express();
 
-// Trust proxy for Render/production behind reverse proxy
+// Trust proxy for Render
 app.set('trust proxy', 1);
 
 connectDB();
