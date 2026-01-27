@@ -116,7 +116,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
                     default: 'Point'
                 },
                 coordinates: {
-                    type: [Number],  // [longitude, latitude]
+                    type: [Number],
                     index: '2dsphere'
                 }
             }
@@ -146,6 +146,8 @@ const bicycleSchema = new Schema<IBicycleDocument>(
     }
 );
 
-const Bicycle = mongoose.model<IBicycleDocument>('Bicycle', bicycleSchema);
+bicycleSchema.index({ 'location.coordinates': '2dsphere' });
 
+
+const Bicycle = mongoose.model<IBicycleDocument>('Bicycle', bicycleSchema);
 export default Bicycle;

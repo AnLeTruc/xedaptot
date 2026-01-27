@@ -425,11 +425,30 @@ export const getBicycleStatus = async (
         const isOwner = req.user?._id.toString() == bicycle.seller._id.toString();
         const isAdmin = req.user?.roles?.includes('ADMIN');
 
-        if (!isOwner && !isAdmin) {
-            res.status(403).json({
+        const adminOnlyStatus = ['APPROVED', 'REJECTED'];
+        const ownerOnlyStatus = ['SOLD', 'HIDDEN', 'PENDING'];
+
+        if (adminOnlyStatus.includes(status)) {
+            if (!isAdmin) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Only admin can approve or reject bicycles'
+                });
+                return;
+            }
+        } else if (ownerOnlyStatus.includes(status)) {
+            if (!isOwner) {
+                res.status(403).json({
+                    success: false,
+                    message: 'Only owner can update this status'
+                });
+                return;
+            }
+        } else {
+            res.status(400).json({
                 success: false,
-                message: 'You are not authorized to update this bicycle'
-            })
+                message: 'Invalid status'
+            });
             return;
         }
 

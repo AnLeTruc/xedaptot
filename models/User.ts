@@ -24,19 +24,33 @@ const userSchema = new Schema<IUserDocument>(
             type: String,
             trim: true,
         },
-        gender: {
-            type: String,
-            enum: ['male', 'female', 'other'],
-        },
-        dateOfBirth: {
-            type: Date,
-        },
-        address: {
-            street: String,
-            city: String,
-            districts: String,
-            ward: String,
-        },
+        addresses: [{
+            label: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            street: {
+                type: String,
+                trim: true
+            },
+            ward: {
+                type: String,
+                trim: true
+            },
+            district: {
+                type: String,
+                trim: true
+            },
+            city: {
+                type: String,
+                required: true
+            },
+            isDefault: {
+                type: Boolean,
+                default: false
+            }
+        }],
         avatarUrl: {
             type: String,
             trim: true
@@ -72,6 +86,31 @@ const userSchema = new Schema<IUserDocument>(
             enum: ['google', 'email'],
             required: [true, 'Auth provider is required'],
         },
+        passwordResetCodeHash: {
+            type: String,
+            select: false
+        },
+        passwordResetExpires: {
+            type: Date,
+            select: false
+        },
+        passwordResetAttempts: {
+            type: Number,
+            select: false,
+            default: 0
+        },
+        passwordResetVerifiedAt: {
+            type: Date,
+            select: false
+        },
+        passwordResetTokenHash:{
+            type: String,
+            select: false
+        },
+        passwordResetTokenExpires:{
+            type: Date,
+            select: false
+        }
     },
     {
         timestamps: true,

@@ -3,6 +3,8 @@ import { AuthRequest } from '../types';
 import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
 import { sendMail, sendVerificationEmail } from '../service/emailService';
+import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
+import crypto from 'crypto';
 
 const { auth } = require('../config/firebase');
 
@@ -232,9 +234,6 @@ export const firebaseAuth = async (
     }
 };
 
-
-
-
 export const getProfile = async (
     req: AuthRequest,
     res: Response
@@ -258,7 +257,7 @@ export const getProfile = async (
                 phone: user.phone,
                 gender: user.gender,
                 dateOfBirth: user.dateOfBirth,
-                address: user.address,
+                addresses: user.addresses,
                 avatarUrl: user.avatarUrl,
                 roles: user.roles,
                 reputationScore: user.reputationScore,
@@ -273,7 +272,6 @@ export const getProfile = async (
         })
     }
 }
-
 
 export const updateProfile = async (
     req: AuthRequest,
@@ -290,11 +288,11 @@ export const updateProfile = async (
             return;
         }
 
-        const { fullName, phone, avatarUrl, address, gender, dateOfBirth } = req.body;
+        const { fullName, phone, avatarUrl, addresses, gender, dateOfBirth } = req.body;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { fullName, phone, avatarUrl, address, gender, dateOfBirth },
+            { fullName, phone, avatarUrl, addresses, gender, dateOfBirth },
             { new: true, runValidators: true }
         );
 
@@ -315,7 +313,7 @@ export const updateProfile = async (
                 phone: updatedUser.phone,
                 gender: updatedUser.gender,
                 dateOfBirth: updatedUser.dateOfBirth,
-                address: updatedUser.address,
+                addresses: updatedUser.addresses,
                 avatarUrl: updatedUser.avatarUrl,
                 roles: updatedUser.roles,
                 reputationScore: updatedUser.reputationScore,
@@ -555,4 +553,453 @@ export const refreshToken = async (
         });
     }
 };
+
+export const addAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+            return;
+        }
+
+        const { label, street, ward, district, city, isDefault } = req.body;
+
+        if (!label || !city) {
+            res.status(400).json({
+                success: false,
+                message: 'Label and city are required'
+            });
+            return;
+        }
+
+        if (isDefault) {
+            const user = await User.findById(userId);
+
+            if (user?.addresses && user.addresses.length > 0) {
+                await User.updateOne(
+                    { _id: userId },
+                    { $set: { 'addresses.$[].isDefault': false } }
+                );
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                $push: {
+                    addresses: {
+                        label,
+                        street,
+                        ward,
+                        district,
+                        city,
+                        isDefault: isDefault || false
+                    }
+                }
+            },
+            { new: true }
+        );
+        res.status(201).json({
+            success: true,
+            message: 'Address added successfully',
+            data: updatedUser?.addresses
+        })
+
+    } catch (error: any) {
+        console.error('Add address error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to add address'
+        });
+    }
+};
+
+// PUT /api/auth/addresses/:id 
+export const updateAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            })
+            return;
+        }
+
+        const { label, street, ward, district, city } = req.body;
+
+        const updateAddress = await User.findOneAndUpdate(
+            { _id: userId, 'addresses._id': id },
+            {
+                $set: {
+                    'addresses.$.label': label,
+                    'addresses.$.street': street,
+                    'addresses.$.ward': ward,
+                    'addresses.$.district': district,
+                    'addresses.$.city': city
+                }
+            },
+            { new: true }
+        );
+
+        if (!updateAddress) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Address updated successfully',
+            data: updateAddress?.addresses
+        })
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update address'
+        })
+    }
+}
+
+// DELETE /api/auth/addresses/:id
+export const deleteAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        const addressToDelete = user.addresses?.find(
+            (addr: any) => addr._id.toString() === id
+        );
+
+        if (!addressToDelete) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+
+        await User.findByIdAndUpdate(userId, {
+            $pull: {
+                addresses: { _id: id }
+            }
+        });
+
+        if (addressToDelete.isDefault) {
+            await User.updateOne(
+                { _id: userId, 'addresses.0': { $exists: true } },
+                { $set: { 'addresses.0.isDefault': true } }
+            );
+        }
+
+        const updatedUser = await User.findById(userId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Address deleted successfully',
+            data: updatedUser?.addresses
+        });
+
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to delete address'
+        })
+    }
+}
+
+// PUT /api/auth/addresses/:id/default - Đặt làm mặc định
+export const setDefaultAddress = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+        const { id } = req.params;
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        await User.updateOne(
+            { _id: userId },
+            { $set: { 'addresses.$[].isDefault': false } }
+        );
+
+
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: userId, 'addresses._id': id },
+            { $set: { 'addresses.$.isDefault': true } },
+            { new: true }
+        );
+        if (!updatedUser) {
+            res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Default address set successfully',
+            data: updatedUser.addresses
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to set default address'
+        })
+    }
+}
+
+//Send code reset password to mail
+export const forgotPassword = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email} = req.body;
+
+    if (!email) {
+        res.status(400).json({
+            success: false,
+            message: 'Email is required'
+        })
+        return;
+    };
+
+    const genericOk = () =>
+        res.status(200).json({
+            success: true,
+            message: 'If that email address is in our system, we have sent a password reset code to it.'
+        });
+
+    const user = await User.findOne({
+        email: String(email).toLowerCase()
+    })
+    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts');
+
+    if( !user) {
+        genericOk();
+        return;
+    }
+    if (user.authProvider !== 'email') {
+        genericOk();
+        return;
+    }
+
+    const code = generate6DigitCode();
+
+    user.passwordResetCodeHash = hashResetCode(email, code);
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); //10 minutes
+    user.passwordResetAttempts = 0;
+    user.passwordResetVerifiedAt = undefined;
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    await user.save();
+
+    await sendMail({
+        to: user.email,
+        subject: '[Xedaptot] Password reset code',
+        html: `
+            <p>Your password reset code is:</p>
+            <h2>${code}</h2>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn’t request this, ignore this email.</p>
+        `
+    });
+
+    genericOk();
+    return;
+};
+
+//Verify reset token
+export const verifyResetCode = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email, code} = req.body;
+
+    if(!email || !code){
+        res.status(400).json({
+            success: false, 
+            message: 'Email and code are required'
+        })
+        return;
+    };
+
+    const user = await User.findOne({
+        email: String(email).toLowerCase()
+    })
+    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
+
+    if(!user || user.authProvider !== 'email'){
+        res.status(400).json({
+            success: false,
+            message: 'Invalid code'
+        });
+        return;
+    };
+
+    if(!user.passwordResetCodeHash || !user.passwordResetExpires){
+        res.status(400).json({
+            success: false,
+            message: 'No reset code found. Please request a new code.'
+        })
+        return;
+    };
+
+    if (user.passwordResetExpires.getTime() <= Date.now()){
+        res.status(400).json({
+            success: false,
+            message: 'Reset code has expired. Please request a new code.'
+        })
+        return;
+    };
+
+    const maxAttempts = 5;
+    if((user.passwordResetAttempts ?? 0) >= maxAttempts){
+        res.status(429).json({
+            success: false,
+            message: 'Maximum reset attempts exceeded. Please request a new code.'
+        })
+        return;
+    };
+
+    const inputHash = hashResetCode (user.email, String(code));
+    const ok = timingSafeEqualHex(user.passwordResetCodeHash, inputHash);
+
+    user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
+
+    if(!ok){
+        await user.save();
+        res.status(400).json({
+            success: false,
+            message: 'Invalid code'
+        })
+        return;
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetVerifiedAt = new Date();
+    user.passwordResetTokenHash = hashResetToken(resetToken);
+    user.passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Reset code verified successfully',
+        data: { resetToken}
+    })
+
+    return;
+};
+
+//Reset password
+export const resetPassword = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const {email, resetToken, newPassword} = req.body;
+
+    if (!email || !resetToken || !newPassword){
+        res.status(400).json({
+            success: false,
+            message: 'Email, reset token and new password are required'
+        })
+        return;
+    };
+
+    if (String(newPassword).length < 6) {
+        res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        return;
+    };
+
+    const user = await User.findOne({ email: String(email).toLowerCase() })
+    .select('+passwordResetTokenHash +passwordResetTokenExpires');
+
+    if (!user || user.authProvider !== 'email') {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return; 
+    }
+
+    if (!user.passwordResetTokenHash || !user.passwordResetTokenExpires) {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return; 
+    }
+
+    if (user.passwordResetTokenExpires.getTime() <= Date.now()) {
+        res.status(400).json({ success: false, message: 'Reset token expired' });
+        return; 
+    }
+
+    const inputHash = hashResetToken(String(resetToken));
+    if (!timingSafeEqualHex(user.passwordResetTokenHash, inputHash)) {
+        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        return;
+    }
+
+
+    //Update firebase password
+    await auth.updateUser(user.firebaseUId, {
+        password: String(newPassword)
+    })
+
+    //Clear reset fields
+    user.passwordResetCodeHash = undefined;
+    user.passwordResetExpires = undefined;
+    user.passwordResetAttempts = 0;
+    user.passwordResetVerifiedAt = undefined;
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'Password reset successfully'
+    });
+
+    return;
+}
 
