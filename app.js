@@ -14,6 +14,7 @@ const userRouter = require('./routes/user').default;
 const brandRouter = require('./routes/brand').default;
 const categoryRouter = require('./routes/category').default;
 const bicycleRouter = require('./routes/bicycle').default;
+const uploadRouter = require('./routes/uploadRoutes').default;
 
 var app = express();
 
@@ -49,5 +50,6 @@ app.use('/api/users', userRouter);
 app.use('/api/brands', brandRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
+app.use('/api/upload', uploadRouter);
 
 module.exports = app;
