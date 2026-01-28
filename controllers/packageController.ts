@@ -28,3 +28,31 @@ export const getAllPackages = async (
         });
     }
 };
+
+
+// GET api/packages/:id
+export const getPackageById = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const packageItem = await Package.findById(id);
+        if (!packageItem) {
+            res.status(404).json({
+                success: false,
+                message: 'Package not found'
+            });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            data: packageItem
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
