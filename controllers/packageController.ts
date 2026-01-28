@@ -147,3 +147,30 @@ export const updatePackage = async (
 
 
 
+// DELETE /api/packages/:id (Admin only)
+export const deletePackage = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const packageItem = await Package.findById(id);
+        if (!packageItem) {
+            res.status(404).json({
+                success: false,
+                message: 'Package not found'
+            });
+            return;
+        }
+        await packageItem.deleteOne();
+        res.json({
+            success: true,
+            message: 'Package deleted successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
