@@ -98,6 +98,7 @@ export const createPackage = async (
 
 
 
+
 // PUT /api/packages/:id (Admin only)
 export const updatePackage = async (
     req: AuthRequest,
@@ -142,4 +143,7 @@ export const updatePackage = async (
         });
     }
 };
+
+
+
 

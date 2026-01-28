@@ -15,9 +15,8 @@ router.get('/', getAllPackages);
 router.get('/:id', getPackageById);
 
 //Admin
-router.post('/:id', verifyToken, requireUser, createPackage);
+router.post('/', verifyToken, requireUser, createPackage);
 router.put('/:id', verifyToken, requireUser, updatePackage);
-
 
 
 export default router;
