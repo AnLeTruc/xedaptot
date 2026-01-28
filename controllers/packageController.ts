@@ -174,3 +174,41 @@ export const deletePackage = async (
         });
     }
 };
+
+
+
+
+
+// PATCH /api/packages/:id/toggle-active (Admin only)
+export const togglePackageActive = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const packageItem = await Package.findById(id);
+        if (!packageItem) {
+            res.status(404).json({
+                success: false,
+                message: 'Package not found'
+            });
+            return;
+        }
+
+        packageItem.isActive = !packageItem.isActive;
+
+        await packageItem.save();
+
+        res.json({
+            success: true,
+            message: `Package ${packageItem.isActive ? 'activated' : 'deactivated'} successfully`,
+            data: packageItem
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}

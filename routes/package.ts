@@ -5,7 +5,8 @@ import {
     getPackageById,
     createPackage,
     updatePackage,
-    deletePackage
+    deletePackage,
+    togglePackageActive
 } from '../controllers/packageController';
 import { verifyToken, requireUser } from '../middleware/auth';
 
@@ -19,5 +20,7 @@ router.get('/:id', getPackageById);
 router.post('/', verifyToken, requireUser, createPackage);
 router.put('/:id', verifyToken, requireUser, updatePackage);
 router.delete('/:id', verifyToken, requireUser, deletePackage);
-
+router.patch('/:id/toggle-active', verifyToken, requireUser, togglePackageActive);
 export default router;
+
+
