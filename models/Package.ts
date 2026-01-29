@@ -39,7 +39,7 @@ const packageSchema = new Schema<IPackageDocument>(
 );
 
 
-packageSchema.index({ code: 1 });
+
 packageSchema.index({ isActive: 1 });
 
 const Package = mongoose.model<IPackageDocument>('Package', packageSchema);

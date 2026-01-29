@@ -38,6 +38,10 @@
     {
       "name": "Upload",
       "description": "Image/Video upload management"
+    },
+    {
+      "name": "Package",
+      "description": "Package management"
     }
   ],
   "components": {
@@ -457,10 +461,354 @@
             }
           }
         }
+      },
+      "Package": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "name": {
+            "type": "string",
+            "example": "Basic Package"
+          },
+          "code": {
+            "type": "string",
+            "example": "BASIC"
+          },
+          "price": {
+            "type": "number",
+            "example": 50000
+          },
+          "postLimit": {
+            "type": "number",
+            "example": 5
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PackageInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "code",
+          "price",
+          "postLimit"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Basic Package"
+          },
+          "code": {
+            "type": "string",
+            "example": "BASIC"
+          },
+          "price": {
+            "type": "number",
+            "example": 50000
+          },
+          "postLimit": {
+            "type": "number",
+            "example": 5
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "PackageUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Basic Package"
+          },
+          "code": {
+            "type": "string",
+            "example": "BASIC"
+          },
+          "price": {
+            "type": "number",
+            "example": 50000
+          },
+          "postLimit": {
+            "type": "number",
+            "example": 5
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        }
       }
     }
   },
   "paths": {
+    "/packages": {
+      "get": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Get all packages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of packages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Package"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Create a new package",
+        "description": "Admin only",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Package created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin only"
+          }
+        }
+      }
+    },
+    "/packages/{id}": {
+      "get": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Get package by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Package ID within the path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Update package",
+        "description": "Admin only",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PackageUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Delete package",
+        "description": "Admin only",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      }
+    },
+    "/packages/{id}/toggle-active": {
+      "patch": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Toggle package active status",
+        "description": "Admin only",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package status toggled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      }
+    },
     "/upload": {
       "post": {
         "tags": [
