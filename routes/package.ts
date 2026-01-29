@@ -9,18 +9,30 @@ import {
     togglePackageActive
 } from '../controllers/packageController';
 import { verifyToken, requireUser } from '../middleware/auth';
+import {
+    createPackageSchema,
+    updatePackageSchema,
+    getPackagesQuerySchema,
+    packageIdParamSchema
+} from '../validations/packageValidation';
+import { validate } from '../middleware/validate';
 
 const router = Router();
 
 // Public routes
-router.get('/', getAllPackages);
-router.get('/:id', getPackageById);
+// Public routes
+router.get('/', validate(getPackagesQuerySchema, 'query'), getAllPackages);
+router.get('/:id', validate(packageIdParamSchema, 'params'), getPackageById);
 
 //Admin
-router.post('/', verifyToken, requireUser, createPackage);
-router.put('/:id', verifyToken, requireUser, updatePackage);
-router.delete('/:id', verifyToken, requireUser, deletePackage);
-router.patch('/:id/toggle-active', verifyToken, requireUser, togglePackageActive);
+router.post('/', validate(createPackageSchema, 'body'), verifyToken, requireUser, createPackage);
+router.put('/:id',
+    validate(packageIdParamSchema, 'params'),
+    validate(updatePackageSchema, 'body'),
+    verifyToken, requireUser, updatePackage
+);
+router.delete('/:id', validate(packageIdParamSchema, 'params'), verifyToken, requireUser, deletePackage);
+router.patch('/:id/toggle-active', validate(packageIdParamSchema, 'params'), verifyToken, requireUser, togglePackageActive);
 export default router;
 
 
