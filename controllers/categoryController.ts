@@ -72,16 +72,7 @@ export const createCategory = async (
     try {
         const { name, description, isActive, imageUrl } = req.body;
 
-        // Validate required field
-        if (!name) {
-            res.status(400).json({
-                success: false,
-                message: 'Name is required'
-            });
-            return;
-        }
 
-        // Check duplicate
         const existingCategory = await Category.findOne({ name });
         if (existingCategory) {
             res.status(400).json({
@@ -120,7 +111,7 @@ export const updateCategory = async (
         const { id } = req.params;
         const { name, description, isActive, imageUrl } = req.body;
 
-        // Check if category exists
+
         const category = await Category.findById(id);
         if (!category) {
             res.status(404).json({
