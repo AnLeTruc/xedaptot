@@ -1,0 +1,32 @@
+import { z } from "zod";
+
+export const createBrandSchema = z.object({
+    name: z.string()
+        .min(1, 'Brand name is required')
+        .max(100, 'Country cannot exceed 100 characters'),
+    country: z.string()
+        .max(100, 'Country cannot exceed 100 characters')
+        .optional(),
+});
+
+
+
+export const updateBrandSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    country: z.string().max(100).optional(),
+    imageUrl: z.string().url('imageUrl must be a valid URL').optional(),
+    isActive: z.boolean().optional()
+});
+
+
+
+export const brandIdParamSchema = z.object({
+    id: z.string()
+        .min(1, 'Brand ID is required')
+        .regex(/^[0-9a-fA-F]{24}$/, 'Invalid brand ID format')
+});
+
+
+export type CreateBrandInput = z.infer<typeof createBrandSchema>;
+export type UpdateBrandInput = z.infer<typeof updateBrandSchema>;
+export type BrandIdParam = z.infer<typeof brandIdParamSchema>;

@@ -29,14 +29,6 @@ export const createBrand = async (
     try {
         const { name, country } = req.body;
 
-        if (!name || name.trim() === '') {
-            res.status(400).json({
-                success: false,
-                message: 'Brand name is required'
-            });
-            return;
-        }
-
         const brand = await Brand.create({
             name: name.trim(),
             country: country?.trim()
@@ -71,15 +63,6 @@ export const updateBrand = async (
     try {
         const id = req.params.id as string;
         const { name, country, imageUrl, isActive } = req.body;
-
-        // Validate ObjectId format
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid brand ID format'
-            });
-            return;
-        }
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name.trim();
@@ -129,14 +112,6 @@ export const deleteBrand = async (
 ): Promise<void> => {
     try {
         const id = req.params.id as string;
-
-        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid brand ID format'
-            });
-            return;
-        }
 
         const deletedBrand = await Brand.findByIdAndDelete(id);
 
