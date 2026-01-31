@@ -1,17 +1,26 @@
 import { Router } from 'express';
 import { verifyToken, requireUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { purchasePackageSchema } from '../validations/userPackageValidation';
-import { purchasePackage } from '../controllers/userPackageController';
+import { purchasePackageSchema, userPackageIdParamSchema } from '../validations/userPackageValidation';
+import { purchasePackage, getMyPackages, getUserPackageById } from '../controllers/userPackageController';
 
 const router = Router();
 
-// POST /api/user-packages/purchase
 router.post('/purchase',
-    validate(purchasePackageSchema, 'body'),  // Validate trước
-    verifyToken,                               // Xác thực Firebase token
-    requireUser,                               // Kiểm tra user đã đăng ký
-    purchasePackage                            // Controller
+    validate(purchasePackageSchema, 'body'),
+    verifyToken,
+    requireUser,
+    purchasePackage
 );
-
+router.get('/myallpackages',
+    verifyToken,
+    requireUser,
+    getMyPackages
+);
+router.get('/:id',
+    validate(userPackageIdParamSchema, 'params'),
+    verifyToken,
+    requireUser,
+    getUserPackageById
+);
 export default router;

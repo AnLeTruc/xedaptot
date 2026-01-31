@@ -56,3 +56,71 @@ export const purchasePackage = async (
 
 
 
+
+// GET /api/user-packages/my
+export const getMyPackages = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user!._id;
+
+        const { status } = req.query;
+
+        const query: Record<string, any> = { userId };
+        if (status) {
+            query.status = status;
+        }
+
+        const userPackages = await UserPackage.find(query).sort({ purchasedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            userPackages
+        })
+
+
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+
+
+
+
+// GET /api/user-packages/:id
+export const getUserPackageById = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!._id;
+
+        const userPackage = await UserPackage.findOne({ _id: id, userId });
+
+        if (!userPackage) {
+            res.status(404).json({
+                success: false,
+                message: 'Package not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: userPackage
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
