@@ -57,7 +57,7 @@ export const purchasePackage = async (
 
 
 
-// GET /api/user-packages/my
+// GET /api/user-packages/myallpackages (lấy tất cả gói của user 'ACTIVE', 'EXPIRED', 'CANCELLED' - lịch sử gói)
 export const getMyPackages = async (
     req: AuthRequest,
     res: Response
@@ -78,8 +78,6 @@ export const getMyPackages = async (
             success: true,
             userPackages
         })
-
-
 
     } catch (error: any) {
         res.status(500).json({
@@ -124,3 +122,65 @@ export const getUserPackageById = async (
         });
     }
 };
+
+
+
+
+
+
+// PATCH /api/user-packages/:id/use-post   -   Trừ 1 lượt đăng, auto EXPIRED nếu hết hạn
+
+export const usePost = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!._id;
+        const userPackage = await UserPackage.findOne({
+            _id: id,
+            userId,
+            status: 'ACTIVE'
+        });
+
+
+        if (!userPackage) {
+            res.status(404).json({
+                success: false,
+                message: 'Active package not found'
+            });
+            return;
+        }
+        if (userPackage.postRemaining <= 0) {
+            res.status(400).json({
+                success: false,
+                message: 'No posts remaining'
+            });
+            return;
+        }
+
+        userPackage.postedUsed += 1;
+        userPackage.postRemaining -= 1;
+
+        if (userPackage.postRemaining === 0) {
+            userPackage.status = 'EXPIRED';
+        }
+
+        await userPackage.save();
+
+        res.status(200).json({
+            success: true,
+            message: userPackage.status === 'EXPIRED'
+                ? 'Post used. Package expired.'
+                : 'Post used successfully',
+            data: userPackage
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+

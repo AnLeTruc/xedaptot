@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyToken, requireUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { purchasePackageSchema, userPackageIdParamSchema } from '../validations/userPackageValidation';
-import { purchasePackage, getMyPackages, getUserPackageById } from '../controllers/userPackageController';
+import { purchasePackage, getMyPackages, getUserPackageById, usePost } from '../controllers/userPackageController';
 
 const router = Router();
 
@@ -22,5 +22,12 @@ router.get('/:id',
     verifyToken,
     requireUser,
     getUserPackageById
+);
+
+router.patch('/:id/use-post',
+    validate(userPackageIdParamSchema, 'params'),
+    verifyToken,
+    requireUser,
+    usePost
 );
 export default router;
