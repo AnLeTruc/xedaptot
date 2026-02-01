@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { startCleanupJob } = require('./services/cleanupService');
+const userPackageRouter = require('./routes/userpackage').default;
 
 // Start Cronjob
 startCleanupJob();
@@ -57,5 +58,5 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
-
+app.use('/api/user-packages', userPackageRouter);
 module.exports = app;
