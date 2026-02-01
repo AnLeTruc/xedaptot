@@ -33,15 +33,6 @@ const userPackageSchema = new Schema<IUserPackageDocument>({
             required: [true, 'Package post limit is required'],
             min: [0, 'Package post limit cannot be negative'],
         },
-        durationDays: {
-            type: Number,
-            required: [true, 'Package duration days is required'],
-            min: [1, 'Package duration days cannot be less than 1'],
-        },
-        isFeatured: {
-            type: Boolean,
-            default: false
-        }
     },
     postedUsed: {
         type: Number,
