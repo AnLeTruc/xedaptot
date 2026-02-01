@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { verifyToken, requireUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { purchasePackageSchema, userPackageIdParamSchema } from '../validations/userPackageValidation';
-import { purchasePackage, getMyPackages, getUserPackageById, usePost } from '../controllers/userPackageController';
+import { purchasePackage, getMyPackages, getUserPackageById, usePost, cancelUserPackage } from '../controllers/userPackageController';
 
 const router = Router();
 
@@ -30,4 +30,11 @@ router.patch('/:id/use-post',
     requireUser,
     usePost
 );
+router.patch('/:id/cancel',
+    validate(userPackageIdParamSchema, 'params'),
+    verifyToken,
+    requireUser,
+    cancelUserPackage
+);
+
 export default router;

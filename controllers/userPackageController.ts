@@ -184,3 +184,49 @@ export const usePost = async (
 };
 
 
+
+
+// PATCH /api/user-packages/:id/cancel
+export const cancelUserPackage = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!._id;
+
+        const userPackage = await UserPackage.findOne({ _id: id, userId });
+
+        if (!userPackage) {
+            res.status(404).json({
+                success: false,
+                message: 'Package not found'
+            });
+            return;
+        }
+
+        if (userPackage.status !== 'ACTIVE') {
+            res.status(400).json({
+                success: false,
+                message: 'Only active packages can be cancelled'
+            });
+            return;
+        }
+
+
+        userPackage.status = 'CANCELLED';
+        await userPackage.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Package cancelled',
+            data: userPackage
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
