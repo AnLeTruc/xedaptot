@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
-import { sendMail, sendVerificationEmail } from '../service/emailService';
+import { sendMail, sendVerificationEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
 import crypto from 'crypto';
 
@@ -796,7 +796,7 @@ export const forgotPassword = async (
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
-    const {email} = req.body;
+    const { email } = req.body;
 
     if (!email) {
         res.status(400).json({
@@ -815,9 +815,9 @@ export const forgotPassword = async (
     const user = await User.findOne({
         email: String(email).toLowerCase()
     })
-    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts');
+        .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts');
 
-    if( !user) {
+    if (!user) {
         genericOk();
         return;
     }
@@ -857,11 +857,11 @@ export const verifyResetCode = async (
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
-    const {email, code} = req.body;
+    const { email, code } = req.body;
 
-    if(!email || !code){
+    if (!email || !code) {
         res.status(400).json({
-            success: false, 
+            success: false,
             message: 'Email and code are required'
         })
         return;
@@ -870,9 +870,9 @@ export const verifyResetCode = async (
     const user = await User.findOne({
         email: String(email).toLowerCase()
     })
-    .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
+        .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
 
-    if(!user || user.authProvider !== 'email'){
+    if (!user || user.authProvider !== 'email') {
         res.status(400).json({
             success: false,
             message: 'Invalid code'
@@ -880,7 +880,7 @@ export const verifyResetCode = async (
         return;
     };
 
-    if(!user.passwordResetCodeHash || !user.passwordResetExpires){
+    if (!user.passwordResetCodeHash || !user.passwordResetExpires) {
         res.status(400).json({
             success: false,
             message: 'No reset code found. Please request a new code.'
@@ -888,7 +888,7 @@ export const verifyResetCode = async (
         return;
     };
 
-    if (user.passwordResetExpires.getTime() <= Date.now()){
+    if (user.passwordResetExpires.getTime() <= Date.now()) {
         res.status(400).json({
             success: false,
             message: 'Reset code has expired. Please request a new code.'
@@ -897,7 +897,7 @@ export const verifyResetCode = async (
     };
 
     const maxAttempts = 5;
-    if((user.passwordResetAttempts ?? 0) >= maxAttempts){
+    if ((user.passwordResetAttempts ?? 0) >= maxAttempts) {
         res.status(429).json({
             success: false,
             message: 'Maximum reset attempts exceeded. Please request a new code.'
@@ -905,12 +905,12 @@ export const verifyResetCode = async (
         return;
     };
 
-    const inputHash = hashResetCode (user.email, String(code));
+    const inputHash = hashResetCode(user.email, String(code));
     const ok = timingSafeEqualHex(user.passwordResetCodeHash, inputHash);
 
     user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
 
-    if(!ok){
+    if (!ok) {
         await user.save();
         res.status(400).json({
             success: false,
@@ -929,7 +929,7 @@ export const verifyResetCode = async (
     res.status(200).json({
         success: true,
         message: 'Reset code verified successfully',
-        data: { resetToken}
+        data: { resetToken }
     })
 
     return;
@@ -940,9 +940,9 @@ export const resetPassword = async (
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
-    const {email, resetToken, newPassword} = req.body;
+    const { email, resetToken, newPassword } = req.body;
 
-    if (!email || !resetToken || !newPassword){
+    if (!email || !resetToken || !newPassword) {
         res.status(400).json({
             success: false,
             message: 'Email, reset token and new password are required'
@@ -956,21 +956,21 @@ export const resetPassword = async (
     };
 
     const user = await User.findOne({ email: String(email).toLowerCase() })
-    .select('+passwordResetTokenHash +passwordResetTokenExpires');
+        .select('+passwordResetTokenHash +passwordResetTokenExpires');
 
     if (!user || user.authProvider !== 'email') {
         res.status(400).json({ success: false, message: 'Invalid reset token' });
-        return; 
+        return;
     }
 
     if (!user.passwordResetTokenHash || !user.passwordResetTokenExpires) {
         res.status(400).json({ success: false, message: 'Invalid reset token' });
-        return; 
+        return;
     }
 
     if (user.passwordResetTokenExpires.getTime() <= Date.now()) {
         res.status(400).json({ success: false, message: 'Reset token expired' });
-        return; 
+        return;
     }
 
     const inputHash = hashResetToken(String(resetToken));
