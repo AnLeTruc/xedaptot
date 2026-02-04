@@ -88,3 +88,54 @@ export const sendVerificationEmail = async (
         html
     });
 };
+
+// Send inspector welcome email with credentials
+export const sendInspectorWelcomeEmail = async (
+    email: string,
+    tempPassword: string,
+    fullName: string
+): Promise<boolean> => {
+    const appBaseUrl = (process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const loginUrl = `${appBaseUrl}/login`;
+    const supportEmail = process.env.EMAIL_SUPPORT || 'support@xedaptot.com';
+
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+            <h2 style="color: #10b981; margin: 0 0 8px;"> Welcome to the Inspector Team!</h2>
+            <p style="margin: 0 0 12px;">Hello <strong>${fullName || 'Inspector'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Your Inspector account has been successfully created on the Xedaptot platform.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 0 0 8px;"><strong>Login Credentials:</strong></p>
+                <p style="margin: 0 0 4px;">📧 Email: <strong>${email}</strong></p>
+                <p style="margin: 0;">Temporary Password: <strong>${tempPassword}</strong></p>
+            </div>
+            
+            <p style="color: #dc2626; font-size: 14px; margin: 0 0 16px;">
+                Please change your password immediately after your first login!
+            </p>
+            
+            <div style="text-align: center; margin: 24px 0;">
+                <a href="${loginUrl}"
+                   style="background-color: #10b981; color: #ffffff; padding: 12px 28px;
+                          text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+                    Login Now
+                </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                If you did not request this account, please contact ${supportEmail}.
+            </p>
+        </div>
+        <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
+    </div>
+    `;
+
+    return sendMail({
+        to: email,
+        subject: '[Xedaptot] Your Inspector Account is Ready!',
+        html
+    });
+};

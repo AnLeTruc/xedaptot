@@ -75,3 +75,6 @@ export interface ICategoryDocument extends ICategory, Document {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export * from './inspectionReport';
+export * from './notification';

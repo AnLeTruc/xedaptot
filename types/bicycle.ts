@@ -4,6 +4,8 @@ export type BicycleCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
 export type BicycleStatus = 'PENDING' | 'APPROVED' | 'SOLD' | 'HIDDEN' | 'REJECTED';
 
+export type InspectionStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+
 
 
 
@@ -85,6 +87,11 @@ export interface IBicycle {
     isInspected: boolean;
     isFeatured: boolean;
     expiresAt?: Date;
+
+    // Inspection fields
+    inspectionStatus?: InspectionStatus;
+    assignedInspectorId?: Types.ObjectId;
+    inspectionReportId?: Types.ObjectId;
 
     // Embedded objects
     category: IBicycleCategory;
