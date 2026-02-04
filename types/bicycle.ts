@@ -85,7 +85,6 @@ export interface IBicycle {
     viewCount: number;
     status: BicycleStatus;
     isInspected: boolean;
-    isFeatured: boolean;
     expiresAt?: Date;
 
     // Inspection fields

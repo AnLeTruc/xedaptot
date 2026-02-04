@@ -47,10 +47,6 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             type: Boolean,
             default: false
         },
-        isFeatured: {
-            type: Boolean,
-            default: false
-        },
         // Inspection fields
         inspectionStatus: {
             type: String,

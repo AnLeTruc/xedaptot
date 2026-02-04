@@ -338,10 +338,6 @@
             "type": "boolean",
             "example": false
           },
-          "isFeatured": {
-            "type": "boolean",
-            "example": false
-          },
           "category": {
             "type": "object",
             "properties": {
