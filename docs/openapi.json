@@ -1253,6 +1253,11 @@
                           "type": "string",
                           "example": "email"
                         },
+                        "isVerified": {
+                          "type": "boolean",
+                          "example": false,
+                          "description": "Whether the user's email has been verified"
+                        },
                         "idToken": {
                           "type": "string",
                           "description": "Firebase ID Token - use this for Authorization"
@@ -1344,6 +1349,10 @@
                         },
                         "authProvider": {
                           "type": "string"
+                        },
+                        "isVerified": {
+                          "type": "boolean",
+                          "description": "Whether the user's email has been verified"
                         },
                         "idToken": {
                           "type": "string",

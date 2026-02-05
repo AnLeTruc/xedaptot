@@ -406,6 +406,7 @@ export const emailRegister = async (
                 fullName: newUser.fullName,
                 roles: newUser.roles,
                 authProvider: newUser.authProvider,
+                isVerified: newUser.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
                 expiresIn: data.expiresIn
@@ -480,6 +481,7 @@ export const emailLogin = async (
                 fullName: user?.fullName,
                 roles: user?.roles,
                 authProvider: user?.authProvider,
+                isVerified: user?.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
                 expiresIn: data.expiresIn
