@@ -31,6 +31,38 @@ router.get('/:id',
     getBicycleById
 );
 
+// Public: Get inspection report for a bicycle
+router.get('/:id/inspection-report',
+    validate(bicycleIdParamSchema, 'params'),
+    async (req, res) => {
+        const InspectionReport = require('../models/InspectionReport').default;
+        try {
+            const { id } = req.params;
+            const report = await InspectionReport.findOne({
+                bicycleId: id,
+                status: { $in: ['COMPLETED', 'REJECTED'] }
+            }).populate('inspectorId', 'fullName');
+
+            if (!report) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No inspection report found for this bicycle'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: report
+            });
+        } catch (error: any) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+);
+
 // Protected routes
 router.post('/',
     verifyToken,

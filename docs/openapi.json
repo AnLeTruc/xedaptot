@@ -42,6 +42,14 @@
     {
       "name": "Package",
       "description": "Package management"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin management endpoints"
+    },
+    {
+      "name": "Inspector",
+      "description": "Inspector operations endpoints"
     }
   ],
   "components": {
@@ -95,6 +103,148 @@
             "format": "date-time"
           },
           "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InspectionConditions": {
+        "type": "object",
+        "properties": {
+          "frame": {
+            "type": "string",
+            "enum": [
+              "EXCELLENT",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "brake": {
+            "type": "string",
+            "enum": [
+              "EXCELLENT",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "drivetrain": {
+            "type": "string",
+            "enum": [
+              "EXCELLENT",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "wheels": {
+            "type": "string",
+            "enum": [
+              "EXCELLENT",
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "frame",
+          "brake",
+          "drivetrain",
+          "wheels"
+        ]
+      },
+      "InspectionReport": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "bicycleId": {
+            "type": "string"
+          },
+          "inspectorId": {
+            "type": "string"
+          },
+          "assignedBy": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/InspectionConditions"
+          },
+          "overallRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "isPassed": {
+            "type": "boolean"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "INSPECTION_ASSIGNED",
+              "NEW_BICYCLE_POSTED",
+              "INSPECTION_COMPLETED",
+              "GENERAL"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time"
           }
@@ -185,10 +335,6 @@
             ]
           },
           "isInspected": {
-            "type": "boolean",
-            "example": false
-          },
-          "isFeatured": {
             "type": "boolean",
             "example": false
           },
@@ -527,6 +673,79 @@
           "isActive": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "UserPackage": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "userId": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "packageId": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "package": {
+            "$ref": "#/components/schemas/UserPackageSnapshot"
+          },
+          "postedUsed": {
+            "type": "number",
+            "example": 2
+          },
+          "postRemaining": {
+            "type": "number",
+            "example": 3
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "example": "ACTIVE"
+          },
+          "purchasedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "transactionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserPackageSnapshot": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Basic Package"
+          },
+          "code": {
+            "type": "string",
+            "example": "BASIC"
+          },
+          "postLimit": {
+            "type": "number",
+            "example": 5
           }
         }
       },
@@ -1034,6 +1253,11 @@
                           "type": "string",
                           "example": "email"
                         },
+                        "isVerified": {
+                          "type": "boolean",
+                          "example": false,
+                          "description": "Whether the user's email has been verified"
+                        },
                         "idToken": {
                           "type": "string",
                           "description": "Firebase ID Token - use this for Authorization"
@@ -1125,6 +1349,10 @@
                         },
                         "authProvider": {
                           "type": "string"
+                        },
+                        "isVerified": {
+                          "type": "boolean",
+                          "description": "Whether the user's email has been verified"
                         },
                         "idToken": {
                           "type": "string",
@@ -2925,6 +3153,960 @@
           },
           "404": {
             "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/users/packages": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user's packages",
+        "description": "Get all packages for the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "EXPIRED",
+                "CANCELLED"
+              ]
+            },
+            "description": "Filter by package status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserPackage"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Purchase a package",
+        "description": "Purchase a new package for the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "packageId"
+                ],
+                "properties": {
+                  "packageId": {
+                    "type": "string",
+                    "description": "ID of the package to purchase",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Package purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Package purchased successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserPackage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Already has active package or package unavailable"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      }
+    },
+    "/users/packages/active": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user's active package",
+        "description": "Get the currently active package for the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserPackage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "No active package found"
+          }
+        }
+      }
+    },
+    "/users/packages/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user package by ID",
+        "description": "Get a specific user package by its ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User package ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserPackage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User package not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update/Cancel a user package",
+        "description": "Update or cancel an active user package. Send {status: 'CANCELLED'} to cancel.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User package ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "CANCELLED"
+                    ],
+                    "example": "CANCELLED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Package cancelled successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UserPackage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Only active packages can be cancelled"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User package not found"
+          }
+        }
+      }
+    },
+    "/admin/inspectors": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create inspector account",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "fullName"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "inspector@example.com"
+                  },
+                  "fullName": {
+                    "type": "string",
+                    "example": "Nguyen Van A"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "0901234567"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inspector created successfully"
+          },
+          "400": {
+            "description": "Email already registered"
+          },
+          "403": {
+            "description": "Admin role required"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all inspectors",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of inspectors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/inspectors/{id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get inspector by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inspector details with stats"
+          },
+          "404": {
+            "description": "Inspector not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update inspector",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inspector updated"
+          },
+          "404": {
+            "description": "Inspector not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Deactivate inspector",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inspector deactivated"
+          },
+          "404": {
+            "description": "Inspector not found"
+          }
+        }
+      }
+    },
+    "/admin/bicycles/{bicycleId}/assign-inspector": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Assign inspector to bicycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bicycleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "inspectorId"
+                ],
+                "properties": {
+                  "inspectorId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inspector assigned successfully"
+          },
+          "400": {
+            "description": "Bicycle already has inspection"
+          },
+          "404": {
+            "description": "Inspector or bicycle not found"
+          }
+        }
+      }
+    },
+    "/admin/bicycles/{bicycleId}/unassign-inspector": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Unassign inspector from bicycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bicycleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inspector unassigned"
+          },
+          "400": {
+            "description": "Cannot unassign in-progress inspection"
+          }
+        }
+      }
+    },
+    "/admin/inspection-reports": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all inspection reports",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "REJECTED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/InspectionReport"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inspectors/me": {
+      "get": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Get inspector profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile with stats"
+          },
+          "403": {
+            "description": "Inspector role required"
+          }
+        }
+      }
+    },
+    "/inspectors/bicycles": {
+      "get": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Get bicycles for inspection",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "assigned",
+                "available",
+                "all"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bicycles"
+          }
+        }
+      }
+    },
+    "/inspectors/bicycles/{id}/claim": {
+      "post": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Claim bicycle for inspection",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bicycle claimed"
+          },
+          "400": {
+            "description": "Bicycle not available"
+          }
+        }
+      }
+    },
+    "/inspectors/reports": {
+      "get": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Get my inspection reports",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/InspectionReport"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Submit inspection report",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bicycleId",
+                  "conditions",
+                  "overallRating",
+                  "isPassed"
+                ],
+                "properties": {
+                  "bicycleId": {
+                    "type": "string"
+                  },
+                  "conditions": {
+                    "$ref": "#/components/schemas/InspectionConditions"
+                  },
+                  "overallRating": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "isPassed": {
+                    "type": "boolean"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report submitted"
+          },
+          "403": {
+            "description": "Not assigned to this bicycle"
+          }
+        }
+      }
+    },
+    "/inspectors/reports/{id}": {
+      "get": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Get report by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report details"
+          },
+          "404": {
+            "description": "Report not found"
+          }
+        }
+      }
+    },
+    "/inspectors/notifications": {
+      "get": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Get inspector notifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inspectors/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Inspector"
+        ],
+        "summary": "Mark notification as read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read"
+          }
+        }
+      }
+    },
+    "/bicycles/{id}/inspection-report": {
+      "get": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Get inspection report for bicycle (public)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inspection report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InspectionReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No inspection report found"
           }
         }
       }

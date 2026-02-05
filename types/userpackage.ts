@@ -8,8 +8,6 @@ export interface IUserPackageSnapshot {
     name: string;
     code: string;
     postLimit: number;
-    durationDays: number;
-    isFeatured: boolean;
 }
 
 export interface IUserPackage {
