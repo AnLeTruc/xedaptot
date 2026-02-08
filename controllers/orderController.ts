@@ -117,3 +117,133 @@ export const createOrder = async (
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+
+
+
+export const payOrder = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if(!order || order.buyer._id.toString() !== req.user!._id.toString()){
+            res.status(404).json({
+                success: false,
+                message: 'Đơn hàng không tồn tại'
+            });
+            return;
+        }
+        if(order.reservationExpiresAt && new Date() > order.reservationExpiresAt){
+            order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
+            await order.save();
+            await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+            res.status(400).json({
+                success: false,
+                message: 'Thời gian đặt cọc đã hết hạn'
+            })
+        }   
+
+
+        let buyerPays = 0, txnType: 'DEPOSIT' | 'FULL' | 'REMAINING' = 'DEPOSIT', nextStatus = '';
+
+        switch ( order.status ) {
+            case 'RESERVED_FULL':
+                buyerPays = order.amounts.total;
+                txnType = 'FULL';
+                nextStatus = 'WAITING_SELLER_CONFIRMATION';
+                break;
+            case 'RESERVED_DEPOSIT':
+                buyerPays = order.amounts.deposit;
+                txnType = 'DEPOSIT';
+                nextStatus = 'WAITING_SELLER_CONFIRMATION';
+                break;
+            case 'WAITING_REMAINING_PAYMENT':
+                buyerPays = order.amounts.total - order.amounts.deposit;
+                txnType = 'REMAINING';
+                nextStatus = 'COMPLETED';
+                break;
+            default:
+                res.status(400).json({
+                    success: false,
+                    message: `Đơn hàng không ở ${order.status} thanh toán hợp lệ`
+                });
+        }
+
+            
+        // const buyerWallet = await Wallet.findOne({ userId: req.user!._id });
+        // if (!buyerWallet || buyerWallet.balance < buyerPays) {
+        //     res.status(400).json({ success: false, message: 'Số dư không đủ', required: buyerPays });
+        // }
+
+
+        // const txn = await new Transaction({
+        //     transactionCode: generateCode('TXN'),
+        //     amount: buyerPays,
+        //     paymentMethod: 'WALLET',
+        //     status: 'SUCCESS',
+        //     walletId: buyerWallet._id,
+        //     type: 'ESCROW_IN',
+        //     balanceBefore: buyerWallet.balance,
+        //     balanceAfter: buyerWallet.balance - buyerPays,
+        //     description: `Thanh toán ${txnType} → Escrow - ${order.orderCode}`,
+        //     orderId: order._id,
+        //     userId: req.user!._id,
+        // }).save();
+
+        // buyerWallet.balance -= buyerPays;
+        // buyerWallet.frozenBalance += buyerPays;  // Option B: frozenBalance thay vì SystemWallet
+        // await buyerWallet.save();
+
+        if (txnType === 'DEPOSIT') {
+            order.amounts.depositPaid = buyerPays;
+        } else if (txnType === 'FULL') {
+            order.amounts.depositPaid = order.amounts.deposit;
+            order.amounts.remainingPaid = order.amounts.total - order.amounts.deposit;
+        } else {
+            order.amounts.remainingPaid = buyerPays;
+        }
+        order.amounts.escrowAmount += buyerPays;
+
+        order.status = nextStatus as any;
+        //order.transactions.push({ transactionId: txn._id, type: txnType, amount: buyerPays, status: 'SUCCESS', createdAt: new Date() });
+
+        if (nextStatus === 'COMPLETED') order.buyerConfirmedAt = new Date();
+        await order.save();
+
+        res.status(200).json({ success: true, data: order });
+        
+    } catch (error : any){
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+
+
+
+export const getMyOrders = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!._id;
+    const { role = 'all', status, page = '1', limit = '10' } = req.query;
+    const filter: any = {};
+    if (role === 'buyer') filter['buyer._id'] = userId;
+    else if (role === 'seller') filter['seller._id'] = userId;
+    else filter.$or = [{ 'buyer._id': userId }, { 'seller._id': userId }];
+    if (status) filter.status = status;
+
+    const [orders, total] = await Promise.all([
+        Order.find(filter).sort({ createdAt: -1 }).skip((+page - 1) * +limit).limit(+limit),
+        Order.countDocuments(filter),
+    ]);
+    res.status(200).json({ success: true, data: { orders, pagination: { page: +page, limit: +limit, total } } });
+};
+
+
+
+
+
+
+
