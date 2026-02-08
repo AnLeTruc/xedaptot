@@ -207,7 +207,22 @@ export const payOrder = async (
         order.amounts.escrowAmount += buyerPays;
 
         order.status = nextStatus as any;
-        //order.transactions.push({ transactionId: txn._id, type: txnType, amount: buyerPays, status: 'SUCCESS', createdAt: new Date() });
+        
+        // order.transactions.push({
+        //     transactionCode: generateCode('TXN'),
+        //     type: txnType,
+        //     amount: buyerPays,
+        //     status: 'SUCCESS',
+        //     createdAt: new Date(),
+        //     walletId: buyerWallet._id,
+        //     paymentMethod: 'WALLET',
+        //     balanceBefore: buyerWallet.balance + buyerPays,
+        //     balanceAfter: buyerWallet.balance,
+        //     description: `Thanh toán ${txnType} - ${order.orderCode}`,
+        //     paymentGateway: '',
+        //     gatewayTransactionId: '',
+        //     gatewayResponseCode: ''
+        // } as any);
 
         if (nextStatus === 'COMPLETED') order.buyerConfirmedAt = new Date();
         await order.save();
