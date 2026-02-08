@@ -260,10 +260,27 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     }
      
     // Ẩn pickupAddress với Buyer (chỉ Admin và Seller thấy)
-    // const orderData = order.toObject();
+    const orderData = order.toObject();
     // if (isBuyer && !isAdmin) {
     //     delete orderData.pickupAddress;
     // }
     
-    // res.status(200).json({ success: true, data: orderData });
+    res.status(200).json({ success: true, data: orderData });
+};
+
+
+
+
+
+
+export const receiveOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
+    if (order.status !== 'DELIVERED') return res.status(400).json({ success: false, message: `Không thể ở ${order.status}` });
+
+    order.status = 'COMPLETED';
+    order.buyerConfirmedAt = new Date();
+    await order.save();
+    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+    res.status(200).json({ success: true, message: '48h sau tiền sẽ chuyển cho seller', data: order });
 };
