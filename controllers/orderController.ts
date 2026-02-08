@@ -339,6 +339,19 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
 
 
 
+export const reviewOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
+    if (order.status !== 'COMPLETED' && order.status !== 'FUNDS_RELEASED') return res.status(400).json({ success: false, message: 'Chỉ đánh giá đơn hoàn thành' });
+    if (order.review) return res.status(400).json({ success: false, message: 'Đã đánh giá' });
+
+    order.review = { rating: req.body.rating, comment: req.body.comment || '', createdAt: new Date() };
+    await order.save();
+    res.status(200).json({ success: true, data: order });
+};
+
+
+
 
 
 // SELLER

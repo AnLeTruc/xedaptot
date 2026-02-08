@@ -12,6 +12,7 @@ router.get('/:id', ctrl.getOrderById);
 router.post('/', validate(createOrderSchema, 'body'), ctrl.createOrder);
 router.post('/:id/pay', ctrl.payOrder);
 router.put('/:id/cancel', validate(cancelOrderSchema, 'body'), ctrl.cancelOrder);
+router.post('/:id/review', ctrl.reviewOrder);
 
 // seller
 router.put('/:id/confirm', ctrl.confirmOrder);  
