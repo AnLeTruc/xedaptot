@@ -300,3 +300,46 @@ export const confirmOrder = async (req: AuthRequest, res: Response) => {
     await order.save();
     res.status(200).json({ success: true, data: order });
 };
+
+
+
+
+
+export const rejectOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
+    if (order.status !== 'WAITING_SELLER_CONFIRMATION') return res.status(400).json({ success: false, message: 'Invalid' });
+    // const escrow = await getEscrowWallet();
+    // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+    // const refund = order.amounts.escrowAmount;
+    // if (refund > 0 && buyerWallet && escrow) {
+    //     escrow.balance -= refund;
+    //     buyerWallet.balance += refund;
+    //     await escrow.save();
+    //     await buyerWallet.save();
+    // }
+
+    order.status = 'REJECTED';
+    order.cancelledAt = new Date();
+    order.cancelReason = req.body.reason || 'Seller từ chối';
+    order.amounts.escrowAmount = 0;
+    await order.save();
+    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+    res.status(200).json({ success: true, data: order });
+};
+
+
+
+
+
+
+// ADMIN
+export const getAllOrders = async (req: AuthRequest, res: Response) => {
+    const { status, page = '1', limit = '10' } = req.query;
+    const filter: any = {}; if (status) filter.status = status;
+    const [orders, total] = await Promise.all([
+        Order.find(filter).sort({ createdAt: -1 }).skip((+page - 1) * +limit).limit(+limit),
+        Order.countDocuments(filter),
+    ]);
+    res.status(200).json({ success: true, data: { orders, pagination: { page: +page, limit: +limit, total } } });
+};
