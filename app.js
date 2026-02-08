@@ -8,7 +8,6 @@ const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { startCleanupJob } = require('./services/cleanupService');
-const userPackageRouter = require('./routes/userpackage').default;
 
 // Start Cronjob
 startCleanupJob();
@@ -21,6 +20,7 @@ const categoryRouter = require('./routes/category').default;
 const bicycleRouter = require('./routes/bicycle').default;
 const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
+const orderRouter = require('./routes/order').default;
 
 var app = express();
 
@@ -58,5 +58,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
-app.use('/api/user-packages', userPackageRouter);
+// app.use('/api/user-packages', userPackageRouter);  // TODO: Create routes/userPackage.ts
+app.use('/api/orders', orderRouter);
+
 module.exports = app;

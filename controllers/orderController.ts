@@ -269,7 +269,59 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 };
 
 
+// HỦY TRƯỚC SELLER CONFIRM
+export const cancelOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
 
+    // Option B: frozenBalance thay vì SystemWallet
+    // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+
+    // Trước seller confirm → hoàn tiền
+    if (['RESERVED_FULL', 'RESERVED_DEPOSIT', 'WAITING_SELLER_CONFIRMATION'].includes(order.status)) {
+        const refund = order.amounts.escrowAmount;
+        // if (refund > 0 && buyerWallet) {
+        //     buyerWallet.frozenBalance -= refund;
+        //     buyerWallet.balance += refund;
+        //     await buyerWallet.save();
+        //     order.transactions.push({
+        //         transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+        //         createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
+        //         balanceBefore: buyerWallet.balance - refund, balanceAfter: buyerWallet.balance,
+        //         description: `Hoàn tiền - ${order.orderCode}`, paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+        //     });
+        // }
+        order.status = 'CANCELLED';
+    }
+    // Sau seller confirm → Mất cọc (chuyển cho Seller)
+    else if (['CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
+        const forfeit = order.amounts.escrowAmount;
+        // let sellerWallet = await Wallet.findOne({ userId: order.seller._id });
+        // if (!sellerWallet) sellerWallet = await new Wallet({ userId: order.seller._id, balance: 0, frozenBalance: 0 }).save();
+        // if (forfeit > 0 && buyerWallet) {
+        //     buyerWallet.frozenBalance -= forfeit;
+        //     sellerWallet.balance += forfeit;
+        //     await buyerWallet.save();
+        //     await sellerWallet.save();
+        //     order.transactions.push({
+        //         transactionCode: generateCode('TXN'), type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
+        //         createdAt: new Date(), walletId: sellerWallet._id, paymentMethod: 'SYSTEM',
+        //         balanceBefore: sellerWallet.balance - forfeit, balanceAfter: sellerWallet.balance,
+        //         description: `Buyer hủy đơn, mất cọc - ${order.orderCode}`, paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+        //     });
+        // }
+        order.status = 'CANCELLED_BY_BUYER';
+    } else {
+        return res.status(400).json({ success: false, message: `Không thể hủy ở ${order.status}` });
+    }
+
+    order.cancelledAt = new Date();
+    order.cancelReason = req.body.reason || 'Buyer hủy';
+    order.amounts.escrowAmount = 0;
+    await order.save();
+    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+    res.status(200).json({ success: true, data: order });
+};
 
 
 
@@ -343,3 +395,31 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
     ]);
     res.status(200).json({ success: true, data: { orders, pagination: { page: +page, limit: +limit, total } } });
 };
+
+
+
+
+
+// export const pickupOrder = async (req: AuthRequest, res: Response) => {
+//     const order = await Order.findById(req.params.id);
+//     if (!order || order.status !== 'CONFIRMED') return res.status(400).json({ success: false, message: 'Invalid' });
+//     order.status = 'WAITING_FOR_PICKUP';
+//     await order.save();
+//     res.status(200).json({ success: true, data: order });
+// };
+
+// export const shipOrder = async (req: AuthRequest, res: Response) => {
+//     const order = await Order.findById(req.params.id);
+//     if (!order || order.status !== 'WAITING_FOR_PICKUP') return res.status(400).json({ success: false, message: 'Invalid' });
+//     order.status = 'IN_TRANSIT';
+//     await order.save();
+//     res.status(200).json({ success: true, data: order });
+// };
+
+// export const deliverOrder = async (req: AuthRequest, res: Response) => {
+//     const order = await Order.findById(req.params.id);
+//     if (!order || order.status !== 'IN_TRANSIT') return res.status(400).json({ success: false, message: 'Invalid' });
+//     order.status = order.paymentType === 'DEPOSIT_10' ? 'WAITING_REMAINING_PAYMENT' : 'DELIVERED';
+//     await order.save();
+//     res.status(200).json({ success: true, data: order });
+// };
