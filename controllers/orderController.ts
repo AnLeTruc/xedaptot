@@ -247,3 +247,23 @@ export const getMyOrders = async (req: AuthRequest, res: Response) => {
 
 
 
+export const getOrderById = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
+    const uid = req.user!._id.toString();
+    const isAdmin = req.user!.roles.includes('ADMIN');
+    const isSeller = order.seller._id.toString() === uid;
+    const isBuyer = order.buyer._id.toString() === uid;
+    
+    if (!isBuyer && !isSeller && !isAdmin) {
+        return res.status(403).json({ success: false, message: 'Không có quyền' });
+    }
+     
+    // Ẩn pickupAddress với Buyer (chỉ Admin và Seller thấy)
+    // const orderData = order.toObject();
+    // if (isBuyer && !isAdmin) {
+    //     delete orderData.pickupAddress;
+    // }
+    
+    // res.status(200).json({ success: true, data: orderData });
+};

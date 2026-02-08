@@ -8,6 +8,7 @@ const router = Router();
 router.use(verifyToken, requireUser);
 
 router.get('/me', ctrl.getMyOrders);
+router.get('/:id', ctrl.getOrderById);
 router.post('/', validate(createOrderSchema, 'body'), ctrl.createOrder);
 router.post('/:id/pay', ctrl.payOrder);
 
