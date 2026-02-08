@@ -167,7 +167,7 @@ export const payOrder = async (
             default:
                 res.status(400).json({
                     success: false,
-                    message: `Đơn hàng không ở ${order.status} thanh toán hợp lệ`
+                    message: `Đơn hàng không ở trạng thái thanh toán hợp lệ`
                 });
         }
 
@@ -260,12 +260,12 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     }
      
     // Ẩn pickupAddress với Buyer (chỉ Admin và Seller thấy)
-    const orderData = order.toObject();
+    // const orderData = order.toObject();
     // if (isBuyer && !isAdmin) {
     //     delete orderData.pickupAddress;
     // }
     
-    res.status(200).json({ success: true, data: orderData });
+    // res.status(200).json({ success: true, data: orderData });
 };
 
 
@@ -283,4 +283,20 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
     await order.save();
     await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
     res.status(200).json({ success: true, message: '48h sau tiền sẽ chuyển cho seller', data: order });
+};
+
+
+
+
+
+// SELLER
+
+export const confirmOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
+    if (order.status !== 'WAITING_SELLER_CONFIRMATION') return res.status(400).json({ success: false, message: 'Invalid' });
+    order.status = 'CONFIRMED';
+    order.sellerConfirmedAt = new Date();
+    await order.save();
+    res.status(200).json({ success: true, data: order });
 };
