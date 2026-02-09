@@ -29,6 +29,14 @@ export const updateCategorySchema = z.object({
 
 
 export const getCategoriesQuerySchema = z.object({
+    page: z.string()
+        .regex(/^\d+$/, 'Page must be a positive number')
+        .optional()
+        .transform(val => val ? parseInt(val, 10) : 1),
+    limit: z.string()
+        .regex(/^\d+$/, 'Limit must be a positive number')
+        .optional()
+        .transform(val => val ? parseInt(val, 10) : 10),
     isActive: z.enum(['true', 'false']).optional(),
     search: z.string().optional()
 });

@@ -27,6 +27,21 @@ export const brandIdParamSchema = z.object({
 });
 
 
+export const getBrandsQuerySchema = z.object({
+    page: z.string()
+        .regex(/^\d+$/, 'Page must be a positive number')
+        .optional()
+        .transform(val => val ? parseInt(val, 10) : 1),
+    limit: z.string()
+        .regex(/^\d+$/, 'Limit must be a positive number')
+        .optional()
+        .transform(val => val ? parseInt(val, 10) : 10),
+    isActive: z.enum(['true', 'false']).optional(),
+    search: z.string().optional()
+});
+
+
 export type CreateBrandInput = z.infer<typeof createBrandSchema>;
 export type UpdateBrandInput = z.infer<typeof updateBrandSchema>;
 export type BrandIdParam = z.infer<typeof brandIdParamSchema>;
+export type GetBrandsQuery = z.infer<typeof getBrandsQuerySchema>;
