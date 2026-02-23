@@ -31,15 +31,14 @@ app.set('trust proxy', 1);
 connectDB();
 
 const corsOptions = {
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5000',
-        'https://xedaptot.onrender.com',
-        'http://localhost:5173'
-    ],
+    origin: process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+        : ['http://localhost:3000', 'http://localhost:5000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 86400,
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
