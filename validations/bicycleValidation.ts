@@ -126,10 +126,17 @@ export const bicycleIdParamSchema = z.object({
 });
 
 
+export const getMyBicyclesQuerySchema = z.object({
+    status: z.enum(['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED']).optional(),
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('10'),
+    sort: z.string().optional().default('-createdAt')
+});
 
 
 export type CreateBicycleInput = z.infer<typeof createBicycleSchema>;
 export type UpdateBicycleInput = z.infer<typeof updateBicycleSchema>;
 export type UpdateBicycleStatusInput = z.infer<typeof updateBicycleStatusSchema>;
 export type GetBicyclesQuery = z.infer<typeof getBicyclesQuerySchema>;
+export type GetMyBicyclesQuery = z.infer<typeof getMyBicyclesQuerySchema>;
 export type BicycleIdParam = z.infer<typeof bicycleIdParamSchema>;
