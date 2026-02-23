@@ -22,6 +22,7 @@ const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
 const adminInspectorRouter = require('./routes/admin/inspector').default;
 const inspectorRouter = require('./routes/inspector').default;
+const orderRouter = require('./routes/order').default;
 
 var app = express();
 
@@ -31,15 +32,14 @@ app.set('trust proxy', 1);
 connectDB();
 
 const corsOptions = {
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5000',
-        'https://xedaptot.onrender.com',
-        'http://localhost:5173'
-    ],
+    origin: process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+        : ['http://localhost:3000', 'http://localhost:5000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 86400,
+    optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
@@ -61,5 +61,6 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/inspectors', inspectorRouter);
+app.use('/api/orders', orderRouter);
 
 module.exports = app;

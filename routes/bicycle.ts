@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+    getMyBicycles,
     getAllBicycles,
     getBicycleById,
     createBicycle,
@@ -14,6 +15,7 @@ import {
     updateBicycleSchema,
     updateBicycleStatusSchema,
     getBicyclesQuerySchema,
+    getMyBicyclesQuerySchema,
     bicycleIdParamSchema
 } from '../validations/bicycleValidation';
 
@@ -24,6 +26,14 @@ const router = Router();
 router.get('/',
     validate(getBicyclesQuerySchema, 'query'),
     getAllBicycles
+);
+
+// Protected: Get my bicycles (must be before /:id)
+router.get('/my',
+    verifyToken,
+    requireUser,
+    validate(getMyBicyclesQuerySchema, 'query'),
+    getMyBicycles
 );
 
 router.get('/:id',
