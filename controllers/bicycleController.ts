@@ -5,6 +5,50 @@ import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
 
 
+// GET /api/bicycles/my
+export const getMyBicycles = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { status, page = '1', limit = '10', sort = '-createdAt' } = req.query;
+
+        const filter: any = { 'seller._id': req.user!._id };
+        if (status) {
+            filter.status = status;
+        }
+
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(100, Math.max(1, Number(limit)));
+        const skip = (pageNum - 1) * limitNum;
+
+        const [bicycles, total] = await Promise.all([
+            Bicycle.find(filter)
+                .sort(sort as string)
+                .skip(skip)
+                .limit(limitNum),
+            Bicycle.countDocuments(filter)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: bicycles,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: total > 0 ? Math.ceil(total / limitNum) : 0
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to fetch your bicycles'
+        });
+    }
+};
+
+
 
 
 // GET /api/bicycles
