@@ -20,7 +20,8 @@ const categoryRouter = require('./routes/category').default;
 const bicycleRouter = require('./routes/bicycle').default;
 const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
-const orderRouter = require('./routes/order').default;
+const adminInspectorRouter = require('./routes/admin/inspector').default;
+const inspectorRouter = require('./routes/inspector').default;
 
 var app = express();
 
@@ -37,7 +38,7 @@ const corsOptions = {
         'http://localhost:5173'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
@@ -58,7 +59,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/bicycles', bicycleRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
-// app.use('/api/user-packages', userPackageRouter);  // TODO: Create routes/userPackage.ts
-app.use('/api/orders', orderRouter);
+app.use('/api/admin', adminInspectorRouter);
+app.use('/api/inspectors', inspectorRouter);
 
 module.exports = app;

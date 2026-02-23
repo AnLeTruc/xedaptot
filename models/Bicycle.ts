@@ -47,9 +47,20 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             type: Boolean,
             default: false
         },
-        isFeatured: {
-            type: Boolean,
-            default: false
+        // Inspection fields
+        inspectionStatus: {
+            type: String,
+            enum: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
+            default: 'PENDING',
+            index: true
+        },
+        assignedInspectorId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        inspectionReportId: {
+            type: Schema.Types.ObjectId,
+            ref: 'InspectionReport'
         },
         expiresAt: {
             type: Date

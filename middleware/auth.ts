@@ -64,3 +64,51 @@ export const requireUser = async (
     }
     next();
 }
+
+// Require Admin role
+export const requireAdmin = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    if (!req.user) {
+        res.status(401).json({
+            success: false,
+            message: 'User does not register with system',
+        });
+        return;
+    }
+
+    if (!req.user.roles.includes('ADMIN')) {
+        res.status(403).json({
+            success: false,
+            message: 'Access denied. Admin role required.',
+        });
+        return;
+    }
+    next();
+}
+
+// Require Inspector role
+export const requireInspector = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    if (!req.user) {
+        res.status(401).json({
+            success: false,
+            message: 'User does not register with system',
+        });
+        return;
+    }
+
+    if (!req.user.roles.includes('INSPECTOR')) {
+        res.status(403).json({
+            success: false,
+            message: 'Access denied. Inspector role required.',
+        });
+        return;
+    }
+    next();
+}
