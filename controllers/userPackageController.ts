@@ -238,3 +238,49 @@ export const cancelUserPackage = async (
         });
     }
 };
+
+
+
+
+
+// GET /api/user-packages (Admin only - Xem tất cả gói của tất cả user)
+export const getAllUserPackages = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { userId, status, page = 1, limit = 20 } = req.query;
+
+        const query: Record<string, any> = {};
+        if (userId) query.userId = userId;
+        if (status) query.status = status;
+
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const skip = (pageNum - 1) * limitNum;
+
+        const [packages, total] = await Promise.all([
+            UserPackage.find(query)
+                .populate('userId', 'fullName email')
+                .sort({ purchasedAt: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            UserPackage.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            count: packages.length,
+            total,
+            page: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            data: packages
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

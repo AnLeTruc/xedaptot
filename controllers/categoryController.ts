@@ -7,7 +7,23 @@ export const getAllCategories = async (
     res: Response
 ): Promise<void> => {
     try {
-        const { isActive, search } = req.query;
+        const { page = '1', limit = '10', isActive, search } = req.query;
+
+        let pageNum = parseInt(page as string, 10);
+        let limitNum = parseInt(limit as string, 10);
+
+        // Validation
+        if (isNaN(pageNum) || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (isNaN(limitNum) || limitNum < 1) {
+            limitNum = 10;
+        }
+        if (limitNum > 100) {
+            limitNum = 100;
+        }
+
+        const skip = (pageNum - 1) * limitNum;
 
         const filter: any = {};
         if (isActive !== undefined) {
@@ -18,18 +34,28 @@ export const getAllCategories = async (
             filter.name = { $regex: search, $options: 'i' };
         }
 
-        const categories = await Category.find(filter)
-            .sort({ createdAt: -1 });
+        const [categories, total] = await Promise.all([
+            Category.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            Category.countDocuments(filter)
+        ]);
 
         res.status(200).json({
             success: true,
-            count: categories.length,
-            data: categories
+            data: categories,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: total > 0 ? Math.ceil(total / limitNum) : 0
+            }
         });
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || 'Failed to fetch categories'
         });
     }
 };
