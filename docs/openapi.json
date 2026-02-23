@@ -50,6 +50,10 @@
     {
       "name": "Inspector",
       "description": "Inspector operations endpoints"
+    },
+    {
+      "name": "Order",
+      "description": "Order management endpoints"
     }
   ],
   "components": {
@@ -771,6 +775,227 @@
           "isActive": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "OrderUser": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderBicycle": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "primaryImage": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderPricing": {
+        "type": "object",
+        "properties": {
+          "originalPrice": {
+            "type": "number"
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "discountPercent": {
+            "type": "number"
+          },
+          "discountReason": {
+            "type": "string"
+          },
+          "finalPrice": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderAmounts": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "deposit": {
+            "type": "number"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/OrderPricing"
+          },
+          "depositPaid": {
+            "type": "number"
+          },
+          "remainingPaid": {
+            "type": "number"
+          },
+          "escrowAmount": {
+            "type": "number"
+          },
+          "releasedAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderReview": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "orderCode": {
+            "type": "string",
+            "example": "ORD-20260223-00001"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESERVED_FULL",
+              "RESERVED_DEPOSIT",
+              "DEPOSIT_EXPIRED",
+              "PAYMENT_TIMEOUT",
+              "WAITING_SELLER_CONFIRMATION",
+              "CONFIRMED",
+              "REJECTED",
+              "WAITING_FOR_PICKUP",
+              "IN_TRANSIT",
+              "DELIVERED",
+              "WAITING_REMAINING_PAYMENT",
+              "COMPLETED",
+              "FUNDS_RELEASED",
+              "CANCELLED",
+              "CANCELLED_BY_BUYER",
+              "DISPUTED"
+            ]
+          },
+          "paymentType": {
+            "type": "string",
+            "enum": [
+              "DEPOSIT_10",
+              "FULL_100"
+            ]
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/OrderUser"
+          },
+          "seller": {
+            "$ref": "#/components/schemas/OrderUser"
+          },
+          "bicycle": {
+            "$ref": "#/components/schemas/OrderBicycle"
+          },
+          "amounts": {
+            "$ref": "#/components/schemas/OrderAmounts"
+          },
+          "review": {
+            "$ref": "#/components/schemas/OrderReview"
+          },
+          "reservedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reservationExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sellerConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "buyerConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelReason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OrderInput": {
+        "type": "object",
+        "required": [
+          "bicycleId",
+          "paymentType"
+        ],
+        "properties": {
+          "bicycleId": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "paymentType": {
+            "type": "string",
+            "enum": [
+              "DEPOSIT_10",
+              "FULL_100"
+            ],
+            "example": "DEPOSIT_10"
+          },
+          "discountPercent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 0
+          },
+          "discountReason": {
+            "type": "string",
+            "example": ""
           }
         }
       }
@@ -4417,6 +4642,597 @@
           },
           "404": {
             "description": "No inspection report found"
+          }
+        }
+      }
+    },
+    "/orders/me": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Get my orders",
+        "description": "Returns paginated list of orders where the current user is buyer or seller. Supports filtering by role and status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "buyer",
+                "seller",
+                "all"
+              ],
+              "default": "all"
+            },
+            "description": "Filter by role: buyer, seller, or all"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by order status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orders": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Order"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Get order by ID",
+        "description": "Returns a single order. Only accessible by the buyer, seller, or admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not authorized"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Create a new order",
+        "description": "Creates a new order for a bicycle. The bicycle must be in APPROVED status and the buyer cannot be the seller.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bicycle not available or already reserved"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Get all orders (Admin)",
+        "description": "Returns paginated list of all orders. Admin only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by order status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "orders": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Order"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/pay": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Pay for an order",
+        "description": "Process payment for an order. Handles deposit, full payment, and remaining payment based on order status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payment state or reservation expired"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/{id}/cancel": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Cancel an order (Buyer)",
+        "description": "Buyer cancels an order. Before seller confirmation: full refund. After seller confirmation: deposit forfeited.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Đổi ý không mua nữa"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot cancel at current status"
+          },
+          "403": {
+            "description": "Not authorized"
+          }
+        }
+      }
+    },
+    "/orders/{id}/review": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Review a completed order",
+        "description": "Buyer reviews a completed order with rating and optional comment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rating"
+                ],
+                "properties": {
+                  "rating": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Xe rất đẹp, đúng mô tả"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order not completed or already reviewed"
+          },
+          "403": {
+            "description": "Not authorized"
+          }
+        }
+      }
+    },
+    "/orders/{id}/confirm": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Confirm an order (Seller)",
+        "description": "Seller confirms the order after buyer payment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order not in WAITING_SELLER_CONFIRMATION status"
+          },
+          "403": {
+            "description": "Not authorized (not the seller)"
+          }
+        }
+      }
+    },
+    "/orders/{id}/reject": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Reject an order (Seller)",
+        "description": "Seller rejects the order. Buyer gets refund.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Xe đã bán cho người khác"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order not in WAITING_SELLER_CONFIRMATION status"
+          },
+          "403": {
+            "description": "Not authorized (not the seller)"
           }
         }
       }

@@ -22,6 +22,7 @@ const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
 const adminInspectorRouter = require('./routes/admin/inspector').default;
 const inspectorRouter = require('./routes/inspector').default;
+const orderRouter = require('./routes/order').default;
 
 var app = express();
 
@@ -60,5 +61,6 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/inspectors', inspectorRouter);
+app.use('/api/orders', orderRouter);
 
 module.exports = app;
