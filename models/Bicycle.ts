@@ -157,6 +157,8 @@ const bicycleSchema = new Schema<IBicycleDocument>(
     }
 );
 
+bicycleSchema.index({ title: 'text', description: 'text' });
+
 bicycleSchema.index({ 'location.coordinates': '2dsphere' });
 
 
