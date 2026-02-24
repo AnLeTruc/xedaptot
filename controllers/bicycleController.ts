@@ -73,8 +73,6 @@ export const getAllBicycles = async (
         const filter: any = {};
         if (status) {
             filter.status = status;
-        } else {
-            filter.status = 'APPROVED';
         }
         if (condition) {
             filter.condition = condition;
