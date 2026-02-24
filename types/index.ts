@@ -78,3 +78,4 @@ export interface ICategoryDocument extends ICategory, Document {
 
 export * from './inspectionReport';
 export * from './notification';
+export * from './bicycleModel';
