@@ -128,14 +128,14 @@ export const payOrder = async (
 ): Promise<void> => {
     try {
         const order = await Order.findById(req.params.id);
-        if(!order || order.buyer._id.toString() !== req.user!._id.toString()){
+        if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
             res.status(404).json({
                 success: false,
                 message: 'Đơn hàng không tồn tại'
             });
             return;
         }
-        if(order.reservationExpiresAt && new Date() > order.reservationExpiresAt){
+        if (order.reservationExpiresAt && new Date() > order.reservationExpiresAt) {
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
@@ -143,12 +143,12 @@ export const payOrder = async (
                 success: false,
                 message: 'Thời gian đặt cọc đã hết hạn'
             })
-        }   
+        }
 
 
         let buyerPays = 0, txnType: 'DEPOSIT' | 'FULL' | 'REMAINING' = 'DEPOSIT', nextStatus = '';
 
-        switch ( order.status ) {
+        switch (order.status) {
             case 'RESERVED_FULL':
                 buyerPays = order.amounts.total;
                 txnType = 'FULL';
@@ -171,7 +171,7 @@ export const payOrder = async (
                 });
         }
 
-            
+
         // const buyerWallet = await Wallet.findOne({ userId: req.user!._id });
         // if (!buyerWallet || buyerWallet.balance < buyerPays) {
         //     res.status(400).json({ success: false, message: 'Số dư không đủ', required: buyerPays });
@@ -207,7 +207,7 @@ export const payOrder = async (
         order.amounts.escrowAmount += buyerPays;
 
         order.status = nextStatus as any;
-        
+
         // order.transactions.push({
         //     transactionCode: generateCode('TXN'),
         //     type: txnType,
@@ -228,8 +228,8 @@ export const payOrder = async (
         await order.save();
 
         res.status(200).json({ success: true, data: order });
-        
-    } catch (error : any){
+
+    } catch (error: any) {
         res.status(500).json({
             success: false,
             message: error.message
@@ -269,17 +269,17 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     const isAdmin = req.user!.roles.includes('ADMIN');
     const isSeller = order.seller._id.toString() === uid;
     const isBuyer = order.buyer._id.toString() === uid;
-    
+
     if (!isBuyer && !isSeller && !isAdmin) {
         return res.status(403).json({ success: false, message: 'Không có quyền' });
     }
-     
+
     // Ẩn pickupAddress với Buyer (chỉ Admin và Seller thấy)
     // const orderData = order.toObject();
     // if (isBuyer && !isAdmin) {
     //     delete orderData.pickupAddress;
     // }
-    
+
     // res.status(200).json({ success: true, data: orderData });
 };
 

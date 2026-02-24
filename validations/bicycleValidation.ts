@@ -55,7 +55,10 @@ export const createBicycleSchema = z.object({
     images: z.array(mediaItemSchema)
         .min(1, 'At least 1 image is required')
         .max(12, 'Maximum 12 media items allowed')
-        .optional()
+        .optional(),
+    usageMonths: z.number().min(0).optional(),
+    specifications: specificationsSchema,
+    location: locationSchema,
 })
 
 
