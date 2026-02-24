@@ -1,4 +1,4 @@
-{
+﻿{
   "openapi": "3.0.0",
   "info": {
     "title": "Xedaptot API",
@@ -1049,7 +1049,7 @@
                 "false"
               ]
             },
-            "description": "Filter by active status (default: true)"
+            "description": "Filter by active status."
           }
         ],
         "responses": {
