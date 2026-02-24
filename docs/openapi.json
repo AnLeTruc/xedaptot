@@ -1,4 +1,4 @@
-{
+﻿{
   "openapi": "3.0.0",
   "info": {
     "title": "Xedaptot API",
@@ -66,6 +66,102 @@
       }
     },
     "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "firebaseUId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Nguyen Van A"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0901234567"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "example": "Home"
+                },
+                "street": {
+                  "type": "string"
+                },
+                "ward": {
+                  "type": "string"
+                },
+                "district": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "isDefault": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "SELLER",
+                "ADMIN",
+                "INSPECTOR"
+              ]
+            },
+            "example": [
+              "BUYER"
+            ]
+          },
+          "reputationScore": {
+            "type": "number",
+            "example": 0
+          },
+          "isVerified": {
+            "type": "boolean",
+            "example": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "authProvider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "email"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ApiResponseError": {
         "type": "object",
         "properties": {
@@ -300,7 +396,7 @@
           },
           "description": {
             "type": "string",
-            "example": "Xe còn mới, ít sử dụng"
+            "example": "Like new, barely used"
           },
           "price": {
             "type": "number",
@@ -1049,7 +1145,7 @@
                 "false"
               ]
             },
-            "description": "Filter by active status (default: true)"
+            "description": "Filter by active status."
           }
         ],
         "responses": {
@@ -2320,7 +2416,7 @@
                               },
                               "label": {
                                 "type": "string",
-                                "example": "Nhà"
+                                "example": "Home"
                               },
                               "street": {
                                 "type": "string",
@@ -2586,7 +2682,7 @@
                 "properties": {
                   "label": {
                     "type": "string",
-                    "example": "Nhà"
+                    "example": "Home"
                   },
                   "street": {
                     "type": "string",
@@ -4041,9 +4137,25 @@
           "Admin"
         ],
         "summary": "Get all inspectors",
+        "description": "Retrieve all inspector accounts. Optionally filter by isActive status.",
         "security": [
           {
             "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "description": "Filter inspectors by active status (true/false). If not provided, returns all inspectors.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
           }
         ],
         "responses": {
@@ -4070,6 +4182,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid token"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
           }
         }
       }
@@ -5007,7 +5125,7 @@
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "example": "Đổi ý không mua nữa"
+                    "example": "Changed my mind, no longer want to buy"
                   }
                 }
               }
@@ -5084,7 +5202,7 @@
                   "comment": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Xe rất đẹp, đúng mô tả"
+                    "example": "Great bike, exactly as described!"
                   }
                 }
               }
@@ -5202,7 +5320,7 @@
                   "reason": {
                     "type": "string",
                     "maxLength": 500,
-                    "example": "Xe đã bán cho người khác"
+                    "example": "Already sold to another buyer"
                   }
                 }
               }

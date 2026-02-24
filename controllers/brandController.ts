@@ -28,8 +28,6 @@ export const getAllBrands = async (
         const filter: any = {};
         if (isActive !== undefined) {
             filter.isActive = isActive === 'true';
-        } else {
-            filter.isActive = true;
         }
 
         if (search) {
