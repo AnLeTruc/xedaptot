@@ -110,7 +110,14 @@ export const getAllInspectors = async (
     res: Response
 ): Promise<void> => {
     try {
-        const inspectors = await User.find({ roles: 'INSPECTOR' })
+        const { isActive } = req.query;
+        const query: any = { roles: 'INSPECTOR' };
+
+        if (isActive !== undefined) {
+            query.isActive = isActive === 'true';
+        }
+
+        const inspectors = await User.find(query)
             .select('-passwordResetCodeHash -passwordResetTokenHash -emailVerificationToken')
             .sort({ createdAt: -1 });
 
