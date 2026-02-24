@@ -66,6 +66,102 @@
       }
     },
     "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "firebaseUId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Nguyen Van A"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0901234567"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "example": "Home"
+                },
+                "street": {
+                  "type": "string"
+                },
+                "ward": {
+                  "type": "string"
+                },
+                "district": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "isDefault": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "SELLER",
+                "ADMIN",
+                "INSPECTOR"
+              ]
+            },
+            "example": [
+              "BUYER"
+            ]
+          },
+          "reputationScore": {
+            "type": "number",
+            "example": 0
+          },
+          "isVerified": {
+            "type": "boolean",
+            "example": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "authProvider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "email"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ApiResponseError": {
         "type": "object",
         "properties": {
