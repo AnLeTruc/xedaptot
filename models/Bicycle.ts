@@ -87,6 +87,15 @@ const bicycleSchema = new Schema<IBicycleDocument>(
                 required: [true, 'Brand name is required']
             }
         },
+        model: {
+            _id: {
+                type: Schema.Types.ObjectId,
+                ref: 'BicycleModel'
+            },
+            name: {
+                type: String
+            }
+        },
         seller: {
             _id: {
                 type: Schema.Types.ObjectId,

@@ -75,6 +75,13 @@ export interface IBicycleBrand {
 }
 
 
+// model (dòng xe)
+export interface IBicycleModelRef {
+    _id: Types.ObjectId;
+    name: string;
+}
+
+
 export interface IBicycle {
     title: string;
     description?: string;
@@ -95,6 +102,7 @@ export interface IBicycle {
     // Embedded objects
     category: IBicycleCategory;
     brand?: IBicycleBrand;
+    model?: IBicycleModelRef;
     seller: IBicycleSeller;
     specifications?: IBicycleSpecifications;
     location?: IBicycleLocation;

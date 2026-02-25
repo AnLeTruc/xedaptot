@@ -3,7 +3,7 @@ import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
-
+import BicycleModel from '../models/BicycleModel';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -188,6 +188,7 @@ export const createBicycle = async (
             usageMonths,
             categoryId,
             brandId,
+            modelId,
             specifications,
             location,
             images       // upload sau 
@@ -232,6 +233,22 @@ export const createBicycle = async (
             }
         }
 
+        let modelData = undefined;
+        if (modelId) {
+            const modelDoc = await BicycleModel.findById(modelId);
+            if (!modelDoc) {
+                res.status(400).json({ success: false, message: 'Bicycle model not found' });
+                return;
+            }
+            if (brandId && modelDoc.brand._id.toString() !== brandId) {
+                res.status(400).json({ success: false, message: 'Model does not belong to the selected brand' });
+                return;
+            }
+            modelData = { _id: modelDoc._id, name: modelDoc.name };
+        }
+
+
+
 
         // TẠO BICYCLE
         const bicycle = await Bicycle.create({
@@ -247,6 +264,7 @@ export const createBicycle = async (
                 name: categoryDoc.name
             },
             brand: brandData,
+            model: modelData,
             seller: {
                 _id: req.user._id,
                 fullName: req.user.fullName,

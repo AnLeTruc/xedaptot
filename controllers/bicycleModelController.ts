@@ -40,4 +40,49 @@ export const getAllBicycleModels = async (
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
     }
-};   
+};
+
+
+
+export const createBicycleModels = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { name, brandId, year, description, imageUrl } = req.body;
+        const brand = await Brand.findById(brandId);
+        if (!brand) {
+            res.status(404).json({
+                success: false,
+                message: 'Brand not found'
+            });
+            return;
+        }
+        const bicycleModel = new BicycleModel({
+            name: name.trim(),
+            brand: {
+                _id: brand._id,
+                name: brand.name
+            },
+            year,
+            description,
+            imageUrl
+        });
+        await bicycleModel.save();
+        res.status(201).json({
+            success: true,
+            message: 'Bicycle model created successfully',
+            data: bicycleModel
+        });
+    } catch (error: any) {
+        // error.code === 11000: lỗi trùng unique index
+        if (error.code === 11000) {
+            res.status(400).json({
+                success: false,
+                message: 'Model name already exists for this brand'
+            });
+            return;
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
