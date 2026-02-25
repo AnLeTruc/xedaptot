@@ -52,6 +52,7 @@ export const createBicycleSchema = z.object({
         .positive('Original price must be positive')
         .optional(),
     brandId: z.string().optional(),
+    modelId: z.string().optional(),
     images: z.array(mediaItemSchema)
         .min(1, 'At least 1 image is required')
         .max(12, 'Maximum 12 media items allowed')
@@ -91,6 +92,7 @@ export const updateBicycleSchema = z.object({
 
     categoryId: z.string().optional(),
     brandId: z.string().optional(),
+    modelId: z.string().optional(),
     specifications: specificationsSchema,
     location: locationSchema,
     images: z.array(mediaItemSchema).optional()
