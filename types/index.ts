@@ -39,6 +39,9 @@ export interface IAddress {
     ward?: string;
     district?: string;
     city: string;
+    provinceId?: number;     // GHN Province ID
+    districtId?: number;     // GHN District ID
+    wardCode?: string;       // GHN Ward Code
     isDefault: boolean;
 }
 

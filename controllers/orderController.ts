@@ -5,6 +5,7 @@ import Bicycle from '../models/Bicycle';
 import User from '../models/User';
 // import Wallet from '../models/Wallet';
 import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order'
+import { calculateShippingFee } from '../services/shippingService';
 import mongoose from 'mongoose';
 
 const generateCode = (prefix: string) => {
@@ -19,7 +20,7 @@ export const createOrder = async (
 ) => {
     try {
         const buyer = req.user!;
-        const { bicycleId, paymentType, discountPercent = 0, discountReason = '' } = req.body;
+        const { bicycleId, paymentType, shippingAddressId, discountPercent = 0, discountReason = '' } = req.body;
 
         const bicycle = await Bicycle.findById(bicycleId);
         if (!bicycle || bicycle.status != 'APPROVED') {
@@ -42,11 +43,49 @@ export const createOrder = async (
 
         const seller = await User.findById(bicycle.seller._id);
 
+        // Shipping address
+        const buyerDoc = await User.findById(buyer._id);
+        const shippingAddr = buyerDoc?.addresses?.find(
+            (a: any) => a._id.toString() === shippingAddressId
+        );
+        if (!shippingAddr || !shippingAddr.districtId || !shippingAddr.wardCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid shipping address or missing district/ward code'
+            });
+        }
+
+        const pickupAddr = seller?.addresses?.find((a: any) => a.isDefault)
+            || seller?.addresses?.[0];
+        if (!pickupAddr || !pickupAddr.districtId || !pickupAddr.wardCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Seller has not updated pickup address'
+            });
+        }
+
         const originalPrice = bicycle.price;
         const discountAmount = Math.round(originalPrice * discountPercent / 100);
         const finalPrice = originalPrice - discountAmount;
-        const shipping = 0;
-        const total = finalPrice + shipping;
+
+        //GHN Shipping fee
+        let shippingFee = 0;
+        try {
+            const shippingResult = await calculateShippingFee({
+                fromDistrictId: pickupAddr.districtId,
+                fromWardCode: pickupAddr.wardCode,
+                toDistrictId: shippingAddr.districtId,
+                toWardCode: shippingAddr.wardCode,
+                weight: 15000,
+                insuranceValue: finalPrice,
+            });
+            shippingFee = shippingResult.total;
+        } catch (err) {
+            console.error('GHN API Error:', err);
+            shippingFee = 30000;
+        }
+
+        const total = finalPrice + shippingFee;
         const deposit = Math.round(total * FEE_CONFIG.DEPOSIT_PERCENT);
 
         const now = new Date();
@@ -68,19 +107,22 @@ export const createOrder = async (
                 fullName: seller!.fullName || '',
                 phone: seller!.phone,
             },
-            // shippingAddress: {
-            //     street: shippingAddr.street,
-            //     city: shippingAddr.city,
-            //     district: shippingAddr.district,
-            //     ward: shippingAddr.ward,
-            // },
-            // // Lấy địa chỉ từ seller để System biết đến đâu lấy hàng
-            // pickupAddress: {
-            //     street: seller?.address?.[0]?.street,
-            //     city: seller?.address?.[0]?.city,
-            //     district: seller?.address?.[0]?.district,
-            //     ward: seller?.address?.[0]?.ward,
-            // },
+            shippingAddress: {
+                street: shippingAddr.street,
+                city: shippingAddr.city,
+                district: shippingAddr.district,
+                ward: shippingAddr.ward,
+                districtId: shippingAddr.districtId,
+                wardCode: shippingAddr.wardCode,
+            },
+            pickupAddress: {
+                street: pickupAddr.street,
+                city: pickupAddr.city,
+                district: pickupAddr.district,
+                ward: pickupAddr.ward,
+                districtId: pickupAddr.districtId,
+                wardCode: pickupAddr.wardCode,
+            },
             bicycle: {
                 _id: bicycle._id,
                 title: bicycle.title,
@@ -91,7 +133,7 @@ export const createOrder = async (
             amounts: {
                 total,
                 deposit,
-                // shippingFee: shipping,  
+                shippingFee,
                 pricing: {
                     originalPrice,
                     discountAmount,
