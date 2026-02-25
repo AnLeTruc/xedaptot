@@ -48,7 +48,7 @@ const bicycleModelSchema = new Schema<IBicycleModelDocument>(
 
 
 bicycleModelSchema.index({ 'brand._id': 1 });
-bicycleModelSchema.index({ 'brand._id': 1, name: 1 });
+bicycleModelSchema.index({ 'brand._id': 1, name: 1 }, { unique: true });
 bicycleModelSchema.index({ isActive: 1 });
 
 
