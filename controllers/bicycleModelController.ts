@@ -45,7 +45,7 @@ export const getAllBicycleModels = async (
 
 
 
-export const createBicycleModels = async (
+export const createBicycleModel = async (
     req: Request,
     res: Response
 ): Promise<void> => {
@@ -127,3 +127,21 @@ export const updateBicycleModel = async (req: Request, res: Response): Promise<v
 
 
 
+
+// DELETE /api/bicycle-models/:id
+export const deleteBicycleModel = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const model = await BicycleModel.findByIdAndDelete(id);
+        if (!model) {
+            res.status(404).json({ success: false, message: 'Bicycle model not found' });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Bicycle model deleted successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
