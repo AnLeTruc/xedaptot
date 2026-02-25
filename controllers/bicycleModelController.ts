@@ -44,6 +44,7 @@ export const getAllBicycleModels = async (
 
 
 
+
 export const createBicycleModels = async (
     req: Request,
     res: Response
@@ -86,3 +87,43 @@ export const createBicycleModels = async (
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+
+
+// PUT /api/bicycle-models/:id
+export const updateBicycleModel = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { name, year, description, imageUrl, isActive } = req.body;
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name.trim();
+        if (year !== undefined) updateData.year = year;
+        if (description !== undefined) updateData.description = description;
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+        if (isActive !== undefined) updateData.isActive = isActive;
+        const model = await BicycleModel.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true
+        });
+        if (!model) {
+            res.status(404).json({ success: false, message: 'Bicycle model not found' });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            message: 'Bicycle model updated successfully',
+            data: model
+        });
+    } catch (error: any) {
+        if (error.code === 11000) {
+            res.status(400).json({ success: false, message: 'Model name already exists for this brand' });
+            return;
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
+
