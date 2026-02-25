@@ -2,12 +2,14 @@ import mongoose, { Schema } from 'mongoose';
 import { IOrderDocument } from '../types/order';
 
 
-// const shippingAddressSchema = {
-//     street: String,
-//     city: String,
-//     district: String,
-//     ward: String,
-// };
+const shippingAddressSchema = {
+    street: String,
+    city: String,
+    district: String,
+    ward: String,
+    districtId: Number,
+    wardCode: String,
+};
 
 
 const pricingSchema = {
@@ -46,8 +48,8 @@ const orderSchema = new Schema<IOrderDocument>({
         email: String,
         phone: String,
     },
-    // shippingAddress: shippingAddressSchema,
-    // pickupAddress: shippingAddressSchema,
+    shippingAddress: shippingAddressSchema,
+    pickupAddress: shippingAddressSchema,
     bicycle: {
         _id: { type: Schema.Types.ObjectId, ref: 'Bicycle', required: true },
         title: { type: String, required: true },
@@ -58,6 +60,7 @@ const orderSchema = new Schema<IOrderDocument>({
     amounts: {
         total: { type: Number, required: true },
         deposit: { type: Number, required: true },
+        shippingFee: { type: Number, default: 0 },
         pricing: pricingSchema,
         depositPaid: { type: Number, default: 0 },
         remainingPaid: { type: Number, default: 0 },
