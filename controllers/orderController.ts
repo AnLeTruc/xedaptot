@@ -4,6 +4,7 @@ import Order from '../models/Order';
 import Bicycle from '../models/Bicycle';
 import User from '../models/User';
 // import Wallet from '../models/Wallet';
+// import Transaction from '../models/Transaction';
 import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order'
 import { calculateShippingFee } from '../services/shippingService';
 import mongoose from 'mongoose';
@@ -213,30 +214,26 @@ export const payOrder = async (
                 });
         }
 
-
         // const buyerWallet = await Wallet.findOne({ userId: req.user!._id });
-        // if (!buyerWallet || buyerWallet.balance < buyerPays) {
+        // if (!buyerWallet || (buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance) < buyerPays) {
         //     res.status(400).json({ success: false, message: 'Số dư không đủ', required: buyerPays });
         // }
-
-
-        // const txn = await new Transaction({
+        //
+        // const balanceBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+        // buyerWallet.frozenBalance += buyerPays;
+        // await buyerWallet.save();
+        //
+        // await Transaction.create({
         //     transactionCode: generateCode('TXN'),
         //     amount: buyerPays,
         //     paymentMethod: 'WALLET',
-        //     status: 'SUCCESS',
         //     walletId: buyerWallet._id,
         //     type: 'ESCROW_IN',
-        //     balanceBefore: buyerWallet.balance,
-        //     balanceAfter: buyerWallet.balance - buyerPays,
+        //     balanceBefore,
+        //     balanceAfter: balanceBefore - buyerPays,
         //     description: `Thanh toán ${txnType} → Escrow - ${order.orderCode}`,
         //     orderId: order._id,
-        //     userId: req.user!._id,
-        // }).save();
-
-        // buyerWallet.balance -= buyerPays;
-        // buyerWallet.frozenBalance += buyerPays;  // Option B: frozenBalance thay vì SystemWallet
-        // await buyerWallet.save();
+        // });
 
         if (txnType === 'DEPOSIT') {
             order.amounts.depositPaid = buyerPays;
@@ -258,8 +255,8 @@ export const payOrder = async (
         //     createdAt: new Date(),
         //     walletId: buyerWallet._id,
         //     paymentMethod: 'WALLET',
-        //     balanceBefore: buyerWallet.balance + buyerPays,
-        //     balanceAfter: buyerWallet.balance,
+        //     balanceBefore,
+        //     balanceAfter: balanceBefore - buyerPays,
         //     description: `Thanh toán ${txnType} - ${order.orderCode}`,
         //     paymentGateway: '',
         //     gatewayTransactionId: '',
@@ -331,7 +328,8 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
 
-    // Option B: frozenBalance thay vì SystemWallet
+    // TODO [DEV KHÁC - Payment Integration]:
+    // Uncomment khi tích hợp VNPay. Wallet dùng userId (không phải sellerId).
     // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
 
     // Trước seller confirm → hoàn tiền
@@ -339,13 +337,13 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
         const refund = order.amounts.escrowAmount;
         // if (refund > 0 && buyerWallet) {
         //     buyerWallet.frozenBalance -= refund;
-        //     buyerWallet.balance += refund;
+        //     buyerWallet.totalEarn += refund;
         //     await buyerWallet.save();
-        //     order.transactions.push({
-        //         transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
-        //         createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
-        //         balanceBefore: buyerWallet.balance - refund, balanceAfter: buyerWallet.balance,
-        //         description: `Hoàn tiền - ${order.orderCode}`, paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+        //     await Transaction.create({
+        //         transactionCode: generateCode('TXN'), paymentMethod: 'SYSTEM',
+        //         walletId: buyerWallet._id, type: 'REFUND', amount: refund,
+        //         balanceBefore: balBefore, balanceAfter: balBefore + refund,
+        //         description: `Hoàn tiền - ${order.orderCode}`, orderId: order._id
         //     });
         // }
         order.status = 'CANCELLED';
@@ -354,17 +352,18 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
     else if (['CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
         const forfeit = order.amounts.escrowAmount;
         // let sellerWallet = await Wallet.findOne({ userId: order.seller._id });
-        // if (!sellerWallet) sellerWallet = await new Wallet({ userId: order.seller._id, balance: 0, frozenBalance: 0 }).save();
+        // if (!sellerWallet) sellerWallet = await Wallet.create({ userId: order.seller._id });
         // if (forfeit > 0 && buyerWallet) {
         //     buyerWallet.frozenBalance -= forfeit;
-        //     sellerWallet.balance += forfeit;
+        //     sellerWallet.totalReceived += forfeit;
+        //     sellerWallet.totalEarn += forfeit;
         //     await buyerWallet.save();
         //     await sellerWallet.save();
-        //     order.transactions.push({
-        //         transactionCode: generateCode('TXN'), type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
-        //         createdAt: new Date(), walletId: sellerWallet._id, paymentMethod: 'SYSTEM',
-        //         balanceBefore: sellerWallet.balance - forfeit, balanceAfter: sellerWallet.balance,
-        //         description: `Buyer hủy đơn, mất cọc - ${order.orderCode}`, paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+        //     await Transaction.create({
+        //         transactionCode: generateCode('TXN'), paymentMethod: 'SYSTEM',
+        //         walletId: sellerWallet._id, type: 'FORFEIT', amount: forfeit,
+        //         balanceBefore: sellerBalBefore, balanceAfter: sellerBalBefore + forfeit,
+        //         description: `Buyer hủy đơn, mất cọc - ${order.orderCode}`, orderId: order._id
         //     });
         // }
         order.status = 'CANCELLED_BY_BUYER';
@@ -431,13 +430,14 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền' });
     if (order.status !== 'WAITING_SELLER_CONFIRMATION') return res.status(400).json({ success: false, message: 'Invalid' });
-    // const escrow = await getEscrowWallet();
+    // TODO [DEV KHÁC - Payment Integration]:
+    // Uncomment khi tích hợp VNPay. Wallet dùng userId.
     // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
     // const refund = order.amounts.escrowAmount;
-    // if (refund > 0 && buyerWallet && escrow) {
-    //     escrow.balance -= refund;
-    //     buyerWallet.balance += refund;
-    //     await escrow.save();
+    // if (refund > 0 && buyerWallet) {
+    //     const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+    //     buyerWallet.frozenBalance -= refund;
+    //     buyerWallet.totalEarn += refund;
     //     await buyerWallet.save();
     // }
 
