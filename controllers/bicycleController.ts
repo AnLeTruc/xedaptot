@@ -4,6 +4,7 @@ import Category from '../models/Category';
 import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
+import User from '../models/User';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -275,6 +276,14 @@ export const createBicycle = async (
             location,
             images: images
         });
+
+        // Auto add SELLER role if user is only BUYER
+        if (!req.user!.roles.includes('SELLER')) {
+            await User.findByIdAndUpdate(req.user!._id, {
+                $addToSet: { roles: 'SELLER' }
+            });
+            req.user!.roles.push('SELLER' as any);
+        }
 
         res.status(201).json({
             success: true,
