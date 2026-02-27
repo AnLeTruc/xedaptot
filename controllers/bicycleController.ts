@@ -54,7 +54,7 @@ export const getMyBicycles = async (
 
 // GET /api/bicycles
 export const getAllBicycles = async (
-    req: Request,
+    req: AuthRequest,
     res: Response
 ): Promise<void> => {
     try {
@@ -72,9 +72,25 @@ export const getAllBicycles = async (
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
         const filter: any = {};
-        if (status) {
-            filter.status = status;
+
+        const userRoles = req.user?.roles || [];
+        const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
+
+        if (isPrivileged) {
+            if (status) {
+                filter.status = status;
+            }
+        } else {
+            if (status && status !== 'APPROVED') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. You can only view APPROVED bicycles.'
+                });
+                return;
+            }
+            filter.status = 'APPROVED';
         }
+
         if (condition) {
             filter.condition = condition;
         }
@@ -277,7 +293,6 @@ export const createBicycle = async (
             images: images
         });
 
-        // Auto add SELLER role if user is only BUYER
         if (!req.user!.roles.includes('SELLER')) {
             await User.findByIdAndUpdate(req.user!._id, {
                 $addToSet: { roles: 'SELLER' }
