@@ -1,4 +1,4 @@
-﻿{
+{
   "openapi": "3.0.0",
   "info": {
     "title": "Xedaptot API",
@@ -54,6 +54,18 @@
     {
       "name": "Order",
       "description": "Order management endpoints"
+    },
+    {
+      "name": "Wallet",
+      "description": "Wallet and payment management"
+    },
+    {
+      "name": "BicycleModel",
+      "description": "Bicycle model management"
+    },
+    {
+      "name": "Shipping",
+      "description": "Shipping fee calculation (GHN)"
     }
   ],
   "components": {
@@ -1092,6 +1104,330 @@
           "discountReason": {
             "type": "string",
             "example": ""
+          }
+        }
+      },
+      "Wallet": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "totalEarn": {
+            "type": "number",
+            "example": 0
+          },
+          "totalWithdrawn": {
+            "type": "number",
+            "example": 0
+          },
+          "frozenBalance": {
+            "type": "number",
+            "example": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "transactionCode": {
+            "type": "string",
+            "example": "DEP-ABC123"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "VNPAY",
+              "WALLET",
+              "BANK_TRANSFER"
+            ]
+          },
+          "walletId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DEPOSIT",
+              "WITHDRAW",
+              "PAYMENT",
+              "REFUND",
+              "EARNING"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 100000
+          },
+          "balanceBefore": {
+            "type": "number"
+          },
+          "balanceAfter": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "paymentGateway": {
+            "type": "string"
+          },
+          "gatewayTransactionId": {
+            "type": "string"
+          },
+          "gatewayResponseCode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WithdrawRequest": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "walletId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "example": 500000
+          },
+          "bankInfo": {
+            "type": "object",
+            "properties": {
+              "bankName": {
+                "type": "string",
+                "example": "Vietcombank"
+              },
+              "accountNumber": {
+                "type": "string",
+                "example": "0123456789"
+              },
+              "accountName": {
+                "type": "string",
+                "example": "NGUYEN VAN A"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DepositInput": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 10000,
+            "maximum": 500000000,
+            "example": 100000
+          },
+          "bankCode": {
+            "type": "string",
+            "description": "Optional VNPay bank code",
+            "example": "NCB"
+          }
+        }
+      },
+      "WithdrawInput": {
+        "type": "object",
+        "required": [
+          "amount",
+          "bankInfo"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1000,
+            "maximum": 500000000,
+            "example": 500000
+          },
+          "bankInfo": {
+            "type": "object",
+            "required": [
+              "bankName",
+              "accountNumber",
+              "accountName"
+            ],
+            "properties": {
+              "bankName": {
+                "type": "string",
+                "example": "Vietcombank"
+              },
+              "accountNumber": {
+                "type": "string",
+                "example": "0123456789"
+              },
+              "accountName": {
+                "type": "string",
+                "example": "NGUYEN VAN A"
+              }
+            }
+          }
+        }
+      },
+      "BicycleModelSchema": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Giant ATX 860"
+          },
+          "brand": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "example": "Giant"
+              }
+            }
+          },
+          "year": {
+            "type": "number",
+            "example": 2023
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BicycleModelInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "brandId"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Giant ATX 860"
+          },
+          "brandId": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "year": {
+            "type": "number",
+            "example": 2023
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "BicycleModelUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "year": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShippingFeeInput": {
+        "type": "object",
+        "required": [
+          "fromDistrictId",
+          "fromWardCode",
+          "toDistrictId",
+          "toWardCode"
+        ],
+        "properties": {
+          "fromDistrictId": {
+            "type": "number",
+            "example": 1542
+          },
+          "fromWardCode": {
+            "type": "string",
+            "example": "21211"
+          },
+          "toDistrictId": {
+            "type": "number",
+            "example": 1444
+          },
+          "toWardCode": {
+            "type": "string",
+            "example": "20314"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Weight in grams",
+            "example": 15000
+          },
+          "insuranceValue": {
+            "type": "number",
+            "description": "Insurance value in VND",
+            "example": 5000000
           }
         }
       }
@@ -3851,7 +4187,6 @@
           "Users"
         ],
         "summary": "Purchase a package",
-        "description": "Purchase a new package for the authenticated user",
         "security": [
           {
             "bearerAuth": []
@@ -3869,7 +4204,6 @@
                 "properties": {
                   "packageId": {
                     "type": "string",
-                    "description": "ID of the package to purchase",
                     "example": "64d1b5b5b5b5b5b5b5b5b5b5"
                   }
                 }
@@ -3879,7 +4213,7 @@
         },
         "responses": {
           "201": {
-            "description": "Package purchased successfully",
+            "description": "Package purchased",
             "content": {
               "application/json": {
                 "schema": {
@@ -3890,8 +4224,7 @@
                       "example": true
                     },
                     "message": {
-                      "type": "string",
-                      "example": "Package purchased successfully"
+                      "type": "string"
                     },
                     "data": {
                       "$ref": "#/components/schemas/UserPackage"
@@ -3902,10 +4235,7 @@
             }
           },
           "400": {
-            "description": "Already has active package or package unavailable"
-          },
-          "401": {
-            "description": "Unauthorized"
+            "description": "Already has active package or insufficient balance"
           },
           "404": {
             "description": "Package not found"
@@ -4009,8 +4339,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "Update/Cancel a user package",
-        "description": "Update or cancel an active user package. Send {status: 'CANCELLED'} to cancel.",
+        "summary": "Cancel a user package",
         "security": [
           {
             "bearerAuth": []
@@ -4018,36 +4347,17 @@
         ],
         "parameters": [
           {
-            "name": "id",
             "in": "path",
+            "name": "id",
             "required": true,
             "schema": {
               "type": "string"
-            },
-            "description": "User package ID"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "CANCELLED"
-                    ],
-                    "example": "CANCELLED"
-                  }
-                }
-              }
             }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Package updated successfully",
+            "description": "Package cancelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -4068,12 +4378,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Only active packages can be cancelled"
-          },
-          "401": {
-            "description": "Unauthorized"
           },
           "404": {
             "description": "User package not found"
@@ -4963,8 +5267,8 @@
         "tags": [
           "Order"
         ],
-        "summary": "Get all orders (Admin)",
-        "description": "Returns paginated list of all orders. Admin only.",
+        "summary": "Get all orders (admin)",
+        "description": "Admin endpoint to get all orders with optional status filter.",
         "security": [
           {
             "bearerAuth": []
@@ -4985,8 +5289,7 @@
             "schema": {
               "type": "integer",
               "default": 1
-            },
-            "description": "Page number"
+            }
           },
           {
             "in": "query",
@@ -4994,20 +5297,20 @@
             "schema": {
               "type": "integer",
               "default": 10
-            },
-            "description": "Items per page"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of all orders",
+            "description": "All orders with pagination",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "data": {
                       "type": "object",
@@ -5038,6 +5341,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -5351,6 +5657,1036 @@
           },
           "403": {
             "description": "Not authorized (not the seller)"
+          }
+        }
+      }
+    },
+    "/wallets/vnpay-return": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "VNPay return callback",
+        "description": "VNPay redirects user here after payment. No auth required.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposit result with redirect info"
+          }
+        }
+      }
+    },
+    "/wallets/vnpay-ipn": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "VNPay IPN (Instant Payment Notification)",
+        "description": "VNPay calls this endpoint server-to-server. No auth required.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IPN acknowledgement"
+          }
+        }
+      }
+    },
+    "/wallets/me": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get my wallet info",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Wallet"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/wallets/transactions": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get transaction history",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DEPOSIT",
+                "WITHDRAW",
+                "PAYMENT",
+                "REFUND",
+                "EARNING"
+              ]
+            },
+            "description": "Filter by transaction type"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction list with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "transactions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Transaction"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/wallets/deposit": {
+      "post": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Deposit money via VNPay",
+        "description": "Creates a VNPay payment URL. Frontend should redirect user to this URL.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "VNPay payment URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paymentUrl": {
+                          "type": "string",
+                          "example": "https://sandbox.vnpayment.vn/paymentv2/..."
+                        },
+                        "txnRef": {
+                          "type": "string",
+                          "example": "DEP-ABC123"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/wallets/withdraw": {
+      "post": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Create withdraw request",
+        "description": "Creates a pending withdraw request. Amount will be frozen until admin approves/rejects.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Withdraw request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request created, pending admin approval"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient balance or pending request exists"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Wallet not found"
+          }
+        }
+      }
+    },
+    "/wallets/withdraw-requests": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get my withdraw requests",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw request list with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "withdrawRequests": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WithdrawRequest"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/bicycle-models": {
+      "get": {
+        "tags": [
+          "BicycleModel"
+        ],
+        "summary": "Get all bicycle models",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "brandId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by brand ID"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by model name"
+          },
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by active status (default: true)"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bicycle models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BicycleModelSchema"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "BicycleModel"
+        ],
+        "summary": "Create a new bicycle model",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BicycleModelInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Model created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BicycleModelSchema"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Duplicate model name for brand"
+          },
+          "404": {
+            "description": "Brand not found"
+          }
+        }
+      }
+    },
+    "/bicycle-models/{id}": {
+      "put": {
+        "tags": [
+          "BicycleModel"
+        ],
+        "summary": "Update a bicycle model",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BicycleModelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Model updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BicycleModelSchema"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Duplicate model name"
+          },
+          "404": {
+            "description": "Model not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "BicycleModel"
+        ],
+        "summary": "Delete a bicycle model",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Model deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Bicycle model deleted successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Model not found"
+          }
+        }
+      }
+    },
+    "/shipping/provinces": {
+      "get": {
+        "tags": [
+          "Shipping"
+        ],
+        "summary": "Get list of provinces",
+        "description": "Returns all provinces/cities from GHN API",
+        "responses": {
+          "200": {
+            "description": "List of provinces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shipping/districts/{provinceId}": {
+      "get": {
+        "tags": [
+          "Shipping"
+        ],
+        "summary": "Get districts by province",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provinceId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Province/City ID from GHN"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of districts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shipping/wards/{districtId}": {
+      "get": {
+        "tags": [
+          "Shipping"
+        ],
+        "summary": "Get wards by district",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "districtId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "District ID from GHN"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of wards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shipping/calculate-fee": {
+      "post": {
+        "tags": [
+          "Shipping"
+        ],
+        "summary": "Calculate shipping fee",
+        "description": "Calculate shipping fee based on GHN API",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShippingFeeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipping fee result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Shipping fee details from GHN"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/receive": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Confirm order received (buyer)",
+        "description": "Buyer confirms receiving the order. Order must be in DELIVERED status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Funds will be released to seller after 48 hours"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order not in DELIVERED status"
+          },
+          "403": {
+            "description": "Not the buyer"
+          }
+        }
+      }
+    },
+    "/orders/{id}/pickup": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Mark order as waiting for pickup (admin)",
+        "description": "Admin marks confirmed order ready for pickup. Order must be in CONFIRMED status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated to WAITING_FOR_PICKUP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order must be CONFIRMED to pickup"
+          }
+        }
+      }
+    },
+    "/orders/{id}/ship": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Mark order as in transit (admin)",
+        "description": "Admin marks order as shipped. Order must be in WAITING_FOR_PICKUP status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated to IN_TRANSIT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order must be WAITING_FOR_PICKUP to ship"
+          }
+        }
+      }
+    },
+    "/orders/{id}/deliver": {
+      "put": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Mark order as delivered (admin)",
+        "description": "Admin marks order as delivered. If DEPOSIT_10 payment type, status becomes WAITING_REMAINING_PAYMENT.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated to DELIVERED or WAITING_REMAINING_PAYMENT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Order"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Order must be IN_TRANSIT to deliver"
           }
         }
       }

@@ -40,7 +40,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         },
         status: {
             type: String,
-            enum: ['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'],
+            enum: ['PENDING', 'APPROVED', 'RESERVED', 'SOLD', 'HIDDEN', 'REJECTED'],
             default: 'PENDING'
         },
         isInspected: {
@@ -85,6 +85,15 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             name: {
                 type: String,
                 required: [true, 'Brand name is required']
+            }
+        },
+        model: {
+            _id: {
+                type: Schema.Types.ObjectId,
+                ref: 'BicycleModel'
+            },
+            name: {
+                type: String
             }
         },
         seller: {

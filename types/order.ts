@@ -41,7 +41,7 @@ export interface IOrderPricing {
 export interface IOrderAmount {
     total: number;
     deposit: number;
-    //  shippingFee: number;
+    shippingFee: number;
     pricing: IOrderPricing;
     depositPaid: number;
     remainingPaid: number;
@@ -51,12 +51,14 @@ export interface IOrderAmount {
 
 
 
-// export interface IShippingAddress {
-//     street?: string;
-//     city?: string;
-//     district?: string;
-//     ward?: string;
-// }
+export interface IShippingAddress {
+    street?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    districtId?: number;
+    wardCode?: string;
+}
 
 
 
@@ -110,8 +112,8 @@ export interface IOrder {
     buyer: IOrderUser;
     seller: IOrderUser;
     bicycle: IOrderBicycle;
-    // shippingAddress: IShippingAddress;
-    // pickupAddress: IShippingAddress;
+    shippingAddress: IShippingAddress;
+    pickupAddress: IShippingAddress;
     amounts: IOrderAmount;
     transactions: IOrderTransaction[];
     review?: IOrderReview;

@@ -49,6 +49,37 @@ export const verifyToken = async (
     }
 };
 
+
+
+export const optionalAuth = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split('Bearer ')[1];
+            const decodedToken = await auth.verifyIdToken(token);
+            req.firebaseUser = {
+                uid: decodedToken.uid,
+                email: decodedToken.email,
+                name: decodedToken.name,
+                picture: decodedToken.picture,
+            };
+            const user = await User.findOne({ firebaseUId: decodedToken.uid });
+            if (user) {
+                req.user = user;
+            }
+        }
+    } catch (error) {
+        // Token invalid → treat as guest
+    }
+    next();
+};
+
+
+
 //User must register
 export const requireUser = async (
     req: AuthRequest,

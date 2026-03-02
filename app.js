@@ -23,7 +23,9 @@ const packageRouter = require('./routes/package').default;
 const adminInspectorRouter = require('./routes/admin/inspector').default;
 const inspectorRouter = require('./routes/inspector').default;
 const orderRouter = require('./routes/order').default;
-
+const bicycleModelRouter = require('./routes/bicycleModel').default;
+const walletRouter = require('./routes/wallet').default;
+const shippingRouter = require('./routes/shipping').default;
 var app = express();
 
 // Trust proxy for Render
@@ -62,5 +64,7 @@ app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/inspectors', inspectorRouter);
 app.use('/api/orders', orderRouter);
-
+app.use('/api/bicycle-models', bicycleModelRouter);
+app.use('/api/wallets', walletRouter);
+app.use('/api/shipping', shippingRouter);
 module.exports = app;
