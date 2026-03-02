@@ -1,10 +1,10 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthRequest } from '../types';
 import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
 import WithdrawRequest from '../models/WithdrawRequest';
 import mongoose from 'mongoose';
-
+import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
@@ -16,7 +16,7 @@ export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
 };
 
 const generateCode = (prefix: string) => {
-    const d = new Date().toISOString().replace(/-/g, '');
+    const d = new Date().toISOString().replace(/[-T:.Z]/g, ''); // Remove all special chars
     return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
 };
 
@@ -98,37 +98,51 @@ export const depositToWallet = async (
 ): Promise<void> => {
     try {
         const userId = req.user!._id;
-        const { amount } = req.body;
+        const { amount, bankCode } = req.body;
+        //           ^^^^^^^^ thêm bankCode (optional, user có thể chọn trước ngân hàng)
 
         const wallet = await getOrCreateWallet(userId);
-
-        // --- MOCK DEPOSIT (replace with VNPay when integrating) ---
-        const balanceBefore = wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance;
-        wallet.totalEarn += amount;
-        wallet.totalReceived += amount;
-        await wallet.save();
+        
+        // Tạo mã giao dịch nội bộ — dùng để MAP khi VNPay callback về
+        const txnRef = generateCode('DEP');
 
         await Transaction.create({
-            transactionCode: generateCode('DEP'),
-            paymentMethod: 'MOCK',    // change to 'VNPAY' when integrating
+            transactionCode: txnRef,          // Internal ref code for mapping
+            paymentMethod: 'VNPAY',
             walletId: wallet._id,
             type: 'DEPOSIT',
             amount,
-            balanceBefore,
-            balanceAfter: balanceBefore + amount,
-            description: `Deposit to wallet (mock)`,
-            paymentGateway: 'MOCK',   // change to 'VNPAY'
+            balanceBefore: wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance,
+            balanceAfter: 0,                  // Unknown yet, will update on callback
+            description: `Deposit ${amount.toLocaleString()} VND to wallet via VNPay`,
+            paymentGateway: 'VNPAY',
+            gatewayTransactionId: '',         // Not available yet, VNPay will provide
+            gatewayResponseCode: '',          // Not available yet
+            data: { status: 'PENDING', userId: userId.toString() },
         });
-        // --- END MOCK ---
 
-        res.status(201).json({
-            success: true,
-            message: 'Deposit successful',
-            data: {
-                wallet: await getOrCreateWallet(userId),
-                depositAmount: amount
-            }
+        let ipAddr = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+            || req.socket.remoteAddress
+            || '127.0.0.1';
+        // VNPay doesn't accept IPv6 — convert ::1 and ::ffff:x.x.x.x to IPv4
+        if (ipAddr === '::1') ipAddr = '127.0.0.1';
+        if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
+               // Gọi VNPay service tạo URL
+        const paymentUrl = createPaymentUrl({
+            amount,
+            orderId: txnRef,                     // Gửi mã nội bộ cho VNPay
+            orderInfo: `Deposit+${txnRef}`,
+            ipAddr,
+            bankCode,                            // Optional
         });
+
+        // Trả URL cho frontend — KHÔNG cộng tiền ở đây!
+        res.status(200).json({
+            success: true,
+            message: 'Redirect user to paymentUrl to complete deposit',
+            data: { paymentUrl, txnRef }
+        });
+
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -136,6 +150,168 @@ export const depositToWallet = async (
         });
     }
 };
+
+
+
+// GET /api/wallets/vnpay-return
+export const vnpayReturn = async (
+    req: Request,       // ← Request thường, KHÔNG phải AuthRequest (không có JWT)
+    res: Response
+): Promise<void> => {
+    try {
+        const vnpParams = req.query as Record<string, string>;
+        // req.query chứa tất cả params VNPay gửi về qua URL
+        const isValid = verifyReturnUrl(vnpParams);
+        if (!isValid) {
+            // Chữ ký sai → có thể bị giả mạo → REJECT
+            res.status(400).json({
+                success: false,
+                message: 'Invalid signature from VNPay'
+            });
+            return;
+        }
+        const txnRef = vnpParams['vnp_TxnRef'];           // Mã giao dịch CỦA MÌNH
+        const responseCode = vnpParams['vnp_ResponseCode']; // '00' = OK, khác = fail
+        const vnpAmount = parseInt(vnpParams['vnp_Amount']) / 100;  // Chia 100 lại
+        const gatewayTxnId = vnpParams['vnp_TransactionNo'] || '';  // Mã giao dịch VNPay cấp
+
+                const transaction = await Transaction.findOne({
+            transactionCode: txnRef,     // Map theo mã nội bộ
+            type: 'DEPOSIT',
+            'data.status': 'PENDING',    // Chỉ tìm PENDING (chưa xử lý)
+        });
+
+        if (!transaction) {
+            // Không tìm thấy HOẶC đã xử lý rồi (duplicate callback)
+            res.status(404).json({ success: false, message: 'Transaction not found or already processed' });
+            return;
+        }
+
+
+                if (responseCode !== '00') {
+            transaction.data = { ...transaction.data, status: 'FAILED' };
+            transaction.gatewayResponseCode = responseCode;
+            transaction.gatewayTransactionId = gatewayTxnId;
+            await transaction.save();
+            // Không cộng tiền! Chỉ update transaction → FAILED
+
+            res.status(400).json({
+                success: false,
+                message: getResponseMessage(responseCode),
+                data: { txnRef, responseCode }
+            });
+            return;
+        }
+                const wallet = await Wallet.findById(transaction.walletId);
+        if (!wallet) {
+            res.status(404).json({ success: false, message: 'Wallet not found' });
+            return;
+        }
+
+        const balanceBefore = wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance;
+
+        // ⭐ CỘNG TIỀN VÀO WALLET
+        wallet.totalEarn += vnpAmount;      // Tổng tiền kiếm được tăng
+        wallet.totalReceived += vnpAmount;  // Tổng tiền nạp tăng
+        await wallet.save();
+        // availableBalance (virtual) = totalEarn - totalWithdrawn - frozenBalance
+        // → Tự động tăng lên vnpAmount
+        transaction.balanceBefore = balanceBefore;
+        transaction.balanceAfter = balanceBefore + vnpAmount;
+        transaction.gatewayTransactionId = gatewayTxnId;
+        transaction.gatewayResponseCode = responseCode;
+        transaction.data = { ...transaction.data, status: 'SUCCESS' };
+        await transaction.save();
+        
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (frontendUrl) {
+            // Nếu có frontend → redirect user về trang wallet
+            res.redirect(`${frontendUrl}/wallet?deposit=success&amount=${vnpAmount}`);
+        } else {
+            // Không có frontend → trả JSON (test bằng browser/Postman)
+            res.status(200).json({
+                success: true,
+                message: `Nạp ${vnpAmount.toLocaleString()}đ thành công`,
+                data: { txnRef, amount: vnpAmount }
+            });
+        }
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
+
+export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const vnpParams = req.query as Record<string, string>;
+
+        // Verify
+        if (!verifyReturnUrl(vnpParams)) {
+            res.status(200).json({ RspCode: '97', Message: 'Invalid checksum' });
+            return;
+        }
+
+        const txnRef = vnpParams['vnp_TxnRef'];
+        const responseCode = vnpParams['vnp_ResponseCode'];
+        const vnpAmount = parseInt(vnpParams['vnp_Amount']) / 100;
+        const gatewayTxnId = vnpParams['vnp_TransactionNo'] || '';
+
+        const transaction = await Transaction.findOne({ transactionCode: txnRef, type: 'DEPOSIT' });
+
+        if (!transaction) {
+            res.status(200).json({ RspCode: '01', Message: 'Order not found' });
+            return;
+        }
+
+        // Đã xử lý rồi → skip
+        if (transaction.data?.status === 'SUCCESS' || transaction.data?.status === 'FAILED') {
+            res.status(200).json({ RspCode: '02', Message: 'Order already processed' });
+            return;
+        }
+
+        // Check số tiền khớp
+        if (transaction.amount !== vnpAmount) {
+            res.status(200).json({ RspCode: '04', Message: 'Invalid amount' });
+            return;
+        }
+
+        // Thanh toán fail
+        if (responseCode !== '00') {
+            transaction.data = { ...transaction.data, status: 'FAILED' };
+            transaction.gatewayResponseCode = responseCode;
+            transaction.gatewayTransactionId = gatewayTxnId;
+            await transaction.save();
+            res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+            return;
+        }
+
+        // Thanh toán OK → cộng tiền (giống vnpayReturn)
+        const wallet = await Wallet.findById(transaction.walletId);
+        if (!wallet) {
+            res.status(200).json({ RspCode: '01', Message: 'Wallet not found' });
+            return;
+        }
+
+        const balanceBefore = wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance;
+        wallet.totalEarn += vnpAmount;
+        wallet.totalReceived += vnpAmount;
+        await wallet.save();
+
+        transaction.balanceBefore = balanceBefore;
+        transaction.balanceAfter = balanceBefore + vnpAmount;
+        transaction.gatewayTransactionId = gatewayTxnId;
+        transaction.gatewayResponseCode = responseCode;
+        transaction.data = { ...transaction.data, status: 'SUCCESS' };
+        await transaction.save();
+
+        res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+    } catch (error: any) {
+        res.status(200).json({ RspCode: '99', Message: 'Unknown error' });
+    }
+};
+
 
 
 // POST /wallets/withdraw - Create withdraw request
