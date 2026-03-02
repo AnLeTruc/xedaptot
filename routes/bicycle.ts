@@ -8,7 +8,7 @@ import {
     deleteBicycle,
     getBicycleStatus
 } from '../controllers/bicycleController';
-import { verifyToken, requireUser } from '../middleware/auth';
+import { verifyToken, requireUser, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
     createBicycleSchema,
@@ -24,9 +24,11 @@ const router = Router();
 
 // Public routes
 router.get('/',
+    optionalAuth,
     validate(getBicyclesQuerySchema, 'query'),
     getAllBicycles
 );
+
 
 // Protected: Get my bicycles (must be before /:id)
 router.get('/my',

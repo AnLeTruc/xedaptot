@@ -31,7 +31,7 @@ export const createOrder = async (
         if (bicycle.seller._id.toString() === buyer._id.toString()) {
             return res.status(400).json({ success: false, message: 'Cannot purchase your own bicycle' });
         }
-        // Check if bicycle is already reserved
+        // ktra có ng đặt chưa (ko đặt trùng)
         const existing = await Order.findOne({
             'bicycle._id': bicycleId,
             status: {

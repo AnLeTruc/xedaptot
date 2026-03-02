@@ -4,6 +4,7 @@ import Category from '../models/Category';
 import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
+import User from '../models/User';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -53,7 +54,7 @@ export const getMyBicycles = async (
 
 // GET /api/bicycles
 export const getAllBicycles = async (
-    req: Request,
+    req: AuthRequest,
     res: Response
 ): Promise<void> => {
     try {
@@ -71,9 +72,25 @@ export const getAllBicycles = async (
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
         const filter: any = {};
-        if (status) {
-            filter.status = status;
+
+        const userRoles = req.user?.roles || [];
+        const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
+
+        if (isPrivileged) {
+            if (status) {
+                filter.status = status;
+            }
+        } else {
+            if (status && status !== 'APPROVED') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. You can only view APPROVED bicycles.'
+                });
+                return;
+            }
+            filter.status = 'APPROVED';
         }
+
         if (condition) {
             filter.condition = condition;
         }
@@ -275,6 +292,13 @@ export const createBicycle = async (
             location,
             images: images
         });
+
+        if (!req.user!.roles.includes('SELLER')) {
+            await User.findByIdAndUpdate(req.user!._id, {
+                $addToSet: { roles: 'SELLER' }
+            });
+            req.user!.roles.push('SELLER' as any);
+        }
 
         res.status(201).json({
             success: true,
