@@ -10,6 +10,8 @@ export type TransactionType =
     | 'FORFEIT'         // Buyer hủy sau confirm → seller nhận cọc
     | 'WITHDRAW';       // Seller rút tiền
 
+export type PaymentMethod = 'WALLET' | 'SYSTEM' | 'BANK_TRANSFER' | 'VNPAY';
+
 
 export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
 
