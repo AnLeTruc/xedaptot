@@ -46,6 +46,15 @@ const userSchema = new Schema<IUserDocument>(
                 type: String,
                 required: true
             },
+            provinceId: {
+                type: Number
+            },
+            districtId: {
+                type: Number
+            },
+            wardCode: {
+                type: String
+            },
             isDefault: {
                 type: Boolean,
                 default: false
@@ -103,11 +112,11 @@ const userSchema = new Schema<IUserDocument>(
             type: Date,
             select: false
         },
-        passwordResetTokenHash:{
+        passwordResetTokenHash: {
             type: String,
             select: false
         },
-        passwordResetTokenExpires:{
+        passwordResetTokenExpires: {
             type: Date,
             select: false
         }

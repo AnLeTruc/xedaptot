@@ -249,6 +249,7 @@ export const submitReport = async (
         // Update bicycle
         bicycle.isInspected = true;
         bicycle.inspectionStatus = isPassed ? 'COMPLETED' : 'REJECTED';
+        bicycle.status = isPassed ? 'APPROVED' : 'REJECTED';
         bicycle.inspectionReportId = report._id;
         await bicycle.save();
 

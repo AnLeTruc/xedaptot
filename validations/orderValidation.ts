@@ -2,8 +2,7 @@ import { z } from 'zod';
 export const createOrderSchema = z.object({
     bicycleId: z.string().min(1),
     paymentType: z.enum(['DEPOSIT_10', 'FULL_100']),
-    // shippingAddressId: z.string().min(1),  // TODO: Team Shipping uncomment
-    // shippingFee: z.number().min(0).optional(),  // TODO: Team Shipping uncomment
+    shippingAddressId: z.string().min(1),
     discountAmount: z.number().min(0).optional(),
     discountPercent: z.number().min(0).max(100).optional(),
     discountReason: z.string().optional(),

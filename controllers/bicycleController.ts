@@ -3,7 +3,8 @@ import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
-
+import BicycleModel from '../models/BicycleModel';
+import User from '../models/User';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -53,7 +54,7 @@ export const getMyBicycles = async (
 
 // GET /api/bicycles
 export const getAllBicycles = async (
-    req: Request,
+    req: AuthRequest,
     res: Response
 ): Promise<void> => {
     try {
@@ -71,9 +72,25 @@ export const getAllBicycles = async (
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
         const filter: any = {};
-        if (status) {
-            filter.status = status;
+
+        const userRoles = req.user?.roles || [];
+        const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
+
+        if (isPrivileged) {
+            if (status) {
+                filter.status = status;
+            }
+        } else {
+            if (status && status !== 'APPROVED') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. You can only view APPROVED bicycles.'
+                });
+                return;
+            }
+            filter.status = 'APPROVED';
         }
+
         if (condition) {
             filter.condition = condition;
         }
@@ -188,6 +205,7 @@ export const createBicycle = async (
             usageMonths,
             categoryId,
             brandId,
+            modelId,
             specifications,
             location,
             images       // upload sau 
@@ -232,6 +250,22 @@ export const createBicycle = async (
             }
         }
 
+        let modelData = undefined;
+        if (modelId) {
+            const modelDoc = await BicycleModel.findById(modelId);
+            if (!modelDoc) {
+                res.status(400).json({ success: false, message: 'Bicycle model not found' });
+                return;
+            }
+            if (brandId && modelDoc.brand._id.toString() !== brandId) {
+                res.status(400).json({ success: false, message: 'Model does not belong to the selected brand' });
+                return;
+            }
+            modelData = { _id: modelDoc._id, name: modelDoc.name };
+        }
+
+
+
 
         // TẠO BICYCLE
         const bicycle = await Bicycle.create({
@@ -247,6 +281,7 @@ export const createBicycle = async (
                 name: categoryDoc.name
             },
             brand: brandData,
+            model: modelData,
             seller: {
                 _id: req.user._id,
                 fullName: req.user.fullName,
@@ -257,6 +292,13 @@ export const createBicycle = async (
             location,
             images: images
         });
+
+        if (!req.user!.roles.includes('SELLER')) {
+            await User.findByIdAndUpdate(req.user!._id, {
+                $addToSet: { roles: 'SELLER' }
+            });
+            req.user!.roles.push('SELLER' as any);
+        }
 
         res.status(201).json({
             success: true,

@@ -39,6 +39,9 @@ export interface IAddress {
     ward?: string;
     district?: string;
     city: string;
+    provinceId?: number;     // GHN Province ID
+    districtId?: number;     // GHN District ID
+    wardCode?: string;       // GHN Ward Code
     isDefault: boolean;
 }
 
@@ -78,3 +81,4 @@ export interface ICategoryDocument extends ICategory, Document {
 
 export * from './inspectionReport';
 export * from './notification';
+export * from './bicycleModel';
