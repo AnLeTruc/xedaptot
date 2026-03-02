@@ -40,7 +40,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         },
         status: {
             type: String,
-            enum: ['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'],
+            enum: ['PENDING', 'APPROVED', 'RESERVED', 'SOLD', 'HIDDEN', 'REJECTED'],
             default: 'PENDING'
         },
         isInspected: {
