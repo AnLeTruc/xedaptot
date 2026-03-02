@@ -101,7 +101,7 @@ export interface IBicycle {
     images?: IBicycleImage[];
 }
 
-export interface IBicycleDocument extends IBicycle, Document {
+export interface IBicycleDocument extends IBicycle, Omit<Document, 'model'> {
     createdAt: Date;
     updatedAt: Date;
 }
