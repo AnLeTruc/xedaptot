@@ -3,9 +3,10 @@ import { AuthRequest } from '../types';
 import Order from '../models/Order';
 import Bicycle from '../models/Bicycle';
 import User from '../models/User';
-// import Wallet from '../models/Wallet';
-// import Transaction from '../models/Transaction';
-import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order'
+import Wallet from '../models/Wallet';
+import Transaction from '../models/Transaction';
+import { getOrCreateWallet } from './walletController';
+import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order';
 import { calculateShippingFee } from '../services/shippingService';
 import mongoose from 'mongoose';
 
@@ -172,24 +173,23 @@ export const payOrder = async (
     try {
         const order = await Order.findById(req.params.id);
         if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
-            res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
+            res.status(404).json({ success: false, message: 'Order not found' });
             return;
         }
+
+        // Check hết hạn giữ xe
         if (order.reservationExpiresAt && new Date() > order.reservationExpiresAt) {
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-            res.status(400).json({
-                success: false,
-                message: 'Reservation has expired'
-            })
+            res.status(400).json({ success: false, message: 'Reservation has expired' });
+            return;
         }
 
-
-        let buyerPays = 0, txnType: 'DEPOSIT' | 'FULL' | 'REMAINING' = 'DEPOSIT', nextStatus = '';
+        // Xác định số tiền cần trả và loại giao dịch
+        let buyerPays = 0;
+        let txnType: 'DEPOSIT' | 'FULL' | 'REMAINING' = 'DEPOSIT';
+        let nextStatus = '';
 
         switch (order.status) {
             case 'RESERVED_FULL':
@@ -203,38 +203,46 @@ export const payOrder = async (
                 nextStatus = 'WAITING_SELLER_CONFIRMATION';
                 break;
             case 'WAITING_REMAINING_PAYMENT':
-                buyerPays = order.amounts.total - order.amounts.deposit;
+                buyerPays = order.amounts.total - order.amounts.depositPaid;
                 txnType = 'REMAINING';
                 nextStatus = 'COMPLETED';
                 break;
             default:
-                res.status(400).json({
-                    success: false,
-                    message: 'Order is not in a valid payment status'
-                });
+                res.status(400).json({ success: false, message: `Cannot pay in ${order.status} status` });
+                return;
         }
 
-        // const buyerWallet = await Wallet.findOne({ userId: req.user!._id });
-        // if (!buyerWallet || (buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance) < buyerPays) {
-        //     res.status(400).json({ success: false, message: 'Insufficient balance', required: buyerPays });
-        // }
-        //
-        // const balanceBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
-        // buyerWallet.frozenBalance += buyerPays;
-        // await buyerWallet.save();
-        //
-        // await Transaction.create({
-        //     transactionCode: generateCode('TXN'),
-        //     amount: buyerPays,
-        //     paymentMethod: 'WALLET',
-        //     walletId: buyerWallet._id,
-        //     type: 'ESCROW_IN',
-        //     balanceBefore,
-        //     balanceAfter: balanceBefore - buyerPays,
-        //     description: `Payment ${txnType} → Escrow - ${order.orderCode}`,
-        //     orderId: order._id,
-        // });
+        // Check ví buyer
+        const buyerWallet = await getOrCreateWallet(req.user!._id);
+        const availableBalance = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+        if (availableBalance < buyerPays) {
+            res.status(400).json({
+                success: false,
+                message: 'Insufficient balance',
+                data: { availableBalance, required: buyerPays }
+            });
+            return;
+        }
 
+        // Freeze tiền buyer (chuyển vào escrow)
+        const balanceBefore = availableBalance;
+        buyerWallet.frozenBalance += buyerPays;
+        await buyerWallet.save();
+
+        // Tạo Transaction record
+        const txn = await Transaction.create({
+            transactionCode: generateCode('TXN'),
+            amount: buyerPays,
+            paymentMethod: 'WALLET',
+            walletId: buyerWallet._id,
+            type: 'ESCROW_IN',
+            balanceBefore,
+            balanceAfter: balanceBefore - buyerPays,
+            description: `Payment ${txnType} → Escrow - ${order.orderCode}`,
+            orderId: order._id,
+        });
+
+        // Cập nhật amounts trong order
         if (txnType === 'DEPOSIT') {
             order.amounts.depositPaid = buyerPays;
         } else if (txnType === 'FULL') {
@@ -245,36 +253,34 @@ export const payOrder = async (
         }
         order.amounts.escrowAmount += buyerPays;
 
+        // Cập nhật status
         order.status = nextStatus as any;
 
-        // order.transactions.push({
-        //     transactionCode: generateCode('TXN'),
-        //     type: txnType,
-        //     amount: buyerPays,
-        //     status: 'SUCCESS',
-        //     createdAt: new Date(),
-        //     walletId: buyerWallet._id,
-        //     paymentMethod: 'WALLET',
-        //     balanceBefore,
-        //     balanceAfter: balanceBefore - buyerPays,
-        //     description: `Payment ${txnType} - ${order.orderCode}`,
-        //     paymentGateway: '',
-        //     gatewayTransactionId: '',
-        //     gatewayResponseCode: ''
-        // } as any);
+        // Push transaction summary vào order
+        order.transactions.push({
+            transactionCode: txn.transactionCode,
+            type: txnType,
+            amount: buyerPays,
+            status: 'SUCCESS',
+            createdAt: new Date(),
+            walletId: buyerWallet._id,
+            paymentMethod: 'WALLET',
+            balanceBefore,
+            balanceAfter: balanceBefore - buyerPays,
+            description: `Payment ${txnType} - ${order.orderCode}`,
+            paymentGateway: '',
+            gatewayTransactionId: '',
+            gatewayResponseCode: ''
+        } as any);
 
         if (nextStatus === 'COMPLETED') order.buyerConfirmedAt = new Date();
         await order.save();
 
         res.status(200).json({ success: true, data: order });
-
     } catch (error: any) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        })
+        res.status(500).json({ success: false, message: error.message });
     }
-}
+};
 
 
 
@@ -339,60 +345,93 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 };
 
 
-// CANCEL BEFORE SELLER CONFIRM
+// CANCEL ORDER
 export const cancelOrder = async (req: AuthRequest, res: Response) => {
-    const order = await Order.findById(req.params.id);
-    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Permission denied' });
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Permission denied' });
+        }
 
-    // TODO [OTHER DEV - Payment Integration]:
-    // Uncomment when integrating VNPay. Wallet uses userId (not sellerId).
-    // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+        const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
 
-    // Before seller confirm → refund
-    if (['RESERVED_FULL', 'RESERVED_DEPOSIT', 'WAITING_SELLER_CONFIRMATION'].includes(order.status)) {
-        const refund = order.amounts.escrowAmount;
-        // if (refund > 0 && buyerWallet) {
-        //     buyerWallet.frozenBalance -= refund;
-        //     buyerWallet.totalEarn += refund;
-        //     await buyerWallet.save();
-        //     await Transaction.create({
-        //         transactionCode: generateCode('TXN'), paymentMethod: 'SYSTEM',
-        //         walletId: buyerWallet._id, type: 'REFUND', amount: refund,
-        //         balanceBefore: balBefore, balanceAfter: balBefore + refund,
-        //         description: `Refund - ${order.orderCode}`, orderId: order._id
-        //     });
-        // }
-        order.status = 'CANCELLED';
+        // Before seller confirm → hoàn 100%
+        if (['RESERVED_FULL', 'RESERVED_DEPOSIT', 'WAITING_SELLER_CONFIRMATION'].includes(order.status)) {
+            const refund = order.amounts.escrowAmount;
+            if (refund > 0 && buyerWallet) {
+                const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+                buyerWallet.frozenBalance -= refund;
+                await buyerWallet.save();
+
+                await Transaction.create({
+                    transactionCode: generateCode('TXN'),
+                    paymentMethod: 'SYSTEM',
+                    walletId: buyerWallet._id,
+                    type: 'REFUND',
+                    amount: refund,
+                    balanceBefore: balBefore,
+                    balanceAfter: balBefore + refund,
+                    description: `Refund - ${order.orderCode}`,
+                    orderId: order._id,
+                });
+
+                order.transactions.push({
+                    transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+                    createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
+                    balanceBefore: balBefore, balanceAfter: balBefore + refund,
+                    description: `Refund - ${order.orderCode}`,
+                    paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+                } as any);
+            }
+            order.status = 'CANCELLED';
+        }
+        // After seller confirm → mất cọc (chuyển cho Seller)
+        else if (['CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
+            const forfeit = order.amounts.escrowAmount;
+            const sellerWallet = await getOrCreateWallet(order.seller._id);
+
+            if (forfeit > 0 && buyerWallet) {
+                const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
+                buyerWallet.frozenBalance -= forfeit;
+                sellerWallet.totalReceived += forfeit;
+                sellerWallet.totalEarn += forfeit;
+                await buyerWallet.save();
+                await sellerWallet.save();
+
+                await Transaction.create({
+                    transactionCode: generateCode('TXN'),
+                    paymentMethod: 'SYSTEM',
+                    walletId: sellerWallet._id,
+                    type: 'FORFEIT',
+                    amount: forfeit,
+                    balanceBefore: sellerBalBefore,
+                    balanceAfter: sellerBalBefore + forfeit,
+                    description: `Buyer cancelled, deposit forfeited - ${order.orderCode}`,
+                    orderId: order._id,
+                });
+
+                order.transactions.push({
+                    transactionCode: generateCode('TXN'), type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
+                    createdAt: new Date(), walletId: sellerWallet._id, paymentMethod: 'SYSTEM',
+                    balanceBefore: sellerBalBefore, balanceAfter: sellerBalBefore + forfeit,
+                    description: `Buyer cancelled, deposit forfeited - ${order.orderCode}`,
+                    paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+                } as any);
+            }
+            order.status = 'CANCELLED_BY_BUYER';
+        } else {
+            return res.status(400).json({ success: false, message: `Cannot cancel order in ${order.status} status` });
+        }
+
+        order.cancelledAt = new Date();
+        order.cancelReason = req.body.reason || 'Cancelled by buyer';
+        order.amounts.escrowAmount = 0;
+        await order.save();
+        await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+        res.status(200).json({ success: true, data: order });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
     }
-    // After seller confirm → Forfeit deposit (transfer to Seller)
-    else if (['CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
-        const forfeit = order.amounts.escrowAmount;
-        // let sellerWallet = await Wallet.findOne({ userId: order.seller._id });
-        // if (!sellerWallet) sellerWallet = await Wallet.create({ userId: order.seller._id });
-        // if (forfeit > 0 && buyerWallet) {
-        //     buyerWallet.frozenBalance -= forfeit;
-        //     sellerWallet.totalReceived += forfeit;
-        //     sellerWallet.totalEarn += forfeit;
-        //     await buyerWallet.save();
-        //     await sellerWallet.save();
-        //     await Transaction.create({
-        //         transactionCode: generateCode('TXN'), paymentMethod: 'SYSTEM',
-        //         walletId: sellerWallet._id, type: 'FORFEIT', amount: forfeit,
-        //         balanceBefore: sellerBalBefore, balanceAfter: sellerBalBefore + forfeit,
-        //         description: `Buyer cancelled, deposit forfeited - ${order.orderCode}`, orderId: order._id
-        //     });
-        // }
-        order.status = 'CANCELLED_BY_BUYER';
-    } else {
-        return res.status(400).json({ success: false, message: `Cannot cancel order in ${order.status} status` });
-    }
-
-    order.cancelledAt = new Date();
-    order.cancelReason = req.body.reason || 'Cancelled by buyer';
-    order.amounts.escrowAmount = 0;
-    await order.save();
-    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-    res.status(200).json({ success: true, data: order });
 };
 
 
@@ -443,27 +482,54 @@ export const confirmOrder = async (req: AuthRequest, res: Response) => {
 
 
 export const rejectOrder = async (req: AuthRequest, res: Response) => {
-    const order = await Order.findById(req.params.id);
-    if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Permission denied' });
-    if (order.status !== 'WAITING_SELLER_CONFIRMATION') return res.status(400).json({ success: false, message: 'Invalid' });
-    // TODO [OTHER DEV - Payment Integration]:
-    // Uncomment when integrating VNPay. Wallet uses userId.
-    // const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
-    // const refund = order.amounts.escrowAmount;
-    // if (refund > 0 && buyerWallet) {
-    //     const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
-    //     buyerWallet.frozenBalance -= refund;
-    //     buyerWallet.totalEarn += refund;
-    //     await buyerWallet.save();
-    // }
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order || order.seller._id.toString() !== req.user!._id.toString()) {
+            return res.status(403).json({ success: false, message: 'Permission denied' });
+        }
+        if (order.status !== 'WAITING_SELLER_CONFIRMATION') {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
 
-    order.status = 'REJECTED';
-    order.cancelledAt = new Date();
-    order.cancelReason = req.body.reason || 'Rejected by seller';
-    order.amounts.escrowAmount = 0;
-    await order.save();
-    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-    res.status(200).json({ success: true, data: order });
+        // Hoàn tiền cho buyer
+        const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+        const refund = order.amounts.escrowAmount;
+        if (refund > 0 && buyerWallet) {
+            const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+            buyerWallet.frozenBalance -= refund;
+            await buyerWallet.save();
+
+            await Transaction.create({
+                transactionCode: generateCode('TXN'),
+                paymentMethod: 'SYSTEM',
+                walletId: buyerWallet._id,
+                type: 'REFUND',
+                amount: refund,
+                balanceBefore: balBefore,
+                balanceAfter: balBefore + refund,
+                description: `Seller rejected - Refund - ${order.orderCode}`,
+                orderId: order._id,
+            });
+
+            order.transactions.push({
+                transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+                createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
+                balanceBefore: balBefore, balanceAfter: balBefore + refund,
+                description: `Seller rejected - Refund - ${order.orderCode}`,
+                paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+            } as any);
+        }
+
+        order.status = 'REJECTED';
+        order.cancelledAt = new Date();
+        order.cancelReason = req.body.reason || 'Rejected by seller';
+        order.amounts.escrowAmount = 0;
+        await order.save();
+        await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+        res.status(200).json({ success: true, data: order });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 
@@ -486,26 +552,32 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
 
 
 
-// export const pickupOrder = async (req: AuthRequest, res: Response) => {
-//     const order = await Order.findById(req.params.id);
-//     if (!order || order.status !== 'CONFIRMED') return res.status(400).json({ success: false, message: 'Invalid' });
-//     order.status = 'WAITING_FOR_PICKUP';
-//     await order.save();
-//     res.status(200).json({ success: true, data: order });
-// };
+export const pickupOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.status !== 'CONFIRMED')
+        return res.status(400).json({ success: false, message: 'Order must be CONFIRMED to pickup' });
+    order.status = 'WAITING_FOR_PICKUP';
+    await order.save();
+    res.status(200).json({ success: true, data: order });
+};
 
-// export const shipOrder = async (req: AuthRequest, res: Response) => {
-//     const order = await Order.findById(req.params.id);
-//     if (!order || order.status !== 'WAITING_FOR_PICKUP') return res.status(400).json({ success: false, message: 'Invalid' });
-//     order.status = 'IN_TRANSIT';
-//     await order.save();
-//     res.status(200).json({ success: true, data: order });
-// };
+export const shipOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.status !== 'WAITING_FOR_PICKUP')
+        return res.status(400).json({ success: false, message: 'Order must be WAITING_FOR_PICKUP to ship' });
+    order.status = 'IN_TRANSIT';
+    await order.save();
+    res.status(200).json({ success: true, data: order });
+};
 
-// export const deliverOrder = async (req: AuthRequest, res: Response) => {
-//     const order = await Order.findById(req.params.id);
-//     if (!order || order.status !== 'IN_TRANSIT') return res.status(400).json({ success: false, message: 'Invalid' });
-//     order.status = order.paymentType === 'DEPOSIT_10' ? 'WAITING_REMAINING_PAYMENT' : 'DELIVERED';
-//     await order.save();
-//     res.status(200).json({ success: true, data: order });
-// };
+export const deliverOrder = async (req: AuthRequest, res: Response) => {
+    const order = await Order.findById(req.params.id);
+    if (!order || order.status !== 'IN_TRANSIT')
+        return res.status(400).json({ success: false, message: 'Order must be IN_TRANSIT to deliver' });
+
+    // Nếu DEPOSIT_10: chưa trả hết → chờ trả nốt
+    // Nếu FULL_100: đã trả hết → giao xong
+    order.status = order.paymentType === 'DEPOSIT_10' ? 'WAITING_REMAINING_PAYMENT' : 'DELIVERED';
+    await order.save();
+    res.status(200).json({ success: true, data: order });
+};

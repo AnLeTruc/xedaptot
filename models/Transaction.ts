@@ -12,7 +12,7 @@ const transactionSchema = new Schema<ITransactionDocument>(
         },
         paymentMethod: {
             type: String,
-            enum: ['WALLET', 'SYSTEM', 'BANK_TRANSFER'],
+            enum: ['WALLET', 'SYSTEM', 'BANK_TRANSFER', 'VNPAY'],
             default: 'WALLET'
         },
         data: {
@@ -29,7 +29,7 @@ const transactionSchema = new Schema<ITransactionDocument>(
         },
         type: {
             type: String,
-            enum: ['ESCROW_IN', 'ESCROW_RELEASE', 'REFUND', 'FORFEIT', 'WITHDRAW'],
+            enum: ['ESCROW_IN', 'ESCROW_RELEASE', 'REFUND', 'FORFEIT', 'WITHDRAW', 'DEPOSIT'],
             required: [true, 'Transaction type is required']
         },
         amount: {

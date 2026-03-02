@@ -13,6 +13,7 @@ router.post('/', validate(createOrderSchema, 'body'), ctrl.createOrder);
 router.post('/:id/pay', ctrl.payOrder);
 router.put('/:id/cancel', validate(cancelOrderSchema, 'body'), ctrl.cancelOrder);
 router.post('/:id/review', ctrl.reviewOrder);
+router.put('/:id/receive', ctrl.receiveOrder);
 
 // seller
 router.put('/:id/confirm', ctrl.confirmOrder);  
@@ -20,5 +21,8 @@ router.put('/:id/reject', validate(cancelOrderSchema, 'body'), ctrl.rejectOrder)
 
 // admin
 router.get('/', ctrl.getAllOrders);
+router.put('/:id/pickup', ctrl.pickupOrder);
+router.put('/:id/ship', ctrl.shipOrder);
+router.put('/:id/deliver', ctrl.deliverOrder);
 
 export default router;
