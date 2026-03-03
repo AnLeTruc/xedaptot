@@ -114,6 +114,7 @@ export const getBicyclesQuerySchema = z.object({
     condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']).optional(),
     category: z.string().optional(),
     brand: z.string().optional(),
+    sellerId: z.string().optional(),
     minPrice: z.string().optional(),
     maxPrice: z.string().optional(),
     city: z.string().optional(),

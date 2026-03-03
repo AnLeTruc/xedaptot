@@ -63,6 +63,7 @@ export const getAllBicycles = async (
             condition,
             category,
             brand,
+            sellerId,
             minPrice,
             maxPrice,
             city,
@@ -89,6 +90,11 @@ export const getAllBicycles = async (
                 return;
             }
             filter.status = 'APPROVED';
+        }
+
+        // Seller filter
+        if (sellerId) {
+            filter['seller._id'] = sellerId;
         }
 
         if (condition) {
