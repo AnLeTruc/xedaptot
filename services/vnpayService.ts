@@ -30,15 +30,14 @@ function sortObject(obj: Record<string, string>): Record<string, string> {
 
 
 function formatVnpDate(date: Date): string {
-    // VNPay yêu cầu format: yyyyMMddHHmmss
-    // VD: 2026-02-27 14:30:00 → "20260227143000"
+    const vnTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
     const pad = (n: number) => n.toString().padStart(2, '0');
-    return date.getFullYear().toString()
-        + pad(date.getMonth() + 1)  // month 0-indexed nên +1
-        + pad(date.getDate())
-        + pad(date.getHours())
-        + pad(date.getMinutes())
-        + pad(date.getSeconds());
+    return vnTime.getUTCFullYear().toString()
+        + pad(vnTime.getUTCMonth() + 1)
+        + pad(vnTime.getUTCDate())
+        + pad(vnTime.getUTCHours())
+        + pad(vnTime.getUTCMinutes())
+        + pad(vnTime.getUTCSeconds());
 }
 
 
@@ -47,9 +46,9 @@ export interface CreatePaymentUrlParams {
     amount: number;       // Số tiền VND (VD: 100000)
     orderId: string;      // Mã giao dịch CỦA MÌNH (VD: "DEP-20260227...")
     orderInfo: string;    // Nội dung hiển thị trên VNPay (VD: "Nap tien vi")
-    ipAddr: string;       
+    ipAddr: string;
     locale?: 'vn' | 'en'; // Ngôn ngữ hiển thị trên VNPay
-    bankCode?: string;    
+    bankCode?: string;
 }
 
 
@@ -90,7 +89,7 @@ export function createPaymentUrl(params: CreatePaymentUrlParams): string {
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
     // Gắn chữ ký vào params
-    vnpParams['vnp_SecureHash'] = signed; 
+    vnpParams['vnp_SecureHash'] = signed;
 
     // URL cuối: KHÔNG encode (VNPay yêu cầu — nên orderInfo không được có ký tự đặc biệt)
     return `${VNP_URL}?${querystring.stringify(vnpParams, { encode: false })}`;
@@ -115,7 +114,7 @@ export function verifyReturnUrl(vnpParams: Record<string, string>): boolean {
 
     // So sánh: chữ ký mình tạo === chữ ký VNPay gửi?
     return secureHash === checkSum;
-   
+
 }
 
 
