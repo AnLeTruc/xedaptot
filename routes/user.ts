@@ -14,6 +14,7 @@ import {
     purchasePackage,
     cancelUserPackage
 } from '../controllers/userPackageController';
+import { getMyInspectionRequests } from '../controllers/bicycleController';
 import { verifyToken, requireUser } from '../middleware/auth';
 
 const router = Router();
@@ -27,6 +28,9 @@ router.post('/addresses', verifyToken, requireUser, addAddress);
 router.put('/addresses/:id', verifyToken, requireUser, updateAddress);
 router.delete('/addresses/:id', verifyToken, requireUser, deleteAddress);
 router.put('/addresses/:id/default', verifyToken, requireUser, setDefaultAddress);
+
+// Inspection Requests
+router.get('/inspection-requests', verifyToken, requireUser, getMyInspectionRequests);
 
 // Packages (RESTful nested resource)
 router.get('/packages', verifyToken, requireUser, getMyPackages);
