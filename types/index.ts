@@ -28,6 +28,8 @@ export interface IUser {
     passwordResetVerifiedAt?: Date;
     passwordResetTokenHash?: string;
     passwordResetTokenExpires?: Date;
+    // Password Change Tracking
+    passwordChangedAt?: Date;
 
 }
 
