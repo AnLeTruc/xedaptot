@@ -571,7 +571,7 @@ export const addAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city, isDefault } = req.body;
+        const { label, street, ward, district, city, provinceId, districtId, wardCode, isDefault } = req.body;
 
         if (!label || !city) {
             res.status(400).json({
@@ -602,6 +602,9 @@ export const addAddress = async (
                         ward,
                         district,
                         city,
+                        provinceId,
+                        districtId,
+                        wardCode,
                         isDefault: isDefault || false
                     }
                 }
@@ -640,19 +643,30 @@ export const updateAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city } = req.body;
+        const { label, street, ward, district, city, provinceId, districtId, wardCode } = req.body;
+
+        // Smart $set: only update fields that are actually provided
+        const updates: Record<string, any> = {};
+        if (label !== undefined) updates['addresses.$.label'] = label;
+        if (street !== undefined) updates['addresses.$.street'] = street;
+        if (ward !== undefined) updates['addresses.$.ward'] = ward;
+        if (district !== undefined) updates['addresses.$.district'] = district;
+        if (city !== undefined) updates['addresses.$.city'] = city;
+        if (provinceId !== undefined) updates['addresses.$.provinceId'] = provinceId;
+        if (districtId !== undefined) updates['addresses.$.districtId'] = districtId;
+        if (wardCode !== undefined) updates['addresses.$.wardCode'] = wardCode;
+
+        if (Object.keys(updates).length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'No fields to update'
+            });
+            return;
+        }
 
         const updateAddress = await User.findOneAndUpdate(
             { _id: userId, 'addresses._id': id },
-            {
-                $set: {
-                    'addresses.$.label': label,
-                    'addresses.$.street': street,
-                    'addresses.$.ward': ward,
-                    'addresses.$.district': district,
-                    'addresses.$.city': city
-                }
-            },
+            { $set: updates },
             { new: true }
         );
 
