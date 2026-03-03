@@ -4,7 +4,7 @@ export type BicycleCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
 export type BicycleStatus = 'PENDING' | 'APPROVED' | 'RESERVED' | 'SOLD' | 'HIDDEN' | 'REJECTED';
 
-export type InspectionStatus = 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+export type InspectionStatus = 'PENDING' | 'REQUESTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
 
 

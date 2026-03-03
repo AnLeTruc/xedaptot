@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 // Notification Types
 export type NotificationType =
     | 'INSPECTION_ASSIGNED'      // Admin assigned inspection to inspector
+    | 'INSPECTION_REQUESTED'     // Seller requested inspection for bicycle
     | 'NEW_BICYCLE_POSTED'       // New bicycle available for inspection
     | 'INSPECTION_COMPLETED'     // Inspection completed (for seller)
     | 'GENERAL';

@@ -5,6 +5,7 @@ import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
+import Notification from '../models/Notification';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -63,6 +64,7 @@ export const getAllBicycles = async (
             condition,
             category,
             brand,
+            sellerId,
             minPrice,
             maxPrice,
             city,
@@ -89,6 +91,11 @@ export const getAllBicycles = async (
                 return;
             }
             filter.status = 'APPROVED';
+        }
+
+        // Seller filter
+        if (sellerId) {
+            filter['seller._id'] = sellerId;
         }
 
         if (condition) {
@@ -535,4 +542,150 @@ export const getBicycleStatus = async (
     }
 };
 
+// POST /api/bicycles/:id/request-inspection
+export const requestInspection = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
 
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        const bicycle = await Bicycle.findById(id);
+        if (!bicycle) {
+            res.status(404).json({
+                success: false,
+                message: 'Bicycle not found'
+            });
+            return;
+        }
+
+        // Verify ownership
+        if (bicycle.seller._id.toString() !== user._id.toString()) {
+            res.status(403).json({
+                success: false,
+                message: 'You can only request inspection for your own bicycles'
+            });
+            return;
+        }
+
+        // Check bicycle status
+        if (bicycle.status !== 'PENDING') {
+            res.status(400).json({
+                success: false,
+                message: 'Inspection can only be requested for bicycles with PENDING status'
+            });
+            return;
+        }
+
+        // Check inspection status (prevent duplicate requests)
+        if (bicycle.inspectionStatus !== 'PENDING') {
+            res.status(400).json({
+                success: false,
+                message: `Inspection already ${bicycle.inspectionStatus!.toLowerCase()}. Cannot request again.`
+            });
+            return;
+        }
+
+        // Update inspection status
+        bicycle.inspectionStatus = 'REQUESTED';
+        await bicycle.save();
+
+        // Notify all admins
+        const admins = await User.find({ roles: 'ADMIN', isActive: true }).select('_id');
+        if (admins.length > 0) {
+            const notifications = admins.map(admin => ({
+                userId: admin._id,
+                type: 'INSPECTION_REQUESTED' as const,
+                title: 'New Inspection Request',
+                content: `Seller ${user.fullName || user.email} has requested inspection for: ${bicycle.title}`,
+                metadata: { bicycleId: bicycle._id }
+            }));
+            await Notification.insertMany(notifications);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Inspection requested successfully. An admin will assign an inspector shortly.',
+            data: {
+                bicycleId: bicycle._id,
+                title: bicycle.title,
+                inspectionStatus: bicycle.inspectionStatus
+            }
+        });
+    } catch (error: any) {
+        console.error('Request inspection error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to request inspection'
+        });
+    }
+};
+
+// GET /api/users/inspection-requests
+export const getMyInspectionRequests = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        const { status, page = '1', limit = '10' } = req.query;
+
+        const filter: any = {
+            'seller._id': user._id,
+            inspectionStatus: { $ne: 'PENDING' }
+        };
+
+        // Optional: filter by specific inspection status
+        if (status) {
+            filter.inspectionStatus = status;
+        }
+
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(50, Math.max(1, Number(limit)));
+        const skip = (pageNum - 1) * limitNum;
+
+        const [bicycles, total] = await Promise.all([
+            Bicycle.find(filter)
+                .select('title price condition status inspectionStatus images createdAt')
+                .sort('-updatedAt')
+                .skip(skip)
+                .limit(limitNum),
+            Bicycle.countDocuments(filter)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: bicycles,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: total > 0 ? Math.ceil(total / limitNum) : 0
+            }
+        });
+    } catch (error: any) {
+        console.error('Get inspection requests error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to fetch inspection requests'
+        });
+    }
+};
