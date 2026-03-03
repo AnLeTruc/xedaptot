@@ -289,6 +289,7 @@
             "type": "string",
             "enum": [
               "PENDING",
+              "REQUESTED",
               "ASSIGNED",
               "IN_PROGRESS",
               "COMPLETED",
@@ -342,6 +343,7 @@
             "type": "string",
             "enum": [
               "INSPECTION_ASSIGNED",
+              "INSPECTION_REQUESTED",
               "NEW_BICYCLE_POSTED",
               "INSPECTION_COMPLETED",
               "GENERAL"
@@ -1434,6 +1436,105 @@
     }
   },
   "paths": {
+    "/auth/change-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Change password (authenticated)",
+        "description": "Allows an authenticated email-registered user to change their password. Google-authenticated users cannot use this endpoint.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword",
+                  "confirmPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "description": "The user's current password",
+                    "example": "oldPass123"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6,
+                    "description": "New password (min 6 characters)",
+                    "example": "newPass456"
+                  },
+                  "confirmPassword": {
+                    "type": "string",
+                    "description": "Must match newPassword",
+                    "example": "newPass456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password changed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password changed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or Google account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized or current password incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts (rate limited)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/brands": {
       "get": {
         "tags": [
@@ -3013,7 +3114,10 @@
                 "type": "object",
                 "required": [
                   "label",
-                  "city"
+                  "city",
+                  "provinceId",
+                  "districtId",
+                  "wardCode"
                 ],
                 "properties": {
                   "label": {
@@ -3026,15 +3130,30 @@
                   },
                   "ward": {
                     "type": "string",
-                    "example": "Ben Nghe"
+                    "example": "Phường Bến Nghé"
                   },
                   "district": {
                     "type": "string",
-                    "example": "1"
+                    "example": "Quận 1"
                   },
                   "city": {
                     "type": "string",
-                    "example": "Ho Chi Minh"
+                    "example": "Hồ Chí Minh"
+                  },
+                  "provinceId": {
+                    "type": "integer",
+                    "description": "GHN Province ID",
+                    "example": 202
+                  },
+                  "districtId": {
+                    "type": "integer",
+                    "description": "GHN District ID",
+                    "example": 1442
+                  },
+                  "wardCode": {
+                    "type": "string",
+                    "description": "GHN Ward Code",
+                    "example": "21012"
                   },
                   "isDefault": {
                     "type": "boolean",
@@ -3146,6 +3265,18 @@
                   },
                   "city": {
                     "type": "string"
+                  },
+                  "provinceId": {
+                    "type": "integer",
+                    "description": "GHN Province ID"
+                  },
+                  "districtId": {
+                    "type": "integer",
+                    "description": "GHN District ID"
+                  },
+                  "wardCode": {
+                    "type": "string",
+                    "description": "GHN Ward Code"
                   }
                 }
               }
@@ -3592,6 +3723,14 @@
           {
             "name": "brand",
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sellerId",
+            "in": "query",
+            "description": "Filter bicycles by seller ID",
             "schema": {
               "type": "string"
             }
@@ -4120,6 +4259,127 @@
           },
           "404": {
             "description": "Category not found"
+          }
+        }
+      }
+    },
+    "/users/inspection-requests": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get my inspection requests (seller)",
+        "description": "Returns paginated list of seller's bicycles that have been submitted for inspection (inspectionStatus != PENDING).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by inspection status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "REQUESTED",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of inspection requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "condition": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "inspectionStatus": {
+                            "type": "string"
+                          },
+                          "images": {
+                            "type": "array",
+                            "items": {
+                              "type": "object"
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -5064,6 +5324,80 @@
           },
           "404": {
             "description": "No inspection report found"
+          }
+        }
+      }
+    },
+    "/bicycles/{id}/request-inspection": {
+      "post": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Request inspection for bicycle (seller)",
+        "description": "Seller requests inspection for their PENDING bicycle. Sets inspectionStatus to REQUESTED and notifies admins.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Bicycle ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inspection requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Inspection requested successfully. An admin will assign an inspector shortly."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bicycleId": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "inspectionStatus": {
+                          "type": "string",
+                          "example": "REQUESTED"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bicycle not in PENDING status or inspection already requested"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Not the owner of this bicycle"
+          },
+          "404": {
+            "description": "Bicycle not found"
           }
         }
       }

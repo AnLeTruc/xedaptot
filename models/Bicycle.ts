@@ -50,7 +50,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         // Inspection fields
         inspectionStatus: {
             type: String,
-            enum: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
+            enum: ['PENDING', 'REQUESTED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
             default: 'PENDING',
             index: true
         },

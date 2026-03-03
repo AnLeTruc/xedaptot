@@ -10,7 +10,7 @@ const notificationSchema = new Schema<INotificationDocument>({
     },
     type: {
         type: String,
-        enum: ['INSPECTION_ASSIGNED', 'NEW_BICYCLE_POSTED', 'INSPECTION_COMPLETED', 'GENERAL'],
+        enum: ['INSPECTION_ASSIGNED', 'INSPECTION_REQUESTED', 'NEW_BICYCLE_POSTED', 'INSPECTION_COMPLETED', 'GENERAL'],
         required: [true, 'Notification type is required']
     },
     title: {

@@ -6,7 +6,8 @@ import {
     createBicycle,
     updateBicycle,
     deleteBicycle,
-    getBicycleStatus
+    getBicycleStatus,
+    requestInspection
 } from '../controllers/bicycleController';
 import { verifyToken, requireUser, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -104,6 +105,14 @@ router.put('/:id/status',
     validate(bicycleIdParamSchema, 'params'),
     validate(updateBicycleStatusSchema, 'body'),
     getBicycleStatus
+);
+
+// Seller request inspection
+router.post('/:id/request-inspection',
+    verifyToken,
+    requireUser,
+    validate(bicycleIdParamSchema, 'params'),
+    requestInspection
 );
 
 export default router;

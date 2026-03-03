@@ -47,7 +47,7 @@ const inspectionReportSchema = new Schema<IInspectionReportDocument>({
     },
     status: {
         type: String,
-        enum: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
+        enum: ['PENDING', 'REQUESTED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
         default: 'PENDING',
         index: true
     },

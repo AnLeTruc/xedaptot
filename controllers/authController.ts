@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
-import { sendMail, sendVerificationEmail } from '../services/emailService';
+import { sendMail, sendVerificationEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
 import crypto from 'crypto';
 
@@ -571,7 +571,7 @@ export const addAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city, isDefault } = req.body;
+        const { label, street, ward, district, city, provinceId, districtId, wardCode, isDefault } = req.body;
 
         if (!label || !city) {
             res.status(400).json({
@@ -602,6 +602,9 @@ export const addAddress = async (
                         ward,
                         district,
                         city,
+                        provinceId,
+                        districtId,
+                        wardCode,
                         isDefault: isDefault || false
                     }
                 }
@@ -640,19 +643,30 @@ export const updateAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city } = req.body;
+        const { label, street, ward, district, city, provinceId, districtId, wardCode } = req.body;
+
+        // Smart $set: only update fields that are actually provided
+        const updates: Record<string, any> = {};
+        if (label !== undefined) updates['addresses.$.label'] = label;
+        if (street !== undefined) updates['addresses.$.street'] = street;
+        if (ward !== undefined) updates['addresses.$.ward'] = ward;
+        if (district !== undefined) updates['addresses.$.district'] = district;
+        if (city !== undefined) updates['addresses.$.city'] = city;
+        if (provinceId !== undefined) updates['addresses.$.provinceId'] = provinceId;
+        if (districtId !== undefined) updates['addresses.$.districtId'] = districtId;
+        if (wardCode !== undefined) updates['addresses.$.wardCode'] = wardCode;
+
+        if (Object.keys(updates).length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'No fields to update'
+            });
+            return;
+        }
 
         const updateAddress = await User.findOneAndUpdate(
             { _id: userId, 'addresses._id': id },
-            {
-                $set: {
-                    'addresses.$.label': label,
-                    'addresses.$.street': street,
-                    'addresses.$.ward': ward,
-                    'addresses.$.district': district,
-                    'addresses.$.city': city
-                }
-            },
+            { $set: updates },
             { new: true }
         );
 
@@ -1004,4 +1018,107 @@ export const resetPassword = async (
 
     return;
 }
+
+// Change password (authenticated user)
+export const changePassword = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            res.status(401).json({
+                success: false,
+                message: 'User not authenticated'
+            });
+            return;
+        }
+
+        // Only email-registered users can change password
+        if (user.authProvider !== 'email') {
+            res.status(400).json({
+                success: false,
+                message: 'Change password is only available for email-registered accounts'
+            });
+            return;
+        }
+
+        // Cooldown: require passwordChangedAt field
+        const fullUser = await User.findById(user._id).select('+passwordChangedAt');
+        if (fullUser?.passwordChangedAt) {
+            const hoursSinceLastChange =
+                (Date.now() - fullUser.passwordChangedAt.getTime()) / (1000 * 60 * 60);
+            if (hoursSinceLastChange < 24) {
+                const hoursRemaining = Math.ceil(24 - hoursSinceLastChange);
+                res.status(429).json({
+                    success: false,
+                    message: `You can only change your password once every 24 hours. Please try again in ${hoursRemaining} hour(s).`
+                });
+                return;
+            }
+        }
+
+        const { currentPassword, newPassword } = req.body;
+
+        // Verify current password via Firebase REST API
+        const verifyResponse = await fetch(
+            `${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: user.email,
+                    password: currentPassword,
+                    returnSecureToken: false
+                })
+            }
+        );
+
+        if (!verifyResponse.ok) {
+            res.status(401).json({
+                success: false,
+                message: 'Current password is incorrect'
+            });
+            return;
+        }
+
+        // Update password in Firebase
+        await auth.updateUser(user.firebaseUId, {
+            password: String(newPassword)
+        });
+
+        // Revoke all existing refresh tokens
+        await auth.revokeRefreshTokens(user.firebaseUId);
+
+        // Save passwordChangedAt
+        await User.findByIdAndUpdate(user._id, {
+            passwordChangedAt: new Date()
+        });
+
+        // Generate new custom token so client can re-authenticate
+        const customToken = await auth.createCustomToken(user.firebaseUId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully',
+            data: {
+                customToken
+            }
+        });
+
+        // Send notification email (fire-and-forget)
+        sendPasswordChangedEmail(user.email, user.fullName || '').catch(err =>
+            console.error('Failed to send password changed email:', err)
+        );
+
+        return;
+    } catch (error: any) {
+        console.error('Change password error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to change password'
+        });
+    }
+};
 
