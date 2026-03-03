@@ -139,3 +139,39 @@ export const sendInspectorWelcomeEmail = async (
         html
     });
 };
+
+// Send password changed notification email
+export const sendPasswordChangedEmail = async (
+    email: string,
+    fullName: string
+): Promise<boolean> => {
+    const supportEmail = process.env.EMAIL_SUPPORT || 'support@xedaptot.com';
+
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+            <h2 style="color: #2563eb; margin: 0 0 8px;">Password Changed</h2>
+            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
+            <p style="margin: 0 0 16px;">
+                Your Xedaptot account password was successfully changed on
+                <strong>${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</strong>.
+            </p>
+            <p style="margin: 0 0 16px;">
+                If you did not make this change, please reset your password immediately or contact
+                <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                This is an automated notification. Please do not reply to this email.
+            </p>
+        </div>
+        <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
+    </div>
+    `;
+
+    return sendMail({
+        to: email,
+        subject: '[Xedaptot] Your password has been changed',
+        html
+    });
+};

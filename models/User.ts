@@ -119,6 +119,10 @@ const userSchema = new Schema<IUserDocument>(
         passwordResetTokenExpires: {
             type: Date,
             select: false
+        },
+        passwordChangedAt: {
+            type: Date,
+            select: false
         }
     },
     {
