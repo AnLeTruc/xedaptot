@@ -6832,7 +6832,7 @@
           "Shipping"
         ],
         "summary": "Calculate shipping fee for a bicycle",
-        "description": "Automatically calculates shipping fee using the bicycle's location (or seller's address as fallback) as pickup point and buyer's shipping address as destination. Requires authentication.",
+        "description": "Automatically calculates shipping fee using the bicycle's location (or seller's address as fallback)",
         "security": [
           {
             "bearerAuth": []
