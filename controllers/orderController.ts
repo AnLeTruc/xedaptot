@@ -43,8 +43,6 @@ export const createOrder = async (
             return res.status(400).json({ success: false, message: 'Bicycle is already reserved or pending payment' });
         }
 
-        const seller = await User.findById(bicycle.seller._id);
-
         // Shipping address
         const buyerDoc = await User.findById(buyer._id);
         const shippingAddr = buyerDoc?.addresses?.find(
@@ -57,14 +55,22 @@ export const createOrder = async (
             });
         }
 
-        const pickupAddr = seller?.addresses?.find((a: any) => a.isDefault)
-            || seller?.addresses?.[0];
-        if (!pickupAddr || !pickupAddr.districtId || !pickupAddr.wardCode) {
+        // Pickup address must come from bicycle.location
+        if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Seller has not updated pickup address'
+                message: 'Bicycle pickup location missing GHN districtId/wardCode'
             });
         }
+
+        const pickupAddr = {
+            street: bicycle.location.address || '',
+            city: bicycle.location.city || '',
+            district: '',
+            ward: '',
+            districtId: bicycle.location.districtId,
+            wardCode: bicycle.location.wardCode,
+        };
 
         const originalPrice = bicycle.price;
         const discountAmount = Math.round(originalPrice * discountPercent / 100);
@@ -74,8 +80,8 @@ export const createOrder = async (
         let shippingFee = 0;
         try {
             const shippingResult = await calculateShippingFee({
-                fromDistrictId: pickupAddr.districtId,
-                fromWardCode: pickupAddr.wardCode,
+                fromDistrictId: bicycle.location.districtId,
+                fromWardCode: bicycle.location.wardCode,
                 toDistrictId: shippingAddr.districtId,
                 toWardCode: shippingAddr.wardCode,
                 weight: 15000,
