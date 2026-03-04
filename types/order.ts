@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-
+import { IAddress } from './address';
 
 export type OrderStatus =
     | 'RESERVED_FULL'
@@ -28,15 +28,13 @@ export const ORDER_TIMEOUTS = {
     FUNDS_RELEASE: 48 * 60 * 60 * 1000,
 };
 
-
 export interface IOrderPricing {
     originalPrice: number;
     discountAmount: number;
     discountPercent: number;
     discountReason?: string;
     finalPrice: number;
-};
-
+}
 
 export interface IOrderAmount {
     total: number;
@@ -47,20 +45,7 @@ export interface IOrderAmount {
     remainingPaid: number;
     escrowAmount: number;
     releasedAmount: number;
-};
-
-
-
-export interface IShippingAddress {
-    street?: string;
-    city?: string;
-    district?: string;
-    ward?: string;
-    districtId?: number;
-    wardCode?: string;
 }
-
-
 
 export interface IOrderUser {
     _id: Types.ObjectId;
@@ -68,7 +53,6 @@ export interface IOrderUser {
     email: string;
     phone: string;
 }
-
 
 export interface IOrderBicycle {
     _id: Types.ObjectId;
@@ -78,14 +62,11 @@ export interface IOrderBicycle {
     condition?: string;
 }
 
-
 export interface IOrderReview {
     rating: number;
     comment: string;
     createdAt: Date;
 }
-
-
 
 export interface IOrderTransaction {
     transactionCode: string;
@@ -103,8 +84,6 @@ export interface IOrderTransaction {
     gatewayResponseCode: string;
 }
 
-
-
 export interface IOrder {
     orderCode: string;
     status: OrderStatus;
@@ -112,8 +91,8 @@ export interface IOrder {
     buyer: IOrderUser;
     seller: IOrderUser;
     bicycle: IOrderBicycle;
-    shippingAddress: IShippingAddress;
-    pickupAddress: IShippingAddress;
+    shippingAddress: IAddress;
+    pickupAddress: IAddress;
     amounts: IOrderAmount;
     transactions: IOrderTransaction[];
     review?: IOrderReview;
@@ -127,8 +106,6 @@ export interface IOrder {
     reservedAt?: Date;
     reservationExpiresAt?: Date;
 }
-
-
 
 export interface IOrderDocument extends IOrder, Document {
     createdAt: Date;

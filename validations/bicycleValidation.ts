@@ -24,12 +24,10 @@ const specificationsSchema = z.object({
 
 
 const locationSchema = z.object({
-    address: z.string().min(1, 'Pickup address is required'),
-    district: z.string().min(1, 'District is required').optional(),
-    ward: z.string().min(1, 'Ward is required').optional(),
     provinceId: z.number().int().positive('Province ID (GHN) is required'),
     districtId: z.number().int().positive('District ID (GHN) is required'),
     wardCode: z.string().min(1, 'Ward Code (GHN) is required'),
+    street: z.string().max(200).optional(),
     coordinates: z.object({
         type: z.literal('Point').optional(),
         coordinates: z.array(z.number()).length(2).optional()

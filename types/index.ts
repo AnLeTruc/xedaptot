@@ -1,9 +1,9 @@
 import { Request } from 'express';
 import { Document } from 'mongoose';
+import { IUserAddress } from './address';
 
 export type UserRole = 'BUYER' | 'SELLER' | 'ADMIN' | 'INSPECTOR';
 
-//Interface for user data
 export interface IUser {
     firebaseUId: string;
     email: string;
@@ -11,40 +11,22 @@ export interface IUser {
     phone?: string;
     gender?: 'male' | 'female' | 'other';
     dateOfBirth?: Date;
-    addresses?: IAddress[];
+    addresses?: IUserAddress[];
     avatarUrl?: string;
     roles: UserRole[];
     reputationScore: number;
     isVerified: boolean;
     isActive: boolean;
     authProvider: 'google' | 'email';
-    // Email Verification Fields
     emailVerificationToken?: string;
     emailVerificationExpires?: Date;
-    // Password Reset Fields
     passwordResetCodeHash?: string;
     passwordResetExpires?: Date;
     passwordResetAttempts?: number;
     passwordResetVerifiedAt?: Date;
     passwordResetTokenHash?: string;
     passwordResetTokenExpires?: Date;
-    // Password Change Tracking
     passwordChangedAt?: Date;
-
-}
-
-
-export interface IAddress {
-    _id?: string;
-    label: string;           // "Nhà", "Công ty",...
-    street?: string;
-    ward?: string;
-    district?: string;
-    city: string;
-    provinceId?: number;     // GHN Province ID
-    districtId?: number;     // GHN District ID
-    wardCode?: string;       // GHN Ward Code
-    isDefault: boolean;
 }
 
 //Interface Mongoose Document
@@ -64,9 +46,9 @@ export interface AuthRequest extends Request {
     };
 };
 
-//Brand
 export * from './brand';
 export * from './bicycle';
+export * from './address';
 export * from './userpackage';
 export * from './package';
 
