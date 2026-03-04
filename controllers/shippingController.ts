@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import * as shippingService from '../services/shippingService';
+import Bicycle from '../models/Bicycle';
+import User from '../models/User';
+import { AuthRequest } from '../types';
 
 export const getProvinces = async (_req: Request, res: Response) => {
     try {
@@ -39,6 +42,57 @@ export const calculateFee = async (req: Request, res: Response) => {
             weight,
             insuranceValue,
         });
+        res.json({ success: true, data });
+    } catch (err: any) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
+/**
+ * POST /api/shipping/calculate-fee-for-bicycle
+ * Body: { bicycleId, shippingAddressId }
+ * Tự lấy from (bicycle.location / seller address) và to (buyer address) để tính phí ship
+ */
+export const calculateFeeForBicycle = async (req: AuthRequest, res: Response) => {
+    try {
+        const { bicycleId, shippingAddressId } = req.body;
+
+        // Lấy bicycle
+        const bicycle = await Bicycle.findById(bicycleId);
+        if (!bicycle) {
+            return res.status(404).json({ success: false, message: 'Bicycle not found' });
+        }
+
+        // Lấy buyer address
+        const buyer = await User.findById(req.user!._id);
+        const shippingAddr = buyer?.addresses?.find(
+            (a: any) => a._id.toString() === shippingAddressId
+        );
+        if (!shippingAddr?.districtId || !shippingAddr?.wardCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid shipping address or missing district/ward code'
+            });
+        }
+
+        // Pickup (from) must come from bicycle.location
+        if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bicycle pickup location missing GHN districtId/wardCode'
+            });
+        }
+
+        const data = await shippingService.calculateShippingFee({
+            fromDistrictId: bicycle.location.districtId,
+            fromWardCode: bicycle.location.wardCode,
+            toDistrictId: shippingAddr.districtId,
+            toWardCode: shippingAddr.wardCode,
+            weight: 15000,
+            insuranceValue: bicycle.price,
+        });
+
         res.json({ success: true, data });
     } catch (err: any) {
         res.status(500).json({ success: false, message: err.message });

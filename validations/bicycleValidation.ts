@@ -24,13 +24,16 @@ const specificationsSchema = z.object({
 
 
 const locationSchema = z.object({
-    address: z.string().optional(),
-    city: z.string().optional(),
+    address: z.string().min(1, 'Pickup address is required'),
+    city: z.string().min(1, 'City is required'),
+    provinceId: z.number().int().positive('Province ID (GHN) is required'),
+    districtId: z.number().int().positive('District ID (GHN) is required'),
+    wardCode: z.string().min(1, 'Ward Code (GHN) is required'),
     coordinates: z.object({
         type: z.literal('Point').optional(),
         coordinates: z.array(z.number()).length(2).optional()
     }).optional()
-}).optional();
+});
 
 
 
@@ -94,7 +97,7 @@ export const updateBicycleSchema = z.object({
     brandId: z.string().optional(),
     modelId: z.string().optional(),
     specifications: specificationsSchema,
-    location: locationSchema,
+    location: locationSchema.optional(),
     images: z.array(mediaItemSchema).optional()
 });
 
