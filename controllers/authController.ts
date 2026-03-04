@@ -4,6 +4,8 @@ import User from '../models/User';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
 import { sendMail, sendVerificationEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
+import * as shippingService from '../services/shippingService';
+import { buildFullAddress } from '../utils/address';
 import crypto from 'crypto';
 
 const { auth } = require('../config/firebase');
@@ -571,15 +573,39 @@ export const addAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city, provinceId, districtId, wardCode, isDefault } = req.body;
+        const { label, provinceId, districtId, wardCode, street, coordinates, isDefault } = req.body;
 
-        if (!label || !city) {
+        const resolvedLocation = await shippingService.resolveGhnLocationNames(
+            provinceId,
+            districtId,
+            wardCode
+        );
+        if (!resolvedLocation) {
             res.status(400).json({
                 success: false,
-                message: 'Label and city are required'
+                message: 'Invalid GHN location data'
             });
             return;
         }
+
+        const addressData = {
+            label,
+            provinceId,
+            districtId,
+            wardCode,
+            provinceName: resolvedLocation.provinceName,
+            districtName: resolvedLocation.districtName,
+            wardName: resolvedLocation.wardName,
+            street,
+            fullAddress: buildFullAddress({
+                street,
+                wardName: resolvedLocation.wardName,
+                districtName: resolvedLocation.districtName,
+                provinceName: resolvedLocation.provinceName
+            }),
+            coordinates,
+            isDefault: isDefault || false
+        };
 
         if (isDefault) {
             const user = await User.findById(userId);
@@ -594,21 +620,7 @@ export const addAddress = async (
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            {
-                $push: {
-                    addresses: {
-                        label,
-                        street,
-                        ward,
-                        district,
-                        city,
-                        provinceId,
-                        districtId,
-                        wardCode,
-                        isDefault: isDefault || false
-                    }
-                }
-            },
+            { $push: { addresses: addressData } },
             { new: true }
         );
         res.status(201).json({
@@ -626,7 +638,6 @@ export const addAddress = async (
     }
 };
 
-// PUT /api/auth/addresses/:id 
 export const updateAddress = async (
     req: AuthRequest,
     res: Response
@@ -643,18 +654,63 @@ export const updateAddress = async (
             return;
         }
 
-        const { label, street, ward, district, city, provinceId, districtId, wardCode } = req.body;
+        const { label, street, provinceId, districtId, wardCode, coordinates } = req.body;
 
-        // Smart $set: only update fields that are actually provided
         const updates: Record<string, any> = {};
         if (label !== undefined) updates['addresses.$.label'] = label;
         if (street !== undefined) updates['addresses.$.street'] = street;
-        if (ward !== undefined) updates['addresses.$.ward'] = ward;
-        if (district !== undefined) updates['addresses.$.district'] = district;
-        if (city !== undefined) updates['addresses.$.city'] = city;
-        if (provinceId !== undefined) updates['addresses.$.provinceId'] = provinceId;
-        if (districtId !== undefined) updates['addresses.$.districtId'] = districtId;
-        if (wardCode !== undefined) updates['addresses.$.wardCode'] = wardCode;
+        if (coordinates !== undefined) updates['addresses.$.coordinates'] = coordinates;
+
+        const hasGhnChange = provinceId !== undefined || districtId !== undefined || wardCode !== undefined;
+
+        if (hasGhnChange) {
+            const user = await User.findOne({ _id: userId, 'addresses._id': id });
+            const existingAddr = user?.addresses?.find((a: any) => a._id.toString() === id);
+            if (!existingAddr) {
+                res.status(404).json({ success: false, message: 'Address not found' });
+                return;
+            }
+
+            const finalProvinceId = provinceId ?? existingAddr.provinceId;
+            const finalDistrictId = districtId ?? existingAddr.districtId;
+            const finalWardCode = wardCode ?? existingAddr.wardCode;
+
+            const resolvedLocation = await shippingService.resolveGhnLocationNames(
+                finalProvinceId,
+                finalDistrictId,
+                finalWardCode
+            );
+            if (!resolvedLocation) {
+                res.status(400).json({ success: false, message: 'Invalid GHN location data' });
+                return;
+            }
+
+            updates['addresses.$.provinceId'] = finalProvinceId;
+            updates['addresses.$.districtId'] = finalDistrictId;
+            updates['addresses.$.wardCode'] = finalWardCode;
+            updates['addresses.$.provinceName'] = resolvedLocation.provinceName;
+            updates['addresses.$.districtName'] = resolvedLocation.districtName;
+            updates['addresses.$.wardName'] = resolvedLocation.wardName;
+
+            const finalStreet = street !== undefined ? street : existingAddr.street;
+            updates['addresses.$.fullAddress'] = buildFullAddress({
+                street: finalStreet,
+                wardName: resolvedLocation.wardName,
+                districtName: resolvedLocation.districtName,
+                provinceName: resolvedLocation.provinceName
+            });
+        } else if (street !== undefined) {
+            const user = await User.findOne({ _id: userId, 'addresses._id': id });
+            const existingAddr = user?.addresses?.find((a: any) => a._id.toString() === id);
+            if (existingAddr) {
+                updates['addresses.$.fullAddress'] = buildFullAddress({
+                    street,
+                    wardName: existingAddr.wardName,
+                    districtName: existingAddr.districtName,
+                    provinceName: existingAddr.provinceName
+                });
+            }
+        }
 
         if (Object.keys(updates).length === 0) {
             res.status(400).json({
@@ -664,13 +720,13 @@ export const updateAddress = async (
             return;
         }
 
-        const updateAddress = await User.findOneAndUpdate(
+        const updatedUser = await User.findOneAndUpdate(
             { _id: userId, 'addresses._id': id },
             { $set: updates },
             { new: true }
         );
 
-        if (!updateAddress) {
+        if (!updatedUser) {
             res.status(404).json({
                 success: false,
                 message: 'Address not found'
@@ -681,7 +737,7 @@ export const updateAddress = async (
         res.status(200).json({
             success: true,
             message: 'Address updated successfully',
-            data: updateAddress?.addresses
+            data: updatedUser?.addresses
         })
     } catch (error: any) {
         res.status(500).json({
