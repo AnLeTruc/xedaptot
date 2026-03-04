@@ -43,8 +43,6 @@ export const createOrder = async (
             return res.status(400).json({ success: false, message: 'Bicycle is already reserved or pending payment' });
         }
 
-        const seller = await User.findById(bicycle.seller._id);
-
         // Shipping address
         const buyerDoc = await User.findById(buyer._id);
         const shippingAddr = buyerDoc?.addresses?.find(
@@ -57,48 +55,22 @@ export const createOrder = async (
             });
         }
 
-        // Pickup address — ưu tiên lấy từ bicycle.location (nơi xe đang ở)
-        let pickupDistrictId: number | undefined;
-        let pickupWardCode: string | undefined;
-        let pickupAddr: any = null;
-
-        // Ưu tiên 1: Bicycle location (nơi xe thực tế)
-        if (bicycle.location?.districtId && bicycle.location?.wardCode) {
-            pickupDistrictId = bicycle.location.districtId;
-            pickupWardCode = bicycle.location.wardCode;
-            pickupAddr = {
-                street: bicycle.location.address || '',
-                city: bicycle.location.city || '',
-                district: '',
-                ward: '',
-                districtId: bicycle.location.districtId,
-                wardCode: bicycle.location.wardCode,
-            };
-        } else {
-            // Fallback 2: Seller's default address
-            const sellerAddr = seller?.addresses?.find((a: any) => a.isDefault)
-                || seller?.addresses?.[0];
-            if (sellerAddr?.districtId && sellerAddr?.wardCode) {
-                pickupDistrictId = sellerAddr.districtId;
-                pickupWardCode = sellerAddr.wardCode;
-                pickupAddr = {
-                    street: sellerAddr.street,
-                    city: sellerAddr.city,
-                    district: sellerAddr.district,
-                    ward: sellerAddr.ward,
-                    districtId: sellerAddr.districtId,
-                    wardCode: sellerAddr.wardCode,
-                };
-                console.warn(`[Order] Bicycle ${bicycleId} missing GHN location, fallback to seller address`);
-            }
-        }
-
-        if (!pickupAddr || !pickupDistrictId || !pickupWardCode) {
+        // Pickup address must come from bicycle.location
+        if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Seller has not updated pickup address with shipping info (districtId/wardCode)'
+                message: 'Bicycle pickup location missing GHN districtId/wardCode'
             });
         }
+
+        const pickupAddr = {
+            street: bicycle.location.address || '',
+            city: bicycle.location.city || '',
+            district: '',
+            ward: '',
+            districtId: bicycle.location.districtId,
+            wardCode: bicycle.location.wardCode,
+        };
 
         const originalPrice = bicycle.price;
         const discountAmount = Math.round(originalPrice * discountPercent / 100);
@@ -108,8 +80,8 @@ export const createOrder = async (
         let shippingFee = 0;
         try {
             const shippingResult = await calculateShippingFee({
-                fromDistrictId: pickupDistrictId,
-                fromWardCode: pickupWardCode,
+                fromDistrictId: bicycle.location.districtId,
+                fromWardCode: bicycle.location.wardCode,
                 toDistrictId: shippingAddr.districtId,
                 toWardCode: shippingAddr.wardCode,
                 weight: 15000,

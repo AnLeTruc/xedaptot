@@ -76,33 +76,17 @@ export const calculateFeeForBicycle = async (req: AuthRequest, res: Response) =>
             });
         }
 
-        // Xác định pickup (from) — ưu tiên bicycle.location, fallback seller address
-        let fromDistrictId: number | undefined;
-        let fromWardCode: string | undefined;
-
-        if (bicycle.location?.districtId && bicycle.location?.wardCode) {
-            fromDistrictId = bicycle.location.districtId;
-            fromWardCode = bicycle.location.wardCode;
-        } else {
-            const seller = await User.findById(bicycle.seller._id);
-            const sellerAddr = seller?.addresses?.find((a: any) => a.isDefault)
-                || seller?.addresses?.[0];
-            if (sellerAddr?.districtId && sellerAddr?.wardCode) {
-                fromDistrictId = sellerAddr.districtId;
-                fromWardCode = sellerAddr.wardCode;
-            }
-        }
-
-        if (!fromDistrictId || !fromWardCode) {
+        // Pickup (from) must come from bicycle.location
+        if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Seller has not updated pickup address with shipping info'
+                message: 'Bicycle pickup location missing GHN districtId/wardCode'
             });
         }
 
         const data = await shippingService.calculateShippingFee({
-            fromDistrictId,
-            fromWardCode,
+            fromDistrictId: bicycle.location.districtId,
+            fromWardCode: bicycle.location.wardCode,
             toDistrictId: shippingAddr.districtId,
             toWardCode: shippingAddr.wardCode,
             weight: 15000,
