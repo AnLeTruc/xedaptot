@@ -32,6 +32,11 @@ export const createOrder = async (
         if (bicycle.seller._id.toString() === buyer._id.toString()) {
             return res.status(400).json({ success: false, message: 'Cannot purchase your own bicycle' });
         }
+
+        const seller = await User.findById(bicycle.seller._id);
+        if (!seller) {
+            return res.status(400).json({ success: false, message: 'Seller not found' });
+        }
         // ktra có ng đặt chưa (ko đặt trùng)
         const existing = await Order.findOne({
             'bicycle._id': bicycleId,
@@ -65,7 +70,7 @@ export const createOrder = async (
 
         const pickupAddr = {
             street: bicycle.location.address || '',
-            city: bicycle.location.city || '',
+            city: '',
             district: '',
             ward: '',
             districtId: bicycle.location.districtId,
@@ -111,9 +116,9 @@ export const createOrder = async (
                 email: buyer.email,
             },
             seller: {
-                _id: seller!._id,
-                fullName: seller!.fullName || '',
-                phone: seller!.phone,
+                _id: seller._id,
+                fullName: seller.fullName || '',
+                phone: seller.phone,
             },
             shippingAddress: {
                 street: shippingAddr.street,

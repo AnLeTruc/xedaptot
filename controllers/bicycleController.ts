@@ -74,10 +74,10 @@ export const getAllBicycles = async (
             limit = 10,
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
-                if (provinceId) {
-                    filter['location.provinceId'] = Number(provinceId);
-                }
         const filter: any = {};
+        if (provinceId) {
+            filter['location.provinceId'] = Number(provinceId);
+        }
 
         const userRoles = req.user?.roles || [];
         const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
