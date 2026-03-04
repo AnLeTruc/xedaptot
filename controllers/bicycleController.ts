@@ -6,6 +6,7 @@ import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
 import Notification from '../models/Notification';
+import * as shippingService from '../services/shippingService';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -67,12 +68,15 @@ export const getAllBicycles = async (
             sellerId,
             minPrice,
             maxPrice,
-            city,
+            provinceId,
             search,
             page = 1,
             limit = 10,
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
+                if (provinceId) {
+                    filter['location.provinceId'] = Number(provinceId);
+                }
         const filter: any = {};
 
         const userRoles = req.user?.roles || [];
@@ -107,10 +111,6 @@ export const getAllBicycles = async (
         if (brand) {
             filter['brand._id'] = brand;
         }
-        if (city) {
-            filter['location.city'] = { $regex: city, $options: 'i' };
-        }
-
 
         // Price range
         if (minPrice || maxPrice) {
@@ -271,6 +271,19 @@ export const createBicycle = async (
             modelData = { _id: modelDoc._id, name: modelDoc.name };
         }
 
+        const resolvedLocation = await shippingService.resolveGhnLocationNames(
+            location.provinceId,
+            location.districtId,
+            location.wardCode
+        );
+        if (!resolvedLocation) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid GHN location data'
+            });
+            return;
+        }
+
 
 
 
@@ -296,7 +309,11 @@ export const createBicycle = async (
                 reputationScore: req.user.reputationScore || 0
             },
             specifications,
-            location,
+            location: {
+                ...location,
+                district: resolvedLocation.districtName,
+                ward: resolvedLocation.wardName
+            },
             images: images
         });
 
@@ -373,7 +390,25 @@ export const updateBicycle = async (
         if (condition) updateData.condition = condition;
         if (usageMonths !== undefined) updateData.usageMonths = usageMonths;
         if (specifications) updateData.specifications = specifications;
-        if (location) updateData.location = location;
+        if (location) {
+            const resolvedLocation = await shippingService.resolveGhnLocationNames(
+                location.provinceId,
+                location.districtId,
+                location.wardCode
+            );
+            if (!resolvedLocation) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid GHN location data'
+                });
+                return;
+            }
+            updateData.location = {
+                ...location,
+                district: resolvedLocation.districtName,
+                ward: resolvedLocation.wardName
+            };
+        }
         if (images) updateData.images = images;
 
         // Nếu đổi category

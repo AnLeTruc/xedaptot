@@ -128,7 +128,8 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         },
         location: {
             address: String,
-            city: String,
+            district: String,
+            ward: String,
             provinceId: Number,
             districtId: Number,
             wardCode: String,

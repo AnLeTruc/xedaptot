@@ -34,7 +34,8 @@ export interface IBicycleCoordinates {
 // location
 export interface IBicycleLocation {
     address?: string;
-    city?: string;
+    district?: string;
+    ward?: string;
     provinceId?: number;     // GHN Province ID
     districtId?: number;     // GHN District ID
     wardCode?: string;       // GHN Ward Code

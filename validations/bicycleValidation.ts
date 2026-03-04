@@ -25,7 +25,8 @@ const specificationsSchema = z.object({
 
 const locationSchema = z.object({
     address: z.string().min(1, 'Pickup address is required'),
-    city: z.string().min(1, 'City is required'),
+    district: z.string().min(1, 'District is required').optional(),
+    ward: z.string().min(1, 'Ward is required').optional(),
     provinceId: z.number().int().positive('Province ID (GHN) is required'),
     districtId: z.number().int().positive('District ID (GHN) is required'),
     wardCode: z.string().min(1, 'Ward Code (GHN) is required'),
@@ -120,7 +121,7 @@ export const getBicyclesQuerySchema = z.object({
     sellerId: z.string().optional(),
     minPrice: z.string().optional(),
     maxPrice: z.string().optional(),
-    city: z.string().optional(),
+    provinceId: z.string().optional(),
     search: z.string().optional(),
     page: z.string().optional().default('1'),
     limit: z.string().optional().default('10'),
