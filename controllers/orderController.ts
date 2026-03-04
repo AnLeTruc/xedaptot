@@ -57,12 +57,46 @@ export const createOrder = async (
             });
         }
 
-        const pickupAddr = seller?.addresses?.find((a: any) => a.isDefault)
-            || seller?.addresses?.[0];
-        if (!pickupAddr || !pickupAddr.districtId || !pickupAddr.wardCode) {
+        // Pickup address — ưu tiên lấy từ bicycle.location (nơi xe đang ở)
+        let pickupDistrictId: number | undefined;
+        let pickupWardCode: string | undefined;
+        let pickupAddr: any = null;
+
+        // Ưu tiên 1: Bicycle location (nơi xe thực tế)
+        if (bicycle.location?.districtId && bicycle.location?.wardCode) {
+            pickupDistrictId = bicycle.location.districtId;
+            pickupWardCode = bicycle.location.wardCode;
+            pickupAddr = {
+                street: bicycle.location.address || '',
+                city: bicycle.location.city || '',
+                district: '',
+                ward: '',
+                districtId: bicycle.location.districtId,
+                wardCode: bicycle.location.wardCode,
+            };
+        } else {
+            // Fallback 2: Seller's default address
+            const sellerAddr = seller?.addresses?.find((a: any) => a.isDefault)
+                || seller?.addresses?.[0];
+            if (sellerAddr?.districtId && sellerAddr?.wardCode) {
+                pickupDistrictId = sellerAddr.districtId;
+                pickupWardCode = sellerAddr.wardCode;
+                pickupAddr = {
+                    street: sellerAddr.street,
+                    city: sellerAddr.city,
+                    district: sellerAddr.district,
+                    ward: sellerAddr.ward,
+                    districtId: sellerAddr.districtId,
+                    wardCode: sellerAddr.wardCode,
+                };
+                console.warn(`[Order] Bicycle ${bicycleId} missing GHN location, fallback to seller address`);
+            }
+        }
+
+        if (!pickupAddr || !pickupDistrictId || !pickupWardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Seller has not updated pickup address'
+                message: 'Seller has not updated pickup address with shipping info (districtId/wardCode)'
             });
         }
 
@@ -74,8 +108,8 @@ export const createOrder = async (
         let shippingFee = 0;
         try {
             const shippingResult = await calculateShippingFee({
-                fromDistrictId: pickupAddr.districtId,
-                fromWardCode: pickupAddr.wardCode,
+                fromDistrictId: pickupDistrictId,
+                fromWardCode: pickupWardCode,
                 toDistrictId: shippingAddr.districtId,
                 toWardCode: shippingAddr.wardCode,
                 weight: 15000,

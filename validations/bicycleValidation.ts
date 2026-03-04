@@ -26,6 +26,9 @@ const specificationsSchema = z.object({
 const locationSchema = z.object({
     address: z.string().optional(),
     city: z.string().optional(),
+    provinceId: z.number().optional(),
+    districtId: z.number().optional(),
+    wardCode: z.string().optional(),
     coordinates: z.object({
         type: z.literal('Point').optional(),
         coordinates: z.array(z.number()).length(2).optional()
