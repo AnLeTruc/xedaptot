@@ -172,6 +172,26 @@ export const firebaseAuth = async (
 
         const existingUser = await User.findOne({ email });
 
+        // Generate custom token and exchange for idToken + refreshToken
+        const customToken = await auth.createCustomToken(uid);
+        const tokenResponse = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+            }
+        );
+        const tokenData: any = await tokenResponse.json();
+
+        if (!tokenResponse.ok) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to generate session tokens'
+            });
+            return;
+        }
+
         if (existingUser) {
             if (existingUser.firebaseUId !== uid) {
                 res.status(400).json({
@@ -194,7 +214,10 @@ export const firebaseAuth = async (
                     avatarUrl: existingUser.avatarUrl,
                     roles: existingUser.roles,
                     isVerified: existingUser.isVerified,
-                    authProvider: existingUser.authProvider
+                    authProvider: existingUser.authProvider,
+                    idToken: tokenData.idToken,
+                    refreshToken: tokenData.refreshToken,
+                    expiresIn: tokenData.expiresIn,
                 },
             });
             return;
@@ -222,7 +245,10 @@ export const firebaseAuth = async (
                 avatarUrl: newUser.avatarUrl,
                 roles: newUser.roles,
                 isVerified: newUser.isVerified,
-                authProvider: newUser.authProvider
+                authProvider: newUser.authProvider,
+                idToken: tokenData.idToken,
+                refreshToken: tokenData.refreshToken,
+                expiresIn: tokenData.expiresIn,
             },
         });
     } catch (error: any) {
