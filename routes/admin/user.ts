@@ -3,7 +3,8 @@ import {
     getAllUsers,
     getUserById,
     updateUser,
-    deactivateUser
+    deactivateUser,
+    getUserDashboard
 } from '../../controllers/admin/userController';
 import { verifyToken, requireAdmin } from '../../middleware/auth';
 
@@ -17,5 +18,6 @@ router.get('/users', getAllUsers);
 router.get('/users/:id', getUserById);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deactivateUser);
+router.get('/users/dashboard', getUserDashboard);
 
 export default router;
