@@ -147,18 +147,21 @@ export interface ShippingFeeResult {
 }
 
 export async function calculateShippingFee(params: ShippingFeeParams): Promise<ShippingFeeResult> {
-    const body = {
+    const body: any = {
         from_district_id: params.fromDistrictId,
         from_ward_code: params.fromWardCode,
         to_district_id: params.toDistrictId,
         to_ward_code: params.toWardCode,
         service_type_id: params.serviceTypeId || 2,
         weight: params.weight || 15000,
-        height: params.height || 50,
-        length: params.length || 180,
-        width: params.width || 70,
+        // height: params.height || 50,
+        // length: params.length || 180,
+        // width: params.width || 70,
         insurance_value: params.insuranceValue || 0,
     };
+    if (params.height) body.height = params.height;
+    if (params.length) body.length = params.length;
+    if (params.width) body.width = params.width;
 
     const data = await ghnRequest('/v2/shipping-order/fee', body);
     return {
