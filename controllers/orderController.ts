@@ -69,19 +69,21 @@ export const createOrder = async (
         }
 
         const pickupAddr = {
-            street: bicycle.location.address || '',
-            city: '',
-            district: '',
-            ward: '',
+            provinceId: bicycle.location.provinceId,
             districtId: bicycle.location.districtId,
             wardCode: bicycle.location.wardCode,
+            provinceName: bicycle.location.provinceName,
+            districtName: bicycle.location.districtName,
+            wardName: bicycle.location.wardName,
+            street: bicycle.location.street,
+            fullAddress: bicycle.location.fullAddress,
+            coordinates: bicycle.location.coordinates,
         };
 
         const originalPrice = bicycle.price;
         const discountAmount = Math.round(originalPrice * discountPercent / 100);
         const finalPrice = originalPrice - discountAmount;
 
-        //GHN Shipping fee
         let shippingFee = 0;
         try {
             const shippingResult = await calculateShippingFee({
@@ -121,21 +123,16 @@ export const createOrder = async (
                 phone: seller.phone,
             },
             shippingAddress: {
-                street: shippingAddr.street,
-                city: shippingAddr.city,
-                district: shippingAddr.district,
-                ward: shippingAddr.ward,
+                provinceId: shippingAddr.provinceId,
                 districtId: shippingAddr.districtId,
                 wardCode: shippingAddr.wardCode,
+                provinceName: shippingAddr.provinceName,
+                districtName: shippingAddr.districtName,
+                wardName: shippingAddr.wardName,
+                street: shippingAddr.street,
+                fullAddress: shippingAddr.fullAddress,
             },
-            pickupAddress: {
-                street: pickupAddr.street,
-                city: pickupAddr.city,
-                district: pickupAddr.district,
-                ward: pickupAddr.ward,
-                districtId: pickupAddr.districtId,
-                wardCode: pickupAddr.wardCode,
-            },
+            pickupAddress: pickupAddr,
             bicycle: {
                 _id: bicycle._id,
                 title: bicycle.title,

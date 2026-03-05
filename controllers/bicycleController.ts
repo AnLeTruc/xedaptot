@@ -7,6 +7,7 @@ import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
 import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
+import { buildFullAddress } from '../utils/address';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -284,10 +285,23 @@ export const createBicycle = async (
             return;
         }
 
+        const locationData = {
+            provinceId: location.provinceId,
+            districtId: location.districtId,
+            wardCode: location.wardCode,
+            provinceName: resolvedLocation.provinceName,
+            districtName: resolvedLocation.districtName,
+            wardName: resolvedLocation.wardName,
+            street: location.street,
+            fullAddress: buildFullAddress({
+                street: location.street,
+                wardName: resolvedLocation.wardName,
+                districtName: resolvedLocation.districtName,
+                provinceName: resolvedLocation.provinceName
+            }),
+            coordinates: location.coordinates
+        };
 
-
-
-        // TẠO BICYCLE
         const bicycle = await Bicycle.create({
             title,
             description,
@@ -309,11 +323,7 @@ export const createBicycle = async (
                 reputationScore: req.user.reputationScore || 0
             },
             specifications,
-            location: {
-                ...location,
-                district: resolvedLocation.districtName,
-                ward: resolvedLocation.wardName
-            },
+            location: locationData,
             images: images
         });
 
@@ -404,9 +414,20 @@ export const updateBicycle = async (
                 return;
             }
             updateData.location = {
-                ...location,
-                district: resolvedLocation.districtName,
-                ward: resolvedLocation.wardName
+                provinceId: location.provinceId,
+                districtId: location.districtId,
+                wardCode: location.wardCode,
+                provinceName: resolvedLocation.provinceName,
+                districtName: resolvedLocation.districtName,
+                wardName: resolvedLocation.wardName,
+                street: location.street,
+                fullAddress: buildFullAddress({
+                    street: location.street,
+                    wardName: resolvedLocation.wardName,
+                    districtName: resolvedLocation.districtName,
+                    provinceName: resolvedLocation.provinceName
+                }),
+                coordinates: location.coordinates
             };
         }
         if (images) updateData.images = images;

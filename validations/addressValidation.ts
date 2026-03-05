@@ -1,27 +1,32 @@
 import { z } from 'zod';
 
-export const addAddressSchema = z.object({
-    label: z.string().min(1, 'Label is required').max(50),
-    street: z.string().max(200).optional(),
-    ward: z.string().max(100).optional(),
-    district: z.string().max(100).optional(),
-    city: z.string().min(1, 'City is required').max(100),
+const geoSchema = z.object({
+    type: z.literal('Point').optional(),
+    coordinates: z.array(z.number()).length(2).optional()
+}).optional();
+
+const baseAddressFieldsSchema = z.object({
     provinceId: z.number().int().positive('Province ID (GHN) is required'),
     districtId: z.number().int().positive('District ID (GHN) is required'),
     wardCode: z.string().min(1, 'Ward Code (GHN) is required'),
+    street: z.string().max(200).optional(),
+    coordinates: geoSchema
+});
+
+export const addAddressSchema = z.object({
+    label: z.string().min(1, 'Label is required').max(50),
     isDefault: z.boolean().optional().default(false),
+    ...baseAddressFieldsSchema.shape
 });
 
 export const updateAddressSchema = z.object({
     label: z.string().min(1).max(50).optional(),
-    street: z.string().max(200).optional(),
-    ward: z.string().max(100).optional(),
-    district: z.string().max(100).optional(),
-    city: z.string().min(1).max(100).optional(),
+    isDefault: z.boolean().optional(),
     provinceId: z.number().int().positive().optional(),
     districtId: z.number().int().positive().optional(),
     wardCode: z.string().min(1).optional(),
-    isDefault: z.boolean().optional(),
+    street: z.string().max(200).optional(),
+    coordinates: geoSchema
 });
 
 export type AddAddressInput = z.infer<typeof addAddressSchema>;
