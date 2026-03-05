@@ -6,9 +6,9 @@ import { withdrawSchema, depositSchema } from '../validations/walletValidation';
 
 const router = Router();
 
-// VNPay callbacks - TODO: implement vnpayReturn and vnpayIPN in walletController
-// router.get('/vnpay-return', ctrl.vnpayReturn);
-// router.get('/vnpay-ipn', ctrl.vnpayIPN);
+// VNPay callbacks - NO AUTH required (VNPay redirects/calls directly)
+router.get('/vnpay-return', ctrl.vnpayReturn);
+router.get('/vnpay-ipn', ctrl.vnpayIPN);
 
 // All routes below require authentication
 router.use(verifyToken, requireUser);
