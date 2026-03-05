@@ -12,6 +12,23 @@ const pricingSchema = {
 };
 
 
+const transactionSchema = new Schema({
+    transactionCode: String,
+    amount: Number,
+    paymentMethod: String,
+    status: String,
+    createdAt: { type: Date, default: Date.now },
+    walletId: { type: Schema.Types.ObjectId, ref: 'Wallet' },
+    type: String,
+    balanceBefore: Number,
+    balanceAfter: Number,
+    description: String,
+    paymentGateway: String,
+    gatewayTransactionId: String,
+    gatewayResponseCode: String,
+}, { _id: false });
+
+
 const orderSchema = new Schema<IOrderDocument>({
     orderCode: { type: String, required: true, unique: true, index: true },
     status: {
@@ -58,21 +75,7 @@ const orderSchema = new Schema<IOrderDocument>({
         escrowAmount: { type: Number, default: 0 },
         releasedAmount: { type: Number, default: 0 },
     },
-    transactions: [{
-        transactionCode: String,
-        amount: Number,
-        paymentMethod: String,
-        status: String,
-        createdAt: { type: Date, default: Date.now },
-        walletId: { type: Schema.Types.ObjectId, ref: 'Wallet' },
-        type: String,
-        balanceBefore: Number,
-        balanceAfter: Number,
-        description: String,
-        paymentGateway: String,
-        gatewayTransactionId: String,
-        gatewayResponseCode: String,
-    }],
+    transactions: [transactionSchema],
     review: {
         rating: { type: Number, min: 1, max: 5 },
         comment: { type: String, maxlength: 1000 },

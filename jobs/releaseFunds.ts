@@ -1,7 +1,6 @@
 import Order from '../models/Order';
 import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
-import { getOrCreateWallet } from '../controllers/walletController';
 import { ORDER_TIMEOUTS } from '../types/order';
 
 // Helper function để generate transaction code
@@ -16,7 +15,7 @@ const generateCode = (prefix: string) => {
 export const releaseFundsJob = async () => {
     try {
         const threshold = new Date(Date.now() - ORDER_TIMEOUTS.FUNDS_RELEASE);
-
+        
         // Tìm các đơn COMPLETED, đã confirm >= 48h, còn tiền trong escrow
         const orders = await Order.find({
             status: 'COMPLETED',
@@ -29,31 +28,36 @@ export const releaseFundsJob = async () => {
         for (const order of orders) {
             try {
                 const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
-                const sellerWallet = await getOrCreateWallet(order.seller._id);
-
-                const release = order.amounts.escrowAmount;
-
-                // Chuyển tiền: buyer.frozenBalance → seller.totalEarn
-                if (buyerWallet) {
-                    buyerWallet.frozenBalance -= release;
-                    await buyerWallet.save();
+                let sellerWallet = await Wallet.findOne({ userId: order.seller._id });
+                if (!sellerWallet) {
+                    sellerWallet = await Wallet.create({ userId: order.seller._id });
+                }
+                if (!buyerWallet) {
+                    console.error(`[RELEASE_ERROR] Buyer wallet not found for order ${order.orderCode}`);
+                    continue;
                 }
 
-                const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
-                sellerWallet.totalReceived += release;
+                const release = order.amounts.pricing.finalPrice;
+
+                // Trừ frozenBalance buyer
+                buyerWallet.frozenBalance -= release;
+                await buyerWallet.save();
+
+                // Cộng tiền cho seller
                 sellerWallet.totalEarn += release;
+                sellerWallet.totalReceived += release;
                 await sellerWallet.save();
 
-                // Tạo Transaction record
-                await Transaction.create({
+                // Tạo Transaction ESCROW_RELEASE
+                const txn = await Transaction.create({
                     transactionCode: generateCode('TXN'),
+                    amount: release,
                     paymentMethod: 'SYSTEM',
                     walletId: sellerWallet._id,
                     type: 'ESCROW_RELEASE',
-                    amount: release,
-                    balanceBefore: sellerBalBefore,
-                    balanceAfter: sellerBalBefore + release,
-                    description: `Release funds to Seller - ${order.orderCode}`,
+                    balanceBefore: sellerWallet.totalEarn - release - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance,
+                    balanceAfter: sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance,
+                    description: `Release escrow - ${order.orderCode}`,
                     orderId: order._id,
                 });
 
@@ -64,19 +68,19 @@ export const releaseFundsJob = async () => {
                 order.fundsReleasedAt = new Date();
 
                 order.transactions.push({
-                    transactionCode: generateCode('TXN'),
-                    type: 'ESCROW_RELEASE',
+                    transactionCode: txn.transactionCode,
+                    type: 'RELEASE',
                     amount: release,
                     status: 'SUCCESS',
                     createdAt: new Date(),
                     walletId: sellerWallet._id,
                     paymentMethod: 'SYSTEM',
-                    balanceBefore: sellerBalBefore,
-                    balanceAfter: sellerBalBefore + release,
-                    description: `Release funds to Seller - ${order.orderCode}`,
+                    balanceBefore: txn.balanceBefore,
+                    balanceAfter: txn.balanceAfter,
+                    description: `Release escrow - ${order.orderCode}`,
                     paymentGateway: '',
                     gatewayTransactionId: '',
-                    gatewayResponseCode: ''
+                    gatewayResponseCode: '',
                 } as any);
 
                 await order.save();
@@ -92,4 +96,3 @@ export const releaseFundsJob = async () => {
         console.error(`[RELEASE_FUNDS_JOB_ERROR] ${error.message}`);
     }
 };
-
