@@ -311,11 +311,10 @@ export const getUserDashboard = async (
             }
         ]);
 
-        const monthCheck = Array.from({
-            length: 12
-        }, (_, i) => {
-            const m = i+1;
-            const found = stats?.usersByMonth?.find((doc: any) => doc.month === m);
+        const monthCheck = Array.from({ length: 12 }, (_, i) => {
+            const month = i + 1;
+            const found = stats?.usersByMonth?.find((doc: any) => doc.month === month);
+            return { month, count: found ? found.count : 0 };
         });
 
         res.status(200).json({

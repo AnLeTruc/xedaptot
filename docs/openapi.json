@@ -5278,7 +5278,7 @@
             "name": "year",
             "in": "query",
             "required": false,
-            "description": "Year for monthly statistics (default: current year)",
+            "description": "Year for monthly statistics",
             "schema": {
               "type": "integer",
               "example": 2026

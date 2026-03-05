@@ -14,10 +14,11 @@ const router = Router();
 router.use(verifyToken, requireAdmin);
 
 // User management
+router.get('/users/dashboard', getUserDashboard);
 router.get('/users', getAllUsers);
 router.get('/users/:id', getUserById);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deactivateUser);
-router.get('/users/dashboard', getUserDashboard);
+
 
 export default router;
