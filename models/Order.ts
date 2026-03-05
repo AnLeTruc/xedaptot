@@ -1,15 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IOrderDocument } from '../types/order';
-
-
-const shippingAddressSchema = {
-    street: String,
-    city: String,
-    district: String,
-    ward: String,
-    districtId: Number,
-    wardCode: String,
-};
+import { addressSubSchema } from './schemas/addressSchema';
 
 
 const pricingSchema = {
@@ -48,8 +39,8 @@ const orderSchema = new Schema<IOrderDocument>({
         email: String,
         phone: String,
     },
-    shippingAddress: shippingAddressSchema,
-    pickupAddress: shippingAddressSchema,
+    shippingAddress: addressSubSchema,
+    pickupAddress: addressSubSchema,
     bicycle: {
         _id: { type: Schema.Types.ObjectId, ref: 'Bicycle', required: true },
         title: { type: String, required: true },

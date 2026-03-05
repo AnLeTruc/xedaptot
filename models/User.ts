@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IUser, IUserDocument, UserRole } from '../types';
+import { addressSubSchema } from './schemas/addressSchema';
 
 const userSchema = new Schema<IUserDocument>(
     {
@@ -30,35 +31,11 @@ const userSchema = new Schema<IUserDocument>(
                 required: true,
                 trim: true
             },
-            street: {
-                type: String,
-                trim: true
-            },
-            ward: {
-                type: String,
-                trim: true
-            },
-            district: {
-                type: String,
-                trim: true
-            },
-            city: {
-                type: String,
-                required: true
-            },
-            provinceId: {
-                type: Number
-            },
-            districtId: {
-                type: Number
-            },
-            wardCode: {
-                type: String
-            },
             isDefault: {
                 type: Boolean,
                 default: false
-            }
+            },
+            ...addressSubSchema
         }],
         avatarUrl: {
             type: String,
