@@ -71,6 +71,60 @@ export async function getWards(districtId: number) {
     return data;
 }
 
+export interface LocationValidationResult {
+    isValid: boolean;
+    message?: string;
+}
+
+export interface GhnLocationNames {
+    provinceName: string;
+    districtName: string;
+    wardName: string;
+}
+
+export async function validateGhnLocation(
+    provinceId: number,
+    districtId: number,
+    wardCode: string
+): Promise<LocationValidationResult> {
+    const resolved = await resolveGhnLocationNames(provinceId, districtId, wardCode);
+    if (!resolved) {
+        return { isValid: false, message: 'Invalid GHN location data' };
+    }
+
+    return { isValid: true };
+}
+
+export async function resolveGhnLocationNames(
+    provinceId: number,
+    districtId: number,
+    wardCode: string
+): Promise<GhnLocationNames | null> {
+    const provinces = await getProvinces();
+    const province = provinces.find((p: any) => p.ProvinceID === provinceId);
+    if (!province) {
+        return null;
+    }
+
+    const districts = await getDistricts(provinceId);
+    const district = districts.find((d: any) => d.DistrictID === districtId);
+    if (!district) {
+        return null;
+    }
+
+    const wards = await getWards(districtId);
+    const ward = wards.find((w: any) => w.WardCode === wardCode);
+    if (!ward) {
+        return null;
+    }
+
+    return {
+        provinceName: province.ProvinceName,
+        districtName: district.DistrictName,
+        wardName: ward.WardName
+    };
+}
+
 
 //Shipping Fee
 export interface ShippingFeeParams {

@@ -6,6 +6,8 @@ import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
 import Notification from '../models/Notification';
+import * as shippingService from '../services/shippingService';
+import { buildFullAddress } from '../utils/address';
 
 // GET /api/bicycles/my
 export const getMyBicycles = async (
@@ -67,13 +69,16 @@ export const getAllBicycles = async (
             sellerId,
             minPrice,
             maxPrice,
-            city,
+            provinceId,
             search,
             page = 1,
             limit = 10,
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
         const filter: any = {};
+        if (provinceId) {
+            filter['location.provinceId'] = Number(provinceId);
+        }
 
         const userRoles = req.user?.roles || [];
         const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
@@ -107,10 +112,6 @@ export const getAllBicycles = async (
         if (brand) {
             filter['brand._id'] = brand;
         }
-        if (city) {
-            filter['location.city'] = { $regex: city, $options: 'i' };
-        }
-
 
         // Price range
         if (minPrice || maxPrice) {
@@ -271,10 +272,36 @@ export const createBicycle = async (
             modelData = { _id: modelDoc._id, name: modelDoc.name };
         }
 
+        const resolvedLocation = await shippingService.resolveGhnLocationNames(
+            location.provinceId,
+            location.districtId,
+            location.wardCode
+        );
+        if (!resolvedLocation) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid GHN location data'
+            });
+            return;
+        }
 
+        const locationData = {
+            provinceId: location.provinceId,
+            districtId: location.districtId,
+            wardCode: location.wardCode,
+            provinceName: resolvedLocation.provinceName,
+            districtName: resolvedLocation.districtName,
+            wardName: resolvedLocation.wardName,
+            street: location.street,
+            fullAddress: buildFullAddress({
+                street: location.street,
+                wardName: resolvedLocation.wardName,
+                districtName: resolvedLocation.districtName,
+                provinceName: resolvedLocation.provinceName
+            }),
+            coordinates: location.coordinates
+        };
 
-
-        // TẠO BICYCLE
         const bicycle = await Bicycle.create({
             title,
             description,
@@ -296,7 +323,7 @@ export const createBicycle = async (
                 reputationScore: req.user.reputationScore || 0
             },
             specifications,
-            location,
+            location: locationData,
             images: images
         });
 
@@ -373,7 +400,36 @@ export const updateBicycle = async (
         if (condition) updateData.condition = condition;
         if (usageMonths !== undefined) updateData.usageMonths = usageMonths;
         if (specifications) updateData.specifications = specifications;
-        if (location) updateData.location = location;
+        if (location) {
+            const resolvedLocation = await shippingService.resolveGhnLocationNames(
+                location.provinceId,
+                location.districtId,
+                location.wardCode
+            );
+            if (!resolvedLocation) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid GHN location data'
+                });
+                return;
+            }
+            updateData.location = {
+                provinceId: location.provinceId,
+                districtId: location.districtId,
+                wardCode: location.wardCode,
+                provinceName: resolvedLocation.provinceName,
+                districtName: resolvedLocation.districtName,
+                wardName: resolvedLocation.wardName,
+                street: location.street,
+                fullAddress: buildFullAddress({
+                    street: location.street,
+                    wardName: resolvedLocation.wardName,
+                    districtName: resolvedLocation.districtName,
+                    provinceName: resolvedLocation.provinceName
+                }),
+                coordinates: location.coordinates
+            };
+        }
         if (images) updateData.images = images;
 
         // Nếu đổi category

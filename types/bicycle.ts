@@ -1,4 +1,5 @@
 import { Document, Types } from "mongoose";
+import { IAddress } from './address';
 
 export type BicycleCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
@@ -6,44 +7,17 @@ export type BicycleStatus = 'PENDING' | 'APPROVED' | 'RESERVED' | 'SOLD' | 'HIDD
 
 export type InspectionStatus = 'PENDING' | 'REQUESTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
-
-
-
-
-// specifications - thông số kỹ thuật
 export interface IBicycleSpecifications {
-    yearManufactured?: number; // năm sx
-    frameSize?: string; // kích thước khung
-    frameMaterial?: string;// chất liệu khung
-    wheelSize?: string;  // Kích thước bánh
-    gearCount?: number;  // số cấp số
-    brakeType?: string; // loại phanh
-    color?: string; // màu sắc
-    weight?: number; // trọng lượng
+    yearManufactured?: number;
+    frameSize?: string;
+    frameMaterial?: string;
+    wheelSize?: string;
+    gearCount?: number;
+    brakeType?: string;
+    color?: string;
+    weight?: number;
 }
 
-
-// coodinates - tọa độ
-export interface IBicycleCoordinates {
-    type?: string;
-    coordinates?: number[];
-}
-
-
-
-// location
-export interface IBicycleLocation {
-    address?: string;
-    city?: string;
-    provinceId?: number;     // GHN Province ID
-    districtId?: number;     // GHN District ID
-    wardCode?: string;       // GHN Ward Code
-    coordinates?: IBicycleCoordinates;
-}
-
-
-
-// images [{}]
 export interface IBicycleImage {
     url: string;
     mediaType?: string;
@@ -51,8 +25,6 @@ export interface IBicycleImage {
     displayOrder?: number;
 }
 
-
-// seller
 export interface IBicycleSeller {
     _id: Types.ObjectId;
     fullName: string;
@@ -60,30 +32,20 @@ export interface IBicycleSeller {
     reputationScore: number;
 }
 
-
-
-
-// category 
 export interface IBicycleCategory {
     _id: Types.ObjectId;
     name: string;
 }
 
-
-
-// brand
 export interface IBicycleBrand {
     _id: Types.ObjectId;
     name: string;
 }
 
-
-// model (dòng xe)
 export interface IBicycleModelRef {
     _id: Types.ObjectId;
     name: string;
 }
-
 
 export interface IBicycle {
     title: string;
@@ -97,18 +59,16 @@ export interface IBicycle {
     isInspected: boolean;
     expiresAt?: Date;
 
-    // Inspection fields
     inspectionStatus?: InspectionStatus;
     assignedInspectorId?: Types.ObjectId;
     inspectionReportId?: Types.ObjectId;
 
-    // Embedded objects
     category: IBicycleCategory;
     brand?: IBicycleBrand;
     model?: IBicycleModelRef;
     seller: IBicycleSeller;
     specifications?: IBicycleSpecifications;
-    location?: IBicycleLocation;
+    location?: IAddress;
     images?: IBicycleImage[];
 }
 

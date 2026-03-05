@@ -180,10 +180,6 @@
           "success": {
             "type": "boolean",
             "example": false
-          },
-          "message": {
-            "type": "string",
-            "example": "Error message"
           }
         }
       },
@@ -527,8 +523,26 @@
               "address": {
                 "type": "string"
               },
-              "city": {
+              "district": {
                 "type": "string"
+              },
+              "ward": {
+                "type": "string"
+              },
+              "provinceId": {
+                "type": "number",
+                "description": "GHN Province ID",
+                "example": 201
+              },
+              "districtId": {
+                "type": "number",
+                "description": "GHN District ID",
+                "example": 1490
+              },
+              "wardCode": {
+                "type": "string",
+                "description": "GHN Ward Code",
+                "example": "1A0101"
               },
               "coordinates": {
                 "type": "object",
@@ -628,7 +642,54 @@
             "type": "object"
           },
           "location": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "example": "123 Le Loi"
+              },
+              "district": {
+                "type": "string",
+                "example": "Ba Dinh"
+              },
+              "ward": {
+                "type": "string",
+                "example": "Doi Can"
+              },
+              "provinceId": {
+                "type": "number",
+                "description": "GHN Province ID",
+                "example": 201
+              },
+              "districtId": {
+                "type": "number",
+                "description": "GHN District ID",
+                "example": 1490
+              },
+              "wardCode": {
+                "type": "string",
+                "description": "GHN Ward Code",
+                "example": "1A0101"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Point"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "[longitude, latitude]"
+                  }
+                }
+              }
+            }
           },
           "images": {
             "type": "array",
@@ -694,7 +755,54 @@
             "type": "object"
           },
           "location": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "example": "123 Le Loi"
+              },
+              "district": {
+                "type": "string",
+                "example": "Ba Dinh"
+              },
+              "ward": {
+                "type": "string",
+                "example": "Doi Can"
+              },
+              "provinceId": {
+                "type": "number",
+                "description": "GHN Province ID",
+                "example": 201
+              },
+              "districtId": {
+                "type": "number",
+                "description": "GHN District ID",
+                "example": 1490
+              },
+              "wardCode": {
+                "type": "string",
+                "description": "GHN Ward Code",
+                "example": "1A0101"
+              },
+              "coordinates": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Point"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "description": "[longitude, latitude]"
+                  }
+                }
+              }
+            }
           },
           "images": {
             "type": "array",
@@ -1492,10 +1600,6 @@
                     "success": {
                       "type": "boolean",
                       "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Password changed successfully"
                     }
                   }
                 }
@@ -3750,11 +3854,12 @@
             }
           },
           {
-            "name": "city",
+            "name": "provinceId",
             "in": "query",
             "schema": {
-              "type": "string"
-            }
+              "type": "integer"
+            },
+            "description": "Filter by GHN provinceId"
           },
           {
             "name": "search",

@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
-import { IBicycle, IBicycleDocument } from '../types/bicycle';
+import { IBicycleDocument } from '../types/bicycle';
+import { addressSubSchema } from './schemas/addressSchema';
 
 
 const bicycleSchema = new Schema<IBicycleDocument>(
@@ -47,7 +48,6 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             type: Boolean,
             default: false
         },
-        // Inspection fields
         inspectionStatus: {
             type: String,
             enum: ['PENDING', 'REQUESTED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED'],
@@ -126,24 +126,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             color: String,
             weight: Number
         },
-        location: {
-            address: String,
-            city: String,
-            provinceId: Number,
-            districtId: Number,
-            wardCode: String,
-            coordinates: {
-                type: {
-                    type: String,
-                    enum: ['Point'],
-                    default: 'Point'
-                },
-                coordinates: {
-                    type: [Number],
-                    index: '2dsphere'
-                }
-            }
-        },
+        location: addressSubSchema,
         images: [{
             url: {
                 type: String,
