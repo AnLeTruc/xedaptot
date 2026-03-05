@@ -14,7 +14,7 @@ export const createBrandSchema = z.object({
 export const updateBrandSchema = z.object({
     name: z.string().min(1).max(100).optional(),
     country: z.string().max(100).optional(),
-    imageUrl: z.string().url('imageUrl must be a valid URL').optional(),
+    imageUrl: z.string().url('Please provide a valid image URL').optional().or(z.literal('')),
     isActive: z.boolean().optional()
 });
 

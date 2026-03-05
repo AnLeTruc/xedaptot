@@ -14,14 +14,14 @@ export const createBicycleModelSchema = z.object({
     description: z.string()
         .max(2000)
         .optional(),
-    imageUrl: z.string().url('Must be a valid URL').optional()
+    imageUrl: z.string().url('Please provide a valid image URL').optional().or(z.literal(''))
 });
 
 export const updateBicycleModelSchema = z.object({
     name: z.string().min(1).max(200).optional(),
     year: z.number().min(1900).optional(),
     description: z.string().max(2000).optional(),
-    imageUrl: z.string().url().optional(),
+    imageUrl: z.string().url('Please provide a valid image URL').optional().or(z.literal('')),
     isActive: z.boolean().optional()
 });
 

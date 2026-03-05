@@ -15,8 +15,6 @@ export const getAllBicycleModels = async (
         if (search) filter.name = { $regex: search, $options: 'i' };
         if (isActive !== undefined) {
             filter.isActive = isActive === 'true';
-        } else {
-            filter.isActive = true;
         }
 
         const pageNum = Math.max(1, Number(page));
