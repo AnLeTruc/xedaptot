@@ -1,0 +1,212 @@
+import { Response } from 'express';
+import { AuthRequest } from '../../types';
+import User from '../../models/User';
+import Order from '../../models/Order';
+import Bicycle from '../../models/Bicycle';
+import Wallet from '../../models/Wallet';
+
+// GET /admin/users - Get all users with filters & pagination
+export const getAllUsers = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const {
+            role,
+            isActive,
+            search,
+            page = '1',
+            limit = '10',
+            sort = '-createdAt'
+        } = req.query;
+
+        const query: any = {};
+
+        // Filter by role
+        if (role) {
+            query.roles = role;
+        }
+
+        // Filter by active status
+        if (isActive !== undefined) {
+            query.isActive = isActive === 'true';
+        }
+
+        // Search by name or email
+        if (search && typeof search === 'string') {
+            query.$or = [
+                { fullName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const pageNum = Math.max(1, +page);
+        const limitNum = Math.min(50, Math.max(1, +limit));
+
+        const [users, total] = await Promise.all([
+            User.find(query)
+                .select('-passwordResetCodeHash -passwordResetTokenHash -emailVerificationToken')
+                .sort(sort as string)
+                .skip((pageNum - 1) * limitNum)
+                .limit(limitNum),
+            User.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                users,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages: Math.ceil(total / limitNum)
+                }
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// GET /admin/users/:id - Get user by ID with stats
+export const getUserById = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id)
+            .select('-passwordResetCodeHash -passwordResetTokenHash -emailVerificationToken');
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        // Get user stats in parallel
+        const [
+            totalOrders,
+            totalBicycles,
+            activeBicycles,
+            wallet
+        ] = await Promise.all([
+            Order.countDocuments({
+                $or: [{ 'buyer._id': id }, { 'seller._id': id }]
+            }),
+            Bicycle.countDocuments({ 'seller._id': id }),
+            Bicycle.countDocuments({ 'seller._id': id, status: 'APPROVED' }),
+            Wallet.findOne({ userId: id })
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                ...user.toObject(),
+                stats: {
+                    totalOrders,
+                    totalBicycles,
+                    activeBicycles,
+                    walletBalance: wallet?.availableBalance ?? 0
+                }
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// PATCH /admin/users/:id - Update user
+export const updateUser = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { fullName, phone, isActive, roles } = req.body;
+
+        const updateData: any = {};
+        if (fullName !== undefined) updateData.fullName = fullName;
+        if (phone !== undefined) updateData.phone = phone;
+        if (isActive !== undefined) updateData.isActive = isActive;
+        if (roles !== undefined) updateData.roles = roles;
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-passwordResetCodeHash -passwordResetTokenHash -emailVerificationToken');
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User updated successfully',
+            data: user
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// DELETE /admin/users/:id - Deactivate user (soft delete)
+export const deactivateUser = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        // Prevent admin from deactivating themselves
+        if (id === req.user?._id?.toString()) {
+            res.status(400).json({
+                success: false,
+                message: 'Cannot deactivate your own account'
+            });
+            return;
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { isActive: false },
+            { new: true }
+        );
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'User deactivated successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
