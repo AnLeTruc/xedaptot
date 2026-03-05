@@ -128,7 +128,7 @@ export const depositToWallet = async (
         if (ipAddr === '::1') ipAddr = '127.0.0.1';
         if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
                // Gọi VNPay service tạo URL
-        const paymentUrl = createPaymentUrl({
+        const   paymentUrl = createPaymentUrl({
             amount,
             orderId: txnRef,                     // Gửi mã nội bộ cho VNPay
             orderInfo: `Deposit+${txnRef}`,
@@ -192,7 +192,6 @@ export const vnpayReturn = async (
             transaction.data = { ...transaction.data, status: 'FAILED' };
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
-            transaction.markModified('data');
             await transaction.save();
             // Không cộng tiền! Chỉ update transaction → FAILED
 
@@ -222,7 +221,6 @@ export const vnpayReturn = async (
         transaction.gatewayTransactionId = gatewayTxnId;
         transaction.gatewayResponseCode = responseCode;
         transaction.data = { ...transaction.data, status: 'SUCCESS' };
-        transaction.markModified('data');
         await transaction.save();
         
         const frontendUrl = process.env.FRONTEND_URL;
@@ -284,7 +282,6 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
             transaction.data = { ...transaction.data, status: 'FAILED' };
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
-            transaction.markModified('data');
             await transaction.save();
             res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
             return;
@@ -307,7 +304,6 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
         transaction.gatewayTransactionId = gatewayTxnId;
         transaction.gatewayResponseCode = responseCode;
         transaction.data = { ...transaction.data, status: 'SUCCESS' };
-        transaction.markModified('data');
         await transaction.save();
 
         res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
