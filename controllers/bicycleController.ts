@@ -230,6 +230,27 @@ export const createBicycle = async (
             return;
         }
 
+        const activePackage = await UserPackage.findOne({
+            userId: req.user._id,
+            status: 'ACTIVE'
+        });
+
+        if (!activePackage) {
+            res.status(403).json({
+                success: false,
+                message: 'Bạn chưa có gói đăng tin. Vui lòng mua gói để tiếp tục.'
+            });
+            return;
+        }
+
+        if (activePackage.postRemaining <= 0) {
+            res.status(403).json({
+                success: false,
+                message: `Bạn đã dùng hết ${activePackage.package.postLimit} lượt đăng của gói "${activePackage.package.name}". Vui lòng mua gói mới.`
+            });
+            return;
+        }
+
         // Lấy thông tin category
         const categoryDoc = await Category.findById(categoryId);
         if (!categoryDoc) {
@@ -328,29 +349,9 @@ export const createBicycle = async (
             images: images
         });
 
-        const userPackage = await UserPackage.findOneAndUpdate(
-            {
-                userId: req.user._id,
-                status: 'ACTIVE',
-                postRemaining: { $gt: 0 }
-            },
-            {
-                $inc: { postedUsed: 1, postRemaining: -1 }
-            },
-            {
-                new: true,
-                sort: { createdAt: -1 }
-            }
-        );
-
-        if (!userPackage) {
-            await Bicycle.findByIdAndDelete(bicycle._id);
-            res.status(400).json({
-                success: false,
-                message: 'No active package available to post'
-            });
-            return;
-        }
+        await UserPackage.findByIdAndUpdate(activePackage._id, {
+            $inc: { postedUsed: 1, postRemaining: -1 }
+        });
 
         if (!req.user!.roles.includes('SELLER')) {
             await User.findByIdAndUpdate(req.user!._id, {
