@@ -4,6 +4,7 @@ import User from '../../models/User';
 import Order from '../../models/Order';
 import Bicycle from '../../models/Bicycle';
 import Wallet from '../../models/Wallet';
+import { fromZonedTime } from "date-fns-tz";
 
 // GET /admin/users - Get all users with filters & pagination
 export const getAllUsers = async (
@@ -208,5 +209,130 @@ export const deactivateUser = async (
             success: false,
             message: error.message
         });
+    }
+};
+
+//GET /admin/users/dashboard - Get user dashboard
+export const getUserDashboard = async (
+    req: AuthRequest,
+    res: Response
+): Promise <void> => {
+    try{
+        const timezone = "Asia/Ho_Chi_Minh";
+        const now = new Date();
+
+        const year = Number(req.query.year) || now.getFullYear();
+        const yearStart = fromZonedTime(`${year}-01-01 00:00:00`, timezone);
+        const yearEnd = fromZonedTime(`${year + 1}-01-01 00:00:00`, timezone);
+
+        const [stats] = await User.aggregate([
+            {
+                $facet: {
+                    totalUsers: [{
+                        $count: "count"
+                    }],
+                    activeUsers: [{
+                        $match: {
+                            isActive: true
+                        }
+                    },
+                    {
+                            $count: "count"
+                    }],
+                    inactiveUsers: [{
+                        $match: {
+                            isActive: false
+                        }
+                        
+                    },
+                    {
+                        $count: "count"
+                    }],
+                    roleDistribution: [
+                        {
+                            $unwind: "$roles"
+                        },
+                        {
+                            $group: {
+                                _id: "$roles",
+                                count: {
+                                    $sum: 1
+                                }
+                            }
+                        },
+                        {
+                            $project:{
+                                _id: 0,
+                                role: "$_id",
+                                count: 1
+                            }
+                        },
+                        {
+                            $sort: {
+                                role: 1
+                            }
+                        }    
+                    ],
+                    usersByMonth: [
+                        {
+                            $match: {
+                               createdAt: {
+                                    $gte: yearStart,
+                                    $lt: yearEnd
+                               }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: {
+                                    month: {
+                                        $month: { date: "$createdAt", timezone }
+                                    }
+                                },
+                                count: {
+                                    $sum: 1
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                            _id: 0,
+                            month: "$_id.month",
+                            count: 1
+                            }
+                        },
+                        {
+                            $sort: {
+                                month :1
+                            }
+                        }  
+                    ]
+                }
+            }
+        ]);
+
+        const monthCheck = Array.from({ length: 12 }, (_, i) => {
+            const month = i + 1;
+            const found = stats?.usersByMonth?.find((doc: any) => doc.month === month);
+            return { month, count: found ? found.count : 0 };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                year,
+                totalUsers: stats?.totalUsers?.[0]?.count ?? 0,
+                activeUsers: stats?.activeUsers?.[0]?.count ?? 0,
+                inactiveUsers: stats?.inactiveUsers?.[0]?.count ?? 0,
+                roleDistribution: stats?.roleDistribution ?? [],
+                usersByMonth: monthCheck
+
+            }
+        })
+    } catch (error: any){
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
     }
 };

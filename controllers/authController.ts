@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types';
 import User from '../models/User';
+import Package from '../models/Package';
+import UserPackage from '../models/UserPackage';
 import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUtils';
 import { sendMail, sendVerificationEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
@@ -149,6 +151,29 @@ const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'face
     }
 };
 
+//Helper: Assign free package to new user
+const assignFreePackage = async (userId: any): Promise<void> => {
+    try {
+        const freePackage = await Package.findOne({ code: 'FREE' });
+        if (!freePackage) return;
+        await UserPackage.create({
+            userId,
+            packageId: freePackage._id,
+            package: {
+                _id: freePackage._id,
+                name: freePackage.name,
+                code: freePackage.code,
+                postLimit: freePackage.postLimit,
+            },
+            postedUsed: 0,
+            postRemaining: freePackage.postLimit,
+            status: 'ACTIVE',
+            purchasedAt: new Date(),
+        });
+    } catch (_) {
+    }
+};
+
 //Register/Sign in with firebase
 export const firebaseAuth = async (
     req: AuthRequest,
@@ -236,6 +261,9 @@ export const firebaseAuth = async (
             isActive: true,
             authProvider
         });
+
+        await assignFreePackage(newUser._id);
+
 
         res.status(201).json({
             success: true,

@@ -5267,6 +5267,73 @@
         }
       }
     },
+    "/admin/users/dashboard": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get user dashboard stats",
+        "description": "Total users, role distribution, active vs inactive, and users by month.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Year for monthly statistics",
+            "schema": {
+              "type": "integer",
+              "example": 2026
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User dashboard statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "year": { "type": "integer", "example": 2026 },
+                        "totalUsers": { "type": "integer", "example": 120 },
+                        "activeUsers": { "type": "integer", "example": 110 },
+                        "inactiveUsers": { "type": "integer", "example": 10 },
+                        "roleDistribution": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "role": { "type": "string", "enum": ["BUYER","SELLER","ADMIN","INSPECTOR"] },
+                              "count": { "type": "integer", "example": 60 }
+                            }
+                          }
+                        },
+                        "usersByMonth": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+                              "count": { "type": "integer", "example": 8 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
     "/admin/inspectors": {
       "post": {
         "tags": [
