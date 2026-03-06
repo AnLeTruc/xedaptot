@@ -453,6 +453,8 @@ export const emailRegister = async (
             authProvider: 'email'
         });
 
+        await assignFreePackage(newUser._id);
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
