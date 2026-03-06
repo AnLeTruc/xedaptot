@@ -8,7 +8,8 @@ export const createCategorySchema = z.object({
         .max(100, 'Name cannot exceed 100 characters'),
     description: z.string()
         .max(500, 'Description cannot exceed 500 characters'),
-    imageUrl: z.string().url('Please provide a valid image URL').optional().or(z.literal('')),
+    imageUrl: z.string()
+        .url('Invalid must be a valid URL').optional(),
     isActive: z.boolean().default(true),
 })
 
@@ -21,7 +22,7 @@ export const updateCategorySchema = z.object({
     description: z.string()
         .max(500, 'Description cannot exceed 500 characters')
         .optional(),
-    imageUrl: z.string().url('Please provide a valid image URL').optional().or(z.literal('')),
+    imageUrl: z.url('imageUrl must be a valid URL').optional(),
     isActive: z.boolean().optional()
 });
 
