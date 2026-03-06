@@ -5,6 +5,7 @@ import Brand from '../models/Brand';
 import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
+import UserPackage from '../models/UserPackage';
 import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
 import { buildFullAddress } from '../utils/address';
@@ -326,6 +327,30 @@ export const createBicycle = async (
             location: locationData,
             images: images
         });
+
+        const userPackage = await UserPackage.findOneAndUpdate(
+            {
+                userId: req.user._id,
+                status: 'ACTIVE',
+                postRemaining: { $gt: 0 }
+            },
+            {
+                $inc: { postedUsed: 1, postRemaining: -1 }
+            },
+            {
+                new: true,
+                sort: { createdAt: -1 }
+            }
+        );
+
+        if (!userPackage) {
+            await Bicycle.findByIdAndDelete(bicycle._id);
+            res.status(400).json({
+                success: false,
+                message: 'No active package available to post'
+            });
+            return;
+        }
 
         if (!req.user!.roles.includes('SELLER')) {
             await User.findByIdAndUpdate(req.user!._id, {
