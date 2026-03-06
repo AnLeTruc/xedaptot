@@ -8,9 +8,14 @@ const connectDB = require('./config/db');
 const { setupSwagger } = require('./config/swagger');
 const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { startCleanupJob } = require('./services/cleanupService');
+const { releaseFundsJob } = require('./jobs/releaseFunds');
+const cron = require('node-cron');
 
 // Start Cronjob
 startCleanupJob();
+//Cronjob releasing funds
+cron.schedule('* * * * *', releaseFundsJob);
+console.log('[Cronjob] Release funds job scheduled: every MINUTE (TEST)');
 
 //Routes
 const authRouter = require('./routes/auth').default;
