@@ -6470,6 +6470,88 @@
         }
       }
     },
+    "/orders/{id}/pay-vnpay": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Pay for an order via VNPay",
+        "description": "Create a VNPay payment URL for the order. Amount is calculated from order status (deposit/full/remaining).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bankCode": {
+                    "type": "string",
+                    "description": "Optional VNPay bank code",
+                    "example": "NCB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "VNPay payment URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paymentUrl": {
+                          "type": "string",
+                          "example": "https://sandbox.vnpayment.vn/paymentv2/..."
+                        },
+                        "txnRef": {
+                          "type": "string",
+                          "example": "OPY-ABC123"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "example": 1500000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payment state or reservation expired"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
     "/orders/{id}/cancel": {
       "put": {
         "tags": [
