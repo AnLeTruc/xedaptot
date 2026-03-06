@@ -49,6 +49,7 @@ export interface CreatePaymentUrlParams {
     ipAddr: string;
     locale?: 'vn' | 'en'; // Ngôn ngữ hiển thị trên VNPay
     bankCode?: string;
+    returnUrl?: string;
 }
 
 
@@ -66,7 +67,7 @@ export function createPaymentUrl(params: CreatePaymentUrlParams): string {
         vnp_OrderInfo: orderInfo,       // Nội dung giao dịch (hiển thị cho user)
         vnp_OrderType: 'other',         // Loại hàng: 'other' cho topup ví
         vnp_Amount: (amount * 100).toString(),  // ⚠️ NHÂN 100! VNPay quy định
-        vnp_ReturnUrl: VNP_RETURN_URL,  // URL redirect về sau thanh toán
+        vnp_ReturnUrl: params.returnUrl || VNP_RETURN_URL,  // URL redirect về sau thanh toán
         vnp_IpAddr: ipAddr,            // IP user
         vnp_CreateDate: formatVnpDate(now),  // Thời gian tạo
     };
