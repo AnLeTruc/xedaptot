@@ -2,6 +2,15 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../types';
 import UserPackage from '../models/UserPackage';
 import Package from '../models/Package';
+import Wallet from '../models/Wallet';
+import Transaction from '../models/Transaction';
+import { getOrCreateWallet } from './walletController';
+import mongoose from 'mongoose';
+
+const generateCode = (prefix: string) => {
+    const d = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+    return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+};
 
 
 
@@ -113,80 +122,108 @@ export const getUserPackageById = async (
 
 // POST /api/user-packages/purchase
 // Purchase a new package
-export const purchasePackage = async (
-    req: AuthRequest,
-    res: Response
-): Promise<void> => {
+export const purchasePackage = async (req: AuthRequest, res: Response): Promise<void> => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const userId = req.user?._id;
         const { packageId } = req.body;
 
         if (!packageId) {
-            res.status(400).json({
-                success: false,
-                message: 'Package ID is required'
-            });
+            await session.abortTransaction(); session.endSession();
+            res.status(400).json({ success: false, message: 'Package ID is required' });
             return;
         }
 
-        // Check if user already has an active package
-        const existingActive = await UserPackage.findOne({
-            userId,
-            status: 'ACTIVE'
-        });
-
+        // Kiểm tra user đã có gói ACTIVE chưa
+        const existingActive = await UserPackage.findOne({ userId, status: 'ACTIVE' }).session(session);
         if (existingActive) {
-            res.status(400).json({
-                success: false,
-                message: 'You already have an active package. Please cancel it first.'
-            });
+            await session.abortTransaction(); session.endSession();
+            res.status(400).json({ success: false, message: 'You already have an active package. Please cancel it first.' });
             return;
         }
 
-        // Find the package
-        const packageItem = await Package.findById(packageId);
+        // Tìm package
+        const packageItem = await Package.findById(packageId).session(session);
         if (!packageItem) {
-            res.status(404).json({
-                success: false,
-                message: 'Package not found'
-            });
+            await session.abortTransaction(); session.endSession();
+            res.status(404).json({ success: false, message: 'Package not found' });
+            return;
+        }
+        if (!packageItem.isActive) {
+            await session.abortTransaction(); session.endSession();
+            res.status(400).json({ success: false, message: 'This package is not available' });
             return;
         }
 
-        if (!packageItem.isActive) {
+        // Lấy ví
+        await getOrCreateWallet(userId as mongoose.Types.ObjectId);
+        const walletDoc = await Wallet.findOne({ userId }).session(session);
+        if (!walletDoc) {
+            await session.abortTransaction(); session.endSession();
+            res.status(500).json({ success: false, message: 'Wallet not found' });
+            return;
+        }
+
+        // Kiểm tra số dư
+        const availableBalance = walletDoc.totalEarn - walletDoc.totalWithdrawn - walletDoc.frozenBalance;
+        if (availableBalance < packageItem.price) {
+            await session.abortTransaction(); session.endSession();
             res.status(400).json({
                 success: false,
-                message: 'This package is not available'
+                message: `Số dư không đủ. Cần: ${packageItem.price.toLocaleString('vi-VN')}đ, Khả dụng: ${availableBalance.toLocaleString('vi-VN')}đ`
             });
             return;
         }
 
-        // Create user package with snapshot
-        const userPackage = await UserPackage.create({
+        // Tạo Transaction
+        const [transaction] = await Transaction.create([{
+            transactionCode: generateCode('PKG'),
+            paymentMethod: 'WALLET',
+            walletId: walletDoc._id,
+            type: 'PACKAGE_PURCHASE',
+            amount: packageItem.price,
+            balanceBefore: availableBalance,
+            balanceAfter: availableBalance - packageItem.price,
+            description: `Mua gói đăng tin: ${packageItem.name} (${packageItem.code})`
+        }], { session });
+
+        // Trừ ví
+        walletDoc.totalWithdrawn += packageItem.price;
+        await walletDoc.save({ session });
+
+        // Tạo UserPackage
+        const [userPackage] = await UserPackage.create([{
             userId,
             packageId: packageItem._id,
-            package: {
-                _id: packageItem._id,
-                name: packageItem.name,
-                code: packageItem.code,
-                postLimit: packageItem.postLimit
-            },
+            package: { _id: packageItem._id, name: packageItem.name, code: packageItem.code, postLimit: packageItem.postLimit },
             postedUsed: 0,
             postRemaining: packageItem.postLimit,
             status: 'ACTIVE',
-            purchasedAt: new Date()
-        });
+            purchasedAt: new Date(),
+            transactionId: transaction._id
+        }], { session });
+
+        await session.commitTransaction();
+        session.endSession();
 
         res.status(201).json({
             success: true,
-            message: 'Package purchased successfully',
-            data: userPackage
+            message: 'Mua gói thành công',
+            data: {
+                userPackage,
+                transaction: {
+                    code: transaction.transactionCode,
+                    amount: transaction.amount,
+                    balanceBefore: transaction.balanceBefore,
+                    balanceAfter: transaction.balanceAfter
+                }
+            }
         });
     } catch (error: any) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        await session.abortTransaction();
+        session.endSession();
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

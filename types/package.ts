@@ -6,6 +6,7 @@ export interface IPackage {
     price: number;
     postLimit: number;
     isActive: boolean;
+    isPopular: boolean;
 }
 
 

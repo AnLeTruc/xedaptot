@@ -17,7 +17,8 @@ export const createPackageSchema = z.object({
         .int('Post limit must be an integer')
         .min(0, 'Post limit cannot be negative'),
 
-    isActive: z.boolean().optional().default(true)
+    isActive: z.boolean().optional().default(true),
+    isPopular: z.boolean().optional().default(false)
 });
 
 
@@ -26,7 +27,8 @@ export const updatePackageSchema = z.object({
     code: z.string().min(1).max(20).toUpperCase().optional(),
     price: z.number().min(0).optional(),
     postLimit: z.number().int('Post limit must be an integer').min(0).optional(),
-    isActive: z.boolean().optional()
+    isActive: z.boolean().optional(),
+    isPopular: z.boolean().optional()
 });
 
 

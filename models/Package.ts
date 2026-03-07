@@ -31,7 +31,11 @@ const packageSchema = new Schema<IPackageDocument>(
         isActive: {
             type: Boolean,
             default: true
-        }
+        },
+        isPopular: {
+            type: Boolean,
+            default: false
+        },
     },
     {
         timestamps: true
