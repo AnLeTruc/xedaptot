@@ -34,7 +34,8 @@ const orderSchema = new Schema<IOrderDocument>({
     status: {
         type: String,
         enum: [
-            'RESERVED_FULL', 'RESERVED_DEPOSIT', 'DEPOSIT_EXPIRED',
+            'RESERVED_FULL', 'RESERVED_DEPOSIT', 'DEPOSIT_CONFIRMED',
+            'DEPOSIT_EXPIRED',
             'PAYMENT_TIMEOUT', 'WAITING_SELLER_CONFIRMATION',
             'CONFIRMED', 'REJECTED', 'WAITING_FOR_PICKUP',
             'IN_TRANSIT', 'DELIVERED', 'WAITING_REMAINING_PAYMENT',
