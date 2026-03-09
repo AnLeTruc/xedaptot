@@ -1,10 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
-
-//Helper for validate objectId
-const isValidateObjectId = (val: string) => {
-    return mongoose.Types.ObjectId.isValid(val);
-}
+import { isValidateObjectId } from "./customValidation";
 
 //Create conversation
 export const createConversationSchema = z.object({
