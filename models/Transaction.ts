@@ -29,7 +29,7 @@ const transactionSchema = new Schema<ITransactionDocument>(
         },
         type: {
             type: String,
-            enum: ['ESCROW_IN', 'ESCROW_RELEASE', 'REFUND', 'FORFEIT', 'WITHDRAW', 'DEPOSIT'],
+            enum: ['ESCROW_IN', 'ESCROW_RELEASE', 'REFUND', 'FORFEIT', 'WITHDRAW', 'DEPOSIT', 'PACKAGE_PURCHASE'],
             required: [true, 'Transaction type is required']
         },
         amount: {

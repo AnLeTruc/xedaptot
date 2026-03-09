@@ -11,7 +11,7 @@ const { startCleanupJob } = require('./services/cleanupService');
 const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
 
-// Start Cronjob
+// Start Cronjobs
 startCleanupJob();
 //Cronjob releasing funds
 cron.schedule('* * * * *', releaseFundsJob);
