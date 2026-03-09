@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('xedaptot:server');
 var http = require('http');
+var socketService = require('../services/socketService');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,7 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+socketService.initSocketServer(server);
 
 /**
  * Listen on provided port, on all network interfaces.
