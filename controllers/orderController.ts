@@ -175,7 +175,47 @@ export const createOrder = async (
 
 
 
+async function handleExpiredOrderForfeit(order: any) {
+    if (order.amounts.escrowAmount > 0) {
+        const forfeit = order.amounts.escrowAmount;
+        const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+        const sellerWallet = await getOrCreateWallet(order.seller._id);
+
+        if (buyerWallet && sellerWallet) {
+            const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
+            buyerWallet.frozenBalance -= forfeit;
+            sellerWallet.totalReceived += forfeit;
+            sellerWallet.totalEarn += forfeit;
+            await buyerWallet.save();
+            await sellerWallet.save();
+
+            const txnCode = generateCode('TXN');
+            await Transaction.create({
+                transactionCode: txnCode,
+                paymentMethod: 'SYSTEM',
+                walletId: sellerWallet._id,
+                type: 'FORFEIT',
+                amount: forfeit,
+                balanceBefore: sellerBalBefore,
+                balanceAfter: sellerBalBefore + forfeit,
+                description: `Reservation expired, deposit forfeited - ${order.orderCode}`,
+                orderId: order._id,
+            });
+
+            order.transactions.push({
+                transactionCode: txnCode, type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
+                createdAt: new Date(), walletId: sellerWallet._id, paymentMethod: 'SYSTEM',
+                balanceBefore: sellerBalBefore, balanceAfter: sellerBalBefore + forfeit,
+                description: `Reservation expired, deposit forfeited - ${order.orderCode}`,
+                paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+            } as any);
+        }
+        order.amounts.escrowAmount = 0;
+    }
+}
+
 export const payOrder = async (
+
     req: AuthRequest,
     res: Response
 ): Promise<void> => {
@@ -188,6 +228,7 @@ export const payOrder = async (
 
         // Check hết hạn giữ xe
         if (order.reservationExpiresAt && new Date() > order.reservationExpiresAt) {
+            await handleExpiredOrderForfeit(order);
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
@@ -209,6 +250,11 @@ export const payOrder = async (
             case 'RESERVED_DEPOSIT':
                 buyerPays = order.amounts.deposit;
                 txnType = 'DEPOSIT';
+                nextStatus = 'DEPOSIT_CONFIRMED';
+                break;
+            case 'DEPOSIT_CONFIRMED':
+                buyerPays = order.amounts.total - order.amounts.depositPaid;
+                txnType = 'REMAINING';
                 nextStatus = 'WAITING_SELLER_CONFIRMATION';
                 break;
             case 'WAITING_REMAINING_PAYMENT':
@@ -364,51 +410,59 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
 
         const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
 
-        // Before seller confirm → hoàn 100%
-        if (['RESERVED_FULL', 'RESERVED_DEPOSIT', 'WAITING_SELLER_CONFIRMATION'].includes(order.status)) {
-            const refund = order.amounts.escrowAmount;
-            if (refund > 0 && buyerWallet) {
-                const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
-                buyerWallet.frozenBalance -= refund;
-                await buyerWallet.save();
+        const sellerWallet = await getOrCreateWallet(order.seller._id);
 
+        let refund = 0;
+        let forfeit = 0;
+
+        if (['RESERVED_FULL', 'RESERVED_DEPOSIT'].includes(order.status)) {
+            refund = order.amounts.escrowAmount;
+            order.status = 'CANCELLED_BY_BUYER';
+        } else if (['DEPOSIT_CONFIRMED', 'WAITING_SELLER_CONFIRMATION', 'CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
+            forfeit = order.amounts.deposit;
+            refund = order.amounts.escrowAmount - forfeit;
+            order.status = 'CANCELLED_BY_BUYER';
+        } else {
+            return res.status(400).json({ success: false, message: `Cannot cancel order in ${order.status} status` });
+        }
+
+        if (buyerWallet && (refund > 0 || forfeit > 0)) {
+            const buyerBalBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+            const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
+
+            if (refund > 0) {
+                buyerWallet.frozenBalance -= refund;
+                const txnCode = generateCode('TXN');
                 await Transaction.create({
-                    transactionCode: generateCode('TXN'),
+                    transactionCode: txnCode,
                     paymentMethod: 'SYSTEM',
                     walletId: buyerWallet._id,
                     type: 'REFUND',
                     amount: refund,
-                    balanceBefore: balBefore,
-                    balanceAfter: balBefore + refund,
+                    balanceBefore: buyerBalBefore,
+                    balanceAfter: buyerBalBefore + refund,
                     description: `Refund - ${order.orderCode}`,
                     orderId: order._id,
                 });
 
                 order.transactions.push({
-                    transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+                    transactionCode: txnCode, type: 'REFUND', amount: refund, status: 'SUCCESS',
                     createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
-                    balanceBefore: balBefore, balanceAfter: balBefore + refund,
+                    balanceBefore: buyerBalBefore, balanceAfter: buyerBalBefore + refund,
                     description: `Refund - ${order.orderCode}`,
                     paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
                 } as any);
             }
-            order.status = 'CANCELLED';
-        }
-        // After seller confirm → mất cọc (chuyển cho Seller)
-        else if (['CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT'].includes(order.status)) {
-            const forfeit = order.amounts.escrowAmount;
-            const sellerWallet = await getOrCreateWallet(order.seller._id);
 
-            if (forfeit > 0 && buyerWallet) {
-                const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
+            if (forfeit > 0) {
                 buyerWallet.frozenBalance -= forfeit;
                 sellerWallet.totalReceived += forfeit;
                 sellerWallet.totalEarn += forfeit;
-                await buyerWallet.save();
                 await sellerWallet.save();
 
+                const txnCode = generateCode('TXN');
                 await Transaction.create({
-                    transactionCode: generateCode('TXN'),
+                    transactionCode: txnCode,
                     paymentMethod: 'SYSTEM',
                     walletId: sellerWallet._id,
                     type: 'FORFEIT',
@@ -420,16 +474,14 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
                 });
 
                 order.transactions.push({
-                    transactionCode: generateCode('TXN'), type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
+                    transactionCode: txnCode, type: 'FORFEIT', amount: forfeit, status: 'SUCCESS',
                     createdAt: new Date(), walletId: sellerWallet._id, paymentMethod: 'SYSTEM',
                     balanceBefore: sellerBalBefore, balanceAfter: sellerBalBefore + forfeit,
                     description: `Buyer cancelled, deposit forfeited - ${order.orderCode}`,
                     paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
                 } as any);
             }
-            order.status = 'CANCELLED_BY_BUYER';
-        } else {
-            return res.status(400).json({ success: false, message: `Cannot cancel order in ${order.status} status` });
+            await buyerWallet.save();
         }
 
         order.cancelledAt = new Date();
@@ -584,9 +636,9 @@ export const deliverOrder = async (req: AuthRequest, res: Response) => {
     if (!order || order.status !== 'IN_TRANSIT')
         return res.status(400).json({ success: false, message: 'Order must be IN_TRANSIT to deliver' });
 
-    // Nếu DEPOSIT_10: chưa trả hết → chờ trả nốt
-    // Nếu FULL_100: đã trả hết → giao xong
-    order.status = order.paymentType === 'DEPOSIT_10' ? 'WAITING_REMAINING_PAYMENT' : 'DELIVERED';
+    // Check nếu đã trả đủ thì chuyển thẳng sang DELIVERED
+    const isPaidTotal = order.amounts.depositPaid + order.amounts.remainingPaid >= order.amounts.total;
+    order.status = isPaidTotal ? 'DELIVERED' : 'WAITING_REMAINING_PAYMENT';
     await order.save();
     res.status(200).json({ success: true, data: order });
 };
@@ -603,6 +655,7 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
         }
 
         if (order.reservationExpiresAt && new Date() > order.reservationExpiresAt) {
+            await handleExpiredOrderForfeit(order);
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
@@ -618,6 +671,9 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
                 buyerPays = order.amounts.total; txnType = 'FULL'; break;
             case 'RESERVED_DEPOSIT':
                 buyerPays = order.amounts.deposit; txnType = 'DEPOSIT'; break;
+            case 'DEPOSIT_CONFIRMED':
+                buyerPays = order.amounts.total - order.amounts.depositPaid;
+                txnType = 'REMAINING'; break;
             case 'WAITING_REMAINING_PAYMENT':
                 buyerPays = order.amounts.total - order.amounts.depositPaid;
                 txnType = 'REMAINING'; break;
@@ -785,7 +841,17 @@ async function _processVnpayOrderSuccess(
     } else order.amounts.remainingPaid = vnpAmount;
 
     order.amounts.escrowAmount += vnpAmount;
-    order.status = (txnType === 'REMAINING' ? 'COMPLETED' : 'WAITING_SELLER_CONFIRMATION') as any;
+    // DEPOSIT → DEPOSIT_CONFIRMED, REMAINING from DEPOSIT_CONFIRMED → WAITING_SELLER_CONFIRMATION
+    // FULL → WAITING_SELLER_CONFIRMATION, REMAINING from WAITING_REMAINING_PAYMENT → COMPLETED
+    if (txnType === 'DEPOSIT') {
+        order.status = 'DEPOSIT_CONFIRMED' as any;
+    } else if (txnType === 'FULL') {
+        order.status = 'WAITING_SELLER_CONFIRMATION' as any;
+    } else {
+        // REMAINING: check if coming from DEPOSIT_CONFIRMED or WAITING_REMAINING_PAYMENT
+        const prevStatus = order.status;
+        order.status = (prevStatus === 'DEPOSIT_CONFIRMED' ? 'WAITING_SELLER_CONFIRMATION' : 'COMPLETED') as any;
+    }
 
     order.transactions.push({
         transactionCode: transaction.transactionCode,

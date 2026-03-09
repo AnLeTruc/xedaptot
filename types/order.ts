@@ -4,6 +4,7 @@ import { IAddress } from './address';
 export type OrderStatus =
     | 'RESERVED_FULL'
     | 'RESERVED_DEPOSIT'
+    | 'DEPOSIT_CONFIRMED'
     | 'DEPOSIT_EXPIRED'
     | 'PAYMENT_TIMEOUT'
     | 'WAITING_SELLER_CONFIRMATION'
@@ -24,7 +25,7 @@ export type PaymentType = 'DEPOSIT_10' | 'FULL_100';
 export const FEE_CONFIG = { DEPOSIT_PERCENT: 0.1 };
 export const ORDER_TIMEOUTS = {
     FULL_PAYMENT: 10 * 60 * 60 * 1000,
-    DEPOSIT_RESERVATION: 48 * 60 * 60 * 1000,
+    DEPOSIT_RESERVATION: 2 * 60 * 1000,
     FUNDS_RELEASE: 48 * 60 * 60 * 1000,
 };
 
