@@ -71,14 +71,26 @@ export const getAllBicycles = async (
             minPrice,
             maxPrice,
             provinceId,
+            provinceName,
             search,
             page = 1,
             limit = 10,
             sort = '-createdAt'  // Mặc định sort mới nhất
         } = req.query;
         const filter: any = {};
-        if (provinceId) {
-            filter['location.provinceId'] = Number(provinceId);
+        if (provinceId || provinceName) {
+            const locationConditions: any[] = [];
+            if (provinceId) {
+                locationConditions.push({ 'location.provinceId': Number(provinceId) });
+            }
+            if (provinceName) {
+                const nameRegex = new RegExp(provinceName as string, 'i');
+                locationConditions.push({ 'location.provinceName': nameRegex });
+                locationConditions.push({ 'location.city': nameRegex });
+            }
+            if (locationConditions.length > 0) {
+                filter.$or = locationConditions;
+            }
         }
 
         const userRoles = req.user?.roles || [];
