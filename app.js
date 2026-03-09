@@ -10,12 +10,14 @@ const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { startCleanupJob } = require('./services/cleanupService');
 const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
+const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
 
 // Start Cronjobs
 startCleanupJob();
 //Cronjob releasing funds
 cron.schedule('* * * * *', releaseFundsJob);
-console.log('[Cronjob] Release funds job scheduled: every MINUTE (TEST)');
+cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
+console.log('[Cronjob] Jobs scheduled (Release Funds & Cleanup Expired)');
 
 //Routes
 const authRouter = require('./routes/auth').default;
