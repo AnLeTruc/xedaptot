@@ -25,7 +25,7 @@ export type PaymentType = 'DEPOSIT_10' | 'FULL_100';
 export const FEE_CONFIG = { DEPOSIT_PERCENT: 0.1 };
 export const ORDER_TIMEOUTS = {
     FULL_PAYMENT: 10 * 60 * 60 * 1000,
-    DEPOSIT_RESERVATION: 2 * 60 * 1000,
+    DEPOSIT_RESERVATION: 1 * 60 * 60 * 1000,
     FUNDS_RELEASE: 48 * 60 * 60 * 1000,
 };
 
