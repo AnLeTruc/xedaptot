@@ -347,3 +347,39 @@ export const markAsRead = async (
         });
     }
 }
+
+// Unread count
+export const getUnreadCount = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = (req as any).user._id;
+
+        const conversations = await Conversation.find({
+            participants: userId
+        }).select('_id');
+
+        const conversationIds = conversations.map(c => c._id);
+
+        if (conversationIds.length === 0) {
+            res.status(200).json({ unreadCount: 0 });
+            return;
+        }
+
+        const unreadCount = await Message.countDocuments({
+            conversationId: { $in: conversationIds },
+            senderId: { $ne: userId },
+            isRead: false
+        });
+
+        res.status(200).json({
+            unreadCount: unreadCount
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
