@@ -175,3 +175,33 @@ export const getAllViolationReports = async (
     }
 };
 
+
+
+
+
+// ADMIN: CẬP NHẬT STATUS
+export const updateViolationReport = async (req: AuthRequest, res: Response) => {
+    try {
+        const { status, adminNotes } = req.body;
+        const report = await ViolationReport.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Violation report not found',
+            });
+        }
+        report.status = status;
+        if (adminNotes !== undefined) report.adminNotes = adminNotes;
+        await report.save();
+        res.json({
+            success: true,
+            message: 'Violation report updated successfully',
+            data: report,
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update violation report',
+        });
+    }
+};

@@ -21,5 +21,6 @@ router.post(
 
 
 router.get('/', ctrl.getAllViolationReports);
-
+router.put('/:id', validate(updateViolationReportSchema, 'body'),
+    ctrl.updateViolationReport);
 export default router;
