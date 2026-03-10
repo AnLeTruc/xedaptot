@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createConversation, getConversations, getMessageHistory } from '../controllers/conversationController';
+import { createConversation, getConversations } from '../controllers/conversationController';
 import { validate } from '../middleware/validate';
 import { createConversationSchema } from '../validations/conversationValidation';
 import { verifyToken, requireUser } from '../middleware/auth';
@@ -11,7 +11,6 @@ router.use('/:conversationId/messages', messageRouter);
 
 router.post('/', verifyToken, requireUser, validate(createConversationSchema, 'body'), createConversation);
 router.get('/', verifyToken, requireUser, getConversations)
-router.get('/:id', verifyToken, requireUser, getMessageHistory);
 
 
 export default router;
