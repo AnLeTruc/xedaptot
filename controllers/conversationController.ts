@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Conversation from "../models/Conversation";
 import User from "../models/User";
 
@@ -46,3 +47,143 @@ export const createConversation = async (
         })
     }
 }
+
+//User list conversation
+export const getConversations = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const userIdRaw = (req as any).user?._id;
+
+        if (!userIdRaw) {
+            res.status(401).json({
+                message: 'Unauthorized'
+            });
+            return;
+        }
+
+        const userId = new mongoose.Types.ObjectId(userIdRaw.toString());
+        const limit = parseInt(req.query.limit as string) || 15;
+        const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
+
+        const matchStage: any = {
+            participants: userId
+        };
+
+        if (cursor) {
+            matchStage.updatedAt = { $lt: cursor };
+        }
+
+        const conversations = await Conversation.aggregate([
+            { $match: matchStage },
+            { $sort: { updatedAt: -1 } },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: 'messages',
+                    localField: 'lastMessage',
+                    foreignField: '_id',
+                    as: 'lastMessageInfo'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$lastMessageInfo',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    chatPartnerId: {
+                        $first: {
+                            $filter: {
+                                input: '$participants',
+                                as: 'participantId',
+                                cond: { $ne: ['$$participantId', userId] }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'chatPartnerId',
+                    foreignField: '_id',
+                    as: 'chatPartnerObj'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$chatPartnerObj',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'messages',
+                    let: { convId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$conversationId', '$$convId'] },
+                                        { $ne: ['$senderId', userId] },
+                                        { $eq: ['$isRead', false] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $count: 'unreadCount' }
+                    ],
+                    as: 'unreadMessages'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    readStatus: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    lastMessage: {
+                        _id: '$lastMessageInfo._id',
+                        content: '$lastMessageInfo.content',
+                        type: '$lastMessageInfo.type',
+                        createdAt: '$lastMessageInfo.createdAt',
+                        isRead: '$lastMessageInfo.isRead',
+                        senderId: '$lastMessageInfo.senderId',
+                        bicycleId: '$lastMessageInfo.bicycleId'
+                    },
+                    chatPartner: {
+                        _id: '$chatPartnerObj._id',
+                        fullName: '$chatPartnerObj.fullName',
+                        avatarUrl: '$chatPartnerObj.avatarUrl',
+                        email: '$chatPartnerObj.email',
+                        roles: '$chatPartnerObj.roles'
+                    },
+                    unreadCount: {
+                        $ifNull: [{ $arrayElemAt: ['$unreadMessages.unreadCount', 0] }, 0]
+                    }
+                }
+            }
+        ]);
+
+        const nextCursor = conversations.length === limit ? conversations[conversations.length - 1].updatedAt : null;
+
+        res.status(200).json({
+            message: 'Conversations retrieved successfully',
+            data: conversations,
+            pagination: {
+                nextCursor,
+                limit
+            }
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
