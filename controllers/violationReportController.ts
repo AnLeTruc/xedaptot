@@ -86,3 +86,33 @@ export const createViolationReport = async (
     }
 }
 
+
+
+export const getMyViolationReports = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        const userId = req.user!._id;
+
+        const reports = await ViolationReport.find({
+            'reportedUser._id': userId
+        })
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            data: reports,
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to get violation reports',
+        });
+    }
+};
+
+
+
+
+
