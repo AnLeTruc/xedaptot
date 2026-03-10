@@ -26,6 +26,13 @@ const conversationSchema = new Schema<IConversationDocument>({
         type: Map,
         of: Date,
         default: new Map()
+    },
+    hiddenBy: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        default: []
     }
 }, { timestamps: true });
 

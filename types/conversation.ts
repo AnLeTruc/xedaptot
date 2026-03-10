@@ -5,6 +5,7 @@ export interface IConversation {
     participants: Types.ObjectId[];
     lastMessage?: Types.ObjectId;
     readStatus: Map<string, Date>;
+    hiddenBy?: Types.ObjectId[];
 }
 
 //Interface mongoose doc

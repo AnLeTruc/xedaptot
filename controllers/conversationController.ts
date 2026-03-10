@@ -69,7 +69,8 @@ export const getConversations = async (
         const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
 
         const matchStage: any = {
-            participants: userId
+            participants: userId,
+            hiddenBy: { $ne: userId }
         };
 
         if (cursor) {
@@ -375,6 +376,49 @@ export const getUnreadCount = async (
 
         res.status(200).json({
             unreadCount: unreadCount
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
+
+// Hide a conversation (Soft delete)
+export const hideConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        if (!conversationId) {
+            res.status(400).json({
+                message: 'Conversation ID field is required'
+            });
+            return;
+        }
+
+        const conversation = await Conversation.findOneAndUpdate(
+            {
+                _id: conversationId,
+                participants: currentUser
+            },
+            {
+                $addToSet: { hiddenBy: currentUser }
+            },
+            { new: true }
+        );
+
+        if (!conversation) {
+            res.status(404).json({ message: 'Không tìm thấy hội thoại hoặc không có quyền truy cập' });
+            return;
+        }
+
+        res.status(200).json({
+            message: 'Đã ẩn cuộc hội thoại thành công'
         });
 
     } catch (error: any) {
