@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const violationReportValidation = z.object({
+export const createViolationReportSchema = z.object({
     reportedUserId: z.string().min(1, 'Reported user ID is require'),
     bicycleId: z.string().min(1, 'Bicycle ID is required'),
     violationType: z.enum([

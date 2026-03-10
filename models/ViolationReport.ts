@@ -49,4 +49,8 @@ violationReportSchema.index({ 'reportedUser_.id': 1, status: 1 });
 violationReportSchema.index({ status: 1 });
 
 
-export default mongoose.model<IViolationReportDocument>('ViolationReport', violationReportSchema);
+const ViolationReport = mongoose.model<IViolationReportDocument>(
+    'ViolationReport',
+    violationReportSchema
+);
+export default ViolationReport;
