@@ -20,4 +20,6 @@ router.post(
 );
 
 
+router.get('/', ctrl.getAllViolationReports);
+
 export default router;

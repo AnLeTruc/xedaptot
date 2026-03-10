@@ -138,3 +138,40 @@ export const getViolationReportById = async (
 };
 
 
+
+
+export const getAllViolationReports = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        // Hỗ trợ filter theo status
+        const { status, page = 1, limit = 10 } = req.query;
+        const filter: any = {};
+        if (status) filter.status = status;
+        const skip = (Number(page) - 1) * Number(limit);
+        const [reports, total] = await Promise.all([
+            ViolationReport.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number(limit)),
+            ViolationReport.countDocuments(filter),
+        ]);
+        res.json({
+            success: true,
+            data: reports,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / Number(limit)),
+            },
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to get all violation reports',
+        });
+    }
+};
+
