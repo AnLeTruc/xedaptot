@@ -115,4 +115,26 @@ export const getMyViolationReports = async (
 
 
 
+export const getViolationReportById = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        const report = await ViolationReport.findById(req.params.id);
+
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Violation report not found',
+            });
+        }
+        res.json({ success: true, data: report });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to get violation report',
+        });
+    }
+};
+
 

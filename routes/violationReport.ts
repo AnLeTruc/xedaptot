@@ -12,7 +12,7 @@ const router = Router();
 router.use(verifyToken, requireUser);
 
 router.get('/me', ctrl.getMyViolationReports);
-
+router.get('/:id', ctrl.getViolationReportById)
 router.post(
     '/',
     validate(createViolationReportSchema, 'body'),
