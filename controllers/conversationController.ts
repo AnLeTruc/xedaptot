@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Conversation from "../models/Conversation";
 import User from "../models/User";
+import Message from "../models/Message";
 
 //Find & create conversation
 export const createConversation = async (
@@ -187,3 +188,84 @@ export const getConversations = async (
         });
     }
 };
+
+//Message History
+export const getMessageHistory = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        const limit = parseInt(req.query.limit as string) || 20;
+        const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
+
+        if (!conversationId) {
+            res.status(404).json({
+                message: 'ConversationID is required'
+            });
+            return;
+        }
+
+        const currentConversation = await Conversation.findById(conversationId);
+        if (!currentConversation) {
+            res.status(201).json({
+                message: 'Không tìm thấy cuộc hội thoại này'
+            });
+            return;
+        }
+
+        //Check participants
+        const isParticipant = currentConversation.participants.some(
+            (pariticipantId) => pariticipantId.toString() === currentUser.toString()
+        );
+        if (!isParticipant) {
+            res.status(403).json({
+                message: 'Bạn không có  quyền xem cuộc hội thoại này'
+            })
+            return;
+        };
+
+        //Query
+        const messageQuery: any = {
+            conversationId: conversationId
+        };
+
+        if (cursor) {
+            messageQuery.createdAt = {
+                $lt: cursor
+            };
+        }
+
+        const message = await Message.find(messageQuery)
+            .sort({
+                createdAt: -1
+            })
+            .limit(limit)
+            //Populate embed bicycle
+            .populate({
+                path: 'bicycleId',
+                select: 'name thumbnail price origin status'
+            });
+
+        //Next cursor
+        let nextCursor = null;
+        if (message.length === limit) {
+            nextCursor = message[message.length - 1].createdAt;
+        }
+
+        res.status(200).json({
+            message: 'Lấy lịch sử tin nhắn thành công',
+            data: message,
+            pagination: {
+                nextCursor: nextCursor,
+                limit: limit
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+}
