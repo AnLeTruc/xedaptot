@@ -60,7 +60,7 @@ export const getMessagesQuerySchema = z.object({
 //  Validate ID Conversation Param
 export const conversationParamsSchema = z.object({
     params: z.object({
-        id: z.string()
+        conversationId: z.string()
             .refine(isValidateObjectId, 'Invalid conversation Id format')
     })
 });

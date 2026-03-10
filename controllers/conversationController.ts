@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Conversation from "../models/Conversation";
-import { conversationParamsSchema } from "../validations/messageValidation";
 import User from "../models/User";
 
 //Find & create conversation
