@@ -1,4 +1,3 @@
-import { StoreIncrementCallback } from 'express-rate-limit';
 import { Document, Types } from 'mongoose';
 
 
