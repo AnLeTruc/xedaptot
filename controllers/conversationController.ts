@@ -269,3 +269,81 @@ export const getMessageHistory = async (
         });
     }
 }
+
+//Mark as read 
+export const markAsRead = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        if (!conversationId) {
+            res.status(400).json({
+                message: 'Conversation ID is required'
+            });
+            return;
+        }
+
+        const conversation = await Conversation.findOneAndUpdate(
+            {
+                _id: conversationId,
+                participants: currentUser
+            },
+            {
+                $set: { [`readStatus.${currentUser.toString()}`]: new Date() }
+            },
+            { new: true }
+        );
+
+        if (!conversation) {
+            res.status(404).json({ message: 'Không tìm thấy hội thoại hoặc không có quyền truy cập' });
+            return;
+        }
+
+        await Message.updateMany(
+            {
+                conversationId: conversationId,
+                senderId: { $ne: currentUser },
+                isRead: false
+            },
+            {
+                $set: { isRead: true }
+            }
+        );
+
+        try {
+            const { getIO } = require('../services/socketService');
+            const io = getIO();
+
+            // Find partner
+            const chatPartnerId = conversation.participants.find(
+                p => p.toString() !== currentUser.toString()
+            );
+
+            if (chatPartnerId) {
+                io.to(chatPartnerId.toString()).emit('messagesRead', {
+                    conversationId: conversationId,
+                    readBy: currentUser.toString(),
+                    readAt: new Date()
+                });
+
+                io.to(currentUser.toString()).emit('conversationRead', {
+                    conversationId: conversationId
+                });
+            }
+        } catch (socketError) {
+            console.error('Socket implementation ready but IO not initialized yet or not found', socketError);
+        }
+
+        res.status(200).json({
+            message: 'Đánh dấu đã đọc thành công'
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
