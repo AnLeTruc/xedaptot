@@ -42,8 +42,8 @@ export interface IDispute {
     disputeType: IDisputeType;
     status: IDisputeStatus;
     resolution: IDisputeResolution;
-    createAt?: Date;
-    resolveAt?: Date;   // thời gian admin bấm resolve
+    createdAt?: Date;
+    resolvedAt?: Date;   // thời gian admin bấm resolve
     complainant: IDisputeUser;      // người kiện
     respondent: IRespondentUser;        // ng bị kiện
     orderId: Types.ObjectId;
