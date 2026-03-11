@@ -18,7 +18,7 @@ export const rejectWithdrawRequestSchema = z.object({
         .max(500, 'Rejection reason cannot exceed 500 characters')
 });
 
-export const approveWithdrawRequestSchema = z.object({
+export const completeWithdrawRequestSchema = z.object({
     transferReference: z.string()
         .trim()
         .max(100, 'Transfer reference cannot exceed 100 characters')
