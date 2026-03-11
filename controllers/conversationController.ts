@@ -256,9 +256,12 @@ export const getMessageHistory = async (
             nextCursor = message[message.length - 1].createdAt;
         }
 
+        //Rev mess
+        const reversedMessages = message.reverse();
+
         res.status(200).json({
             message: 'Lấy lịch sử tin nhắn thành công',
-            data: message,
+            data: reversedMessages,
             pagination: {
                 nextCursor: nextCursor,
                 limit: limit
