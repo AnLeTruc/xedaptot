@@ -28,6 +28,13 @@ export const createConversation = async (
         const { receiverId } = req.body;
         const senderId = (req as any).user?._id;
 
+        if (!receiverId || !isValidateObjectId(receiverId)) {
+            res.status(400).json({
+                message: 'Invalid receiverId format'
+            });
+            return;
+        }
+
         if (senderId.toString() === receiverId.toString()) {
             res.status(400).json({
                 message: 'You cannot create a conversation with yourself'
@@ -293,7 +300,7 @@ export const getMessageHistory = async (
             //Populate embed bicycle
             .populate({
                 path: 'bicycleId',
-                select: 'name thumbnail price origin status'
+                select: 'title images price condition status'
             });
 
         //Next cursor
@@ -329,9 +336,9 @@ export const markAsRead = async (
         const conversationId = req.params.id;
         const currentUser = (req as any).user._id;
 
-        if (!conversationId) {
+        if (!conversationId || !isValidateObjectId(conversationId)) {
             res.status(400).json({
-                message: 'Conversation ID is required'
+                message: 'Invalid Conversation ID format'
             });
             return;
         }
@@ -407,9 +414,9 @@ export const markAsUnread = async (
         const conversationId = req.params.id;
         const currentUser = (req as any).user._id;
 
-        if (!conversationId) {
+        if (!conversationId || !isValidateObjectId(conversationId)) {
             res.status(400).json({
-                message: 'Conversation ID is required'
+                message: 'Invalid Conversation ID format'
             });
             return;
         }
@@ -470,7 +477,8 @@ export const getUnreadCount = async (
         const userId = (req as any).user._id;
 
         const conversations = await Conversation.find({
-            participants: userId
+            participants: userId,
+            hiddenBy: { $ne: userId }
         }).select('_id');
 
         const conversationIds = conversations.map(c => c._id);
@@ -506,9 +514,9 @@ export const hideConversation = async (
         const conversationId = req.params.id;
         const currentUser = (req as any).user._id;
 
-        if (!conversationId) {
+        if (!conversationId || !isValidateObjectId(conversationId)) {
             res.status(400).json({
-                message: 'Conversation ID field is required'
+                message: 'Invalid Conversation ID format'
             });
             return;
         }

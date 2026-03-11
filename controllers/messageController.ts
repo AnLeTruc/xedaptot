@@ -116,6 +116,8 @@ export const sendMessage = async (
             conversationId,
             {
                 $set: updateFields,
+                $pull: { hiddenBy: { $in: conversation.participants } },
+                $currentDate: { updatedAt: true },
                 ...(matchedWord ? { $inc: { violationCount: 1 } } : {})
             },
             { new: true }

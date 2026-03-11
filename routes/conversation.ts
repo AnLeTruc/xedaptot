@@ -8,8 +8,8 @@ import { searchMessages } from '../controllers/messageController';
 
 const router = Router();
 
-router.use('/:conversationId/messages', messageRouter);
 router.get('/messages/search', verifyToken, requireUser, searchMessages);
+router.use('/:conversationId/messages', messageRouter);
 
 router.post('/', verifyToken, requireUser, validate(createConversationSchema, 'body'), createConversation);
 router.get('/', verifyToken, requireUser, getConversations);

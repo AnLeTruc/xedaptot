@@ -14,7 +14,7 @@ export interface IMessage {
     content?: string;
     type: MessageType;
     bicycleId?: Types.ObjectId;
-    isRead: Boolean
+    isRead: boolean
 }
 
 //Interface for mongoose doc
