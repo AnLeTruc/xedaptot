@@ -4,6 +4,11 @@ import Message from '../models/Message';
 import { getIO } from '../services/socketService';
 import { MessageType } from '../types';
 import { maskRestrictedContent } from '../services/restrictedWordCache';
+import { isValidateObjectId } from '../validations/customValidation';
+
+const escapeRegex = (value: string): string => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
 
 //Send message
 export const sendMessage = async (
@@ -123,12 +128,12 @@ export const sendMessage = async (
                     $set: {
                         lockedStatus: 'TEMP_LOCKED',
                         lockedUntil: lockUntil,
-                        lockedReason: 'Vi phạm nội quy chat từ cấm quá 3 lần'
+                        lockedReason: 'Vi phạm nội quy chat từ cấm từ 3 lần trở lên'
                     }
                 });
                 updatedConversation.lockedStatus = 'TEMP_LOCKED' as any;
                 updatedConversation.lockedUntil = lockUntil;
-                updatedConversation.lockedReason = 'Vi phạm nội quy chat từ cấm quá 3 lần';
+                updatedConversation.lockedReason = 'Vi phạm nội quy chat từ cấm từ 3 lần trở lên';
             }
         }
 
@@ -186,6 +191,10 @@ export const searchMessages = async (
 
         //conversationId (Search Local)
         if (conversationId) {
+            if (typeof conversationId !== 'string' || !isValidateObjectId(conversationId)) {
+                res.status(400).json({ message: 'Invalid conversationId format' });
+                return;
+            }
             const conversation = await Conversation.findOne({
                 _id: conversationId,
                 participants: currentUser
@@ -207,9 +216,11 @@ export const searchMessages = async (
             return;
         }
 
+        const safeKeyword = escapeRegex(keyword);
+
         const messages = await Message.find({
             conversationId: { $in: conversationIdsToSearch },
-            content: { $regex: keyword, $options: 'i' }
+            content: { $regex: safeKeyword, $options: 'i' }
         })
             .sort({ createdAt: -1 })
             .limit(50)

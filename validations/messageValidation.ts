@@ -2,6 +2,11 @@ import { z } from "zod";
 import { MessageType } from "../types";
 import { isValidateObjectId } from "./customValidation";
 
+const isValidUrl = (value?: string): boolean => {
+    if (!value) return false;
+    return z.string().url().safeParse(value).success;
+};
+
 //Send message Schema
 export const sendMessageSchema = z.object({
     content: z.string().optional(),
@@ -42,12 +47,12 @@ export const sendMessageSchema = z.object({
     })
     .refine(data => {
         //Image
-        if (data.type === MessageType.IMAGE && (!data.content || data.content.trim() === '')) {
-            return false;
+        if (data.type !== MessageType.IMAGE) {
+            return true;
         }
-        return true;
+        return isValidUrl(data.content);
     }, {
-        message: "Content (image URL) is required for IMAGE messages.",
+        message: "Content must be a valid URL for IMAGE messages.",
         path: ["content"]
     });
 

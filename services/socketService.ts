@@ -7,7 +7,7 @@ const { auth } = require('../config/firebase');
 
 let io: Server;
 
-export const onlineUsers = new Map<string, string>();
+export const onlineUsers = new Map<string, Set<string>>();
 
 export const initSocketServer = (server: HttpServer) => {
     io = new Server(server, {
@@ -56,9 +56,13 @@ export const initSocketServer = (server: HttpServer) => {
         console.log(`User ${userId} joined room: ${userId}`);
 
         // Add to online map
-        onlineUsers.set(userId, socket.id);
-        await User.findByIdAndUpdate(userId, { isOnline: true });
-        io.emit('user_online', { userId: userId });
+        const existingSockets = onlineUsers.get(userId) || new Set<string>();
+        existingSockets.add(socket.id);
+        onlineUsers.set(userId, existingSockets);
+        if (existingSockets.size === 1) {
+            await User.findByIdAndUpdate(userId, { isOnline: true });
+            io.emit('user_online', { userId: userId });
+        }
 
 
         //Listen user typing
@@ -86,13 +90,21 @@ export const initSocketServer = (server: HttpServer) => {
         socket.on('disconnect', async () => {
             console.log(`User disconnected from socket: ${userId}`);
 
-            onlineUsers.delete(userId);
-            await User.findByIdAndUpdate(userId, {
-                isOnline: false,
-                lastActiveAt: new Date()
-            });
+            const sockets = onlineUsers.get(userId);
+            if (sockets) {
+                sockets.delete(socket.id);
+                if (sockets.size === 0) {
+                    onlineUsers.delete(userId);
+                    await User.findByIdAndUpdate(userId, {
+                        isOnline: false,
+                        lastActiveAt: new Date()
+                    });
 
-            io.emit('user_offline', { userId: userId, lastActiveAt: new Date() });
+                    io.emit('user_offline', { userId: userId, lastActiveAt: new Date() });
+                } else {
+                    onlineUsers.set(userId, sockets);
+                }
+            }
         });
     });
     return io;

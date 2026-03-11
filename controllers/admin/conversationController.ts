@@ -1,6 +1,22 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Conversation from "../../models/Conversation";
+import Message from "../../models/Message";
+import { isValidateObjectId } from "../../validations/customValidation";
+
+const parsePositiveInt = (value: any, defaultValue: number, maxValue: number): number | null => {
+    if (value === undefined) return defaultValue;
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) return null;
+    return Math.min(parsed, maxValue);
+};
+
+const parseCursorDate = (value: any): Date | null => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+};
 
 // Get all conversations
 export const getAllConversationsAdmin = async (
@@ -8,8 +24,14 @@ export const getAllConversationsAdmin = async (
     res: Response
 ): Promise<void> => {
     try {
-        const limit = parseInt(req.query.limit as string) || 20;
-        const page = parseInt(req.query.page as string) || 1;
+        const limit = parsePositiveInt(req.query.limit, 20, 100);
+        const page = parsePositiveInt(req.query.page, 1, 1000);
+        if (limit === null || page === null) {
+            res.status(400).json({
+                message: 'Limit and page must be positive integers'
+            });
+            return;
+        }
         const skip = (page - 1) * limit;
 
         // Filter variables
@@ -20,6 +42,12 @@ export const getAllConversationsAdmin = async (
         const matchStage: any = {};
 
         if (searchUserId) {
+            if (!isValidateObjectId(searchUserId)) {
+                res.status(400).json({
+                    message: 'Invalid userId format'
+                });
+                return;
+            }
             matchStage.participants = new mongoose.Types.ObjectId(searchUserId);
         }
 
@@ -112,12 +140,32 @@ export const getConversationMessagesAdmin = async (
 ): Promise<void> => {
     try {
         const conversationId = req.params.id;
-        const limit = parseInt(req.query.limit as string) || 20;
-        const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
+        const limit = parsePositiveInt(req.query.limit, 20, 100);
+        if (limit === null) {
+            res.status(400).json({
+                message: 'Limit must be a positive integer'
+            });
+            return;
+        }
+
+        const cursor = parseCursorDate(req.query.cursor);
+        if (req.query.cursor && !cursor) {
+            res.status(400).json({
+                message: 'Invalid cursor format'
+            });
+            return;
+        }
 
         if (!conversationId) {
             res.status(400).json({
                 message: 'Conversation ID is required'
+            });
+            return;
+        }
+
+        if (!isValidateObjectId(conversationId)) {
+            res.status(400).json({
+                message: 'Invalid conversationId format'
             });
             return;
         }
@@ -140,7 +188,7 @@ export const getConversationMessagesAdmin = async (
             };
         }
 
-        const messages = await mongoose.model('Message').find(messageQuery)
+        const messages = await Message.find(messageQuery)
             .sort({ createdAt: -1 })
             .limit(limit)
             .populate({

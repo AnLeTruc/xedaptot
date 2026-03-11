@@ -3,6 +3,21 @@ import mongoose from "mongoose";
 import Conversation from "../models/Conversation";
 import User from "../models/User";
 import Message from "../models/Message";
+import { isValidateObjectId } from "../validations/customValidation";
+
+const parsePositiveInt = (value: any, defaultValue: number, maxValue: number): number | null => {
+    if (value === undefined) return defaultValue;
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) return null;
+    return Math.min(parsed, maxValue);
+};
+
+const parseCursorDate = (value: any): Date | null => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+};
 
 //Find & create conversation
 export const createConversation = async (
@@ -63,8 +78,21 @@ export const getConversations = async (
         }
 
         const userId = new mongoose.Types.ObjectId(userIdRaw.toString());
-        const limit = parseInt(req.query.limit as string) || 15;
-        const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
+        const limit = parsePositiveInt(req.query.limit, 15, 100);
+        if (limit === null) {
+            res.status(400).json({
+                message: 'Limit must be a positive integer'
+            });
+            return;
+        }
+
+        const cursor = parseCursorDate(req.query.cursor);
+        if (req.query.cursor && !cursor) {
+            res.status(400).json({
+                message: 'Invalid cursor format'
+            });
+            return;
+        }
 
         const matchStage: any = {
             participants: userId,
@@ -197,19 +225,39 @@ export const getMessageHistory = async (
         const conversationId = req.params.id;
         const currentUser = (req as any).user._id;
 
-        const limit = parseInt(req.query.limit as string) || 20;
-        const cursor = req.query.cursor ? new Date(req.query.cursor as string) : null;
+        const limit = parsePositiveInt(req.query.limit, 20, 100);
+        if (limit === null) {
+            res.status(400).json({
+                message: 'Limit must be a positive integer'
+            });
+            return;
+        }
+
+        const cursor = parseCursorDate(req.query.cursor);
+        if (req.query.cursor && !cursor) {
+            res.status(400).json({
+                message: 'Invalid cursor format'
+            });
+            return;
+        }
 
         if (!conversationId) {
-            res.status(404).json({
+            res.status(400).json({
                 message: 'ConversationID is required'
+            });
+            return;
+        }
+
+        if (!isValidateObjectId(conversationId)) {
+            res.status(400).json({
+                message: 'Invalid conversationId format'
             });
             return;
         }
 
         const currentConversation = await Conversation.findById(conversationId);
         if (!currentConversation) {
-            res.status(201).json({
+            res.status(404).json({
                 message: 'Không tìm thấy cuộc hội thoại này'
             });
             return;
