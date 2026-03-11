@@ -28,5 +28,4 @@ firebase-service-account.json
 # Public test files
 public/
 docs/postman/Inspector-Flow-Test.postman_collection.json
-/scripts
 /postman
