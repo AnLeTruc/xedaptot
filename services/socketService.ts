@@ -7,13 +7,19 @@ const { auth } = require('../config/firebase');
 
 let io: Server;
 
+const allowedSocketOrigins: string[] = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(origin => origin.length > 0);
+
 export const onlineUsers = new Map<string, Set<string>>();
 
 export const initSocketServer = (server: HttpServer) => {
     io = new Server(server, {
         cors: {
-            origin: '*',
+            origin: allowedSocketOrigins.length ? allowedSocketOrigins : false,
             methods: ["GET", "POST"],
+            credentials: true,
         }
     });
 

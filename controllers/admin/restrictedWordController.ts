@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import RestrictedWord from '../../models/RestrictedWord';
 import { refreshRestrictedWordCache } from '../../services/restrictedWordCache';
+import { isValidateObjectId } from '../../validations/customValidation';
 
 const normalizeWord = (word: string): string => word.trim().toLowerCase();
 
@@ -87,6 +88,14 @@ export const updateRestrictedWord = async (
         const { id } = req.params;
         const { word, isActive } = req.body;
 
+        if (!isValidateObjectId(id)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid ID format'
+            });
+            return;
+        }
+
         const updateData: any = {};
         if (word !== undefined) {
             if (typeof word !== 'string' || word.trim() === '') {
@@ -138,6 +147,14 @@ export const deleteRestrictedWord = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
+
+        if (!isValidateObjectId(id)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid ID format'
+            });
+            return;
+        }
 
         const restrictedWord = await RestrictedWord.findByIdAndDelete(id);
         if (!restrictedWord) {

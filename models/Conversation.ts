@@ -25,7 +25,7 @@ const conversationSchema = new Schema<IConversationDocument>({
     readStatus: {
         type: Map,
         of: Date,
-        default: new Map()
+        default: () => new Map()
     },
     hiddenBy: {
         type: [{

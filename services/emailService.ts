@@ -51,7 +51,7 @@ export const sendVerificationEmail = async (
     fullName: string
 ): Promise<boolean> => {
     //Url to verify
-    const appBaseUrl = (process.env.APP_URL || process.env.FRONTEND_URL || process.env.API_URL).replace(/\/$/, '');
+    const appBaseUrl = (process.env.APP_URL || process.env.FRONTEND_URL || process.env.API_URL || '').replace(/\/$/, '');
     const verifyUrl = `${appBaseUrl}/auth/verify-email?token=${verificationToken}`;
     const supportEmail = process.env.EMAIL_SUPPORT || process.env.EMAIL_USER || 'support@xedaptot.com';
 
