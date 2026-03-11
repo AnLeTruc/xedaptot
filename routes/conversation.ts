@@ -4,10 +4,12 @@ import { validate } from '../middleware/validate';
 import { createConversationSchema } from '../validations/conversationValidation';
 import { verifyToken, requireUser } from '../middleware/auth';
 import messageRouter from './message';
+import { searchMessages } from '../controllers/messageController';
 
 const router = Router();
 
 router.use('/:conversationId/messages', messageRouter);
+router.get('/messages/search', verifyToken, requireUser, searchMessages);
 
 router.post('/', verifyToken, requireUser, validate(createConversationSchema, 'body'), createConversation);
 router.get('/', verifyToken, requireUser, getConversations);
