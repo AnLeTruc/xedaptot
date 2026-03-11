@@ -12,6 +12,16 @@ export const sendMessageSchema = z.object({
             .optional()
     })
         .refine(data => {
+            //System type reserved for server
+            if (data.type === MessageType.SYSTEM) {
+                return false;
+            }
+            return true;
+        }, {
+            message: "MessageType SYSTEM is reserved for server usage.",
+            path: ["type"]
+        })
+        .refine(data => {
             //Text
             if (data.type === MessageType.TEXT && (!data.content || data.content.trim() === '')) {
                 return false;

@@ -33,12 +33,31 @@ const conversationSchema = new Schema<IConversationDocument>({
             ref: 'User'
         }],
         default: []
+    },
+    violationCount: {
+        type: Number,
+        default: 0
+    },
+    lockedStatus: {
+        type: String,
+        enum: ['NONE', 'TEMP_LOCKED', 'PERM_LOCKED'],
+        default: 'NONE'
+    },
+    lockedUntil: {
+        type: Date,
+        default: null
+    },
+    lockedReason: {
+        type: String,
+        default: null,
+        trim: true
     }
 }, { timestamps: true });
 
 //Index
 conversationSchema.index({ participants: 1 });
 conversationSchema.index({ updatedAt: -1 });
+conversationSchema.index({ lockedStatus: 1 });
 
 const Conversation = mongoose.model<IConversationDocument>('Conversation', conversationSchema);
 export default Conversation;

@@ -70,3 +70,4 @@ export * from './notification';
 export * from './bicycleModel';
 export * from './message';
 export * from './conversation';
+export * from './restrictedWord';

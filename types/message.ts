@@ -3,7 +3,8 @@ import { Document, Types } from "mongoose";
 export enum MessageType {
     TEXT = 'TEXT',
     PRODUCT = 'PRODUCT',
-    IMAGE = 'IMAGE'
+    IMAGE = 'IMAGE',
+    SYSTEM = 'SYSTEM'
 }
 
 //Interface raw data

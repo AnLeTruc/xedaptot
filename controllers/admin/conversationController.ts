@@ -173,3 +173,135 @@ export const getConversationMessagesAdmin = async (
         });
     }
 };
+
+//Lock conversation
+export const lockConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { status, duration, reason } = req.body;
+
+        if (!['TEMP_LOCKED', 'PERM_LOCKED'].includes(status)) {
+            res.status(400).json({
+                success: false,
+                message: 'status must be TEMP_LOCKED or PERM_LOCKED'
+            });
+            return;
+        }
+
+        let lockedUntil: Date | null = null;
+        if (status === 'TEMP_LOCKED') {
+            const durationMinutes = Number(duration);
+            if (!durationMinutes || durationMinutes <= 0) {
+                res.status(400).json({
+                    success: false,
+                    message: 'duration (minutes) is required for TEMP_LOCKED'
+                });
+                return;
+            }
+            lockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+        }
+
+        const conversation = await Conversation.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    lockedStatus: status,
+                    lockedUntil,
+                    lockedReason: reason || 'Admin locked conversation'
+                }
+            },
+            { new: true }
+        );
+
+        if (!conversation) {
+            res.status(404).json({
+                success: false,
+                message: 'Conversation not found'
+            });
+            return;
+        }
+
+        try {
+            const { getIO } = require('../../services/socketService');
+            const io = getIO();
+            conversation.participants.forEach((participantId) => {
+                io.to(participantId.toString()).emit('conversation_locked', {
+                    conversationId: conversation._id.toString(),
+                    lockedStatus: conversation.lockedStatus,
+                    lockedUntil: conversation.lockedUntil,
+                    lockedReason: conversation.lockedReason
+                });
+            });
+        } catch (socketError) {
+            console.error('Socket not initialized', socketError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Conversation locked successfully',
+            data: conversation
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+//Unlock conversation
+export const unlockConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const conversation = await Conversation.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    lockedStatus: 'NONE',
+                    lockedUntil: null,
+                    lockedReason: null,
+                    violationCount: 0
+                }
+            },
+            { new: true }
+        );
+
+        if (!conversation) {
+            res.status(404).json({
+                success: false,
+                message: 'Conversation not found'
+            });
+            return;
+        }
+
+        try {
+            const { getIO } = require('../../services/socketService');
+            const io = getIO();
+            conversation.participants.forEach((participantId) => {
+                io.to(participantId.toString()).emit('conversation_unlocked', {
+                    conversationId: conversation._id.toString()
+                });
+            });
+        } catch (socketError) {
+            console.error('Socket not initialized', socketError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Conversation unlocked successfully',
+            data: conversation
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

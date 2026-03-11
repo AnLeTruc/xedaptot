@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import { getIO } from '../services/socketService';
+import { MessageType } from '../types';
+import { findRestrictedWordMatch } from '../services/restrictedWordCache';
 
 //Send message
 export const sendMessage = async (
@@ -13,6 +15,12 @@ export const sendMessage = async (
         const senderId = (req as any).user?._id;
         const { content, type, bicycleId } = req.body;
 
+        if (type === MessageType.SYSTEM) {
+            res.status(400).json({
+                message: 'MessageType SYSTEM is reserved for server usage'
+            });
+            return;
+        }
 
         //Find conversation 
         const conversation = await Conversation.findOne({
@@ -29,6 +37,37 @@ export const sendMessage = async (
             return;
         }
 
+        const now = new Date();
+        if (conversation.lockedStatus === 'PERM_LOCKED') {
+            res.status(403).json({
+                message: 'Hội thoại đã bị khóa vĩnh viễn',
+                lockedStatus: conversation.lockedStatus
+            });
+            return;
+        }
+
+        if (conversation.lockedStatus === 'TEMP_LOCKED') {
+            if (conversation.lockedUntil && conversation.lockedUntil > now) {
+                res.status(403).json({
+                    message: `Hội thoại đã bị khóa đến ${conversation.lockedUntil.toISOString()}`,
+                    lockedStatus: conversation.lockedStatus,
+                    lockedUntil: conversation.lockedUntil
+                });
+                return;
+            }
+
+            await Conversation.findByIdAndUpdate(conversationId, {
+                $set: {
+                    lockedStatus: 'NONE',
+                    lockedUntil: null,
+                    lockedReason: null
+                }
+            });
+        }
+
+        const isTextMessage = type === MessageType.TEXT && typeof content === 'string';
+        const matchedWord = isTextMessage ? findRestrictedWordMatch(content) : null;
+
         //Create new message
         const newMessage = new Message({
             conversationId,
@@ -38,15 +77,41 @@ export const sendMessage = async (
             ...(bicycleId && { bicycleId })
         });
 
-        //Save message + update last message
-        await Promise.all([
-            newMessage.save(),
-            Conversation.findByIdAndUpdate(
+        let systemMessage: any = null;
+        if (matchedWord) {
+            systemMessage = new Message({
                 conversationId,
-                { $set: { lastMessage: newMessage._id } },
-                { new: true }
-            )
-        ]);
+                senderId,
+                content: `Vi phạm từ cấm: "${matchedWord}"`,
+                type: MessageType.SYSTEM
+            });
+        }
+
+        const messagesToSave = systemMessage ? [newMessage, systemMessage] : [newMessage];
+        await Promise.all(messagesToSave.map(msg => msg.save()));
+
+        const updateFields: any = {
+            lastMessage: (systemMessage ?? newMessage)._id
+        };
+
+        let newViolationCount = conversation.violationCount || 0;
+        if (matchedWord) {
+            newViolationCount += 1;
+            updateFields.violationCount = newViolationCount;
+            updateFields.lockedReason = `Vi phạm từ cấm: "${matchedWord}"`;
+
+            if (newViolationCount >= 3) {
+                updateFields.lockedStatus = 'TEMP_LOCKED';
+                updateFields.lockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                updateFields.lockedReason = 'Vi phạm nội quy chat quá 3 lần';
+            }
+        }
+
+        const updatedConversation = await Conversation.findByIdAndUpdate(
+            conversationId,
+            { $set: updateFields },
+            { new: true }
+        );
 
         //Socket emit
         const receiverId = conversation.participants.find((id) => id.toString() !== senderId.toString());
@@ -54,11 +119,28 @@ export const sendMessage = async (
             const io = getIO();
             //Emit event to private room
             io.to(receiverId.toString()).emit("new_message", newMessage);
+
+            if (systemMessage) {
+                io.to(receiverId.toString()).emit("new_message", systemMessage);
+                io.to(senderId.toString()).emit("new_message", systemMessage);
+            }
+
+            if (updatedConversation?.lockedStatus === 'TEMP_LOCKED') {
+                const lockPayload = {
+                    conversationId: conversationId,
+                    lockedStatus: updatedConversation.lockedStatus,
+                    lockedUntil: updatedConversation.lockedUntil,
+                    lockedReason: updatedConversation.lockedReason
+                };
+                io.to(receiverId.toString()).emit('conversation_locked', lockPayload);
+                io.to(senderId.toString()).emit('conversation_locked', lockPayload);
+            }
         }
 
         res.status(201).json({
             message: "Message sent successfully",
-            data: newMessage
+            data: newMessage,
+            violationCount: updatedConversation?.violationCount
         });
     } catch (error: any) {
         res.status(500).json({
