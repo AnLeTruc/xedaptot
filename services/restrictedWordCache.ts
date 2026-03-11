@@ -12,7 +12,7 @@ const buildRegex = (words: string[]): RegExp | null => {
         return null;
     }
     const pattern = words.map(escapeRegex).join('|');
-    return new RegExp(pattern, 'iu');
+    return new RegExp(pattern, 'giu');
 };
 
 export const refreshRestrictedWordCache = async (): Promise<void> => {
@@ -45,6 +45,7 @@ export const findRestrictedWordMatch = (content: string): string | null => {
         return null;
     }
 
+    regex.lastIndex = 0;
     if (!regex.test(content)) {
         return null;
     }
@@ -57,4 +58,26 @@ export const findRestrictedWordMatch = (content: string): string | null => {
     }
 
     return null;
+};
+
+export const maskRestrictedContent = (
+    content: string
+): { maskedContent: string; violatedWords: string[] } => {
+    if (!content) {
+        return { maskedContent: content, violatedWords: [] };
+    }
+
+    const { regex } = getRestrictedWordCache();
+    if (!regex) {
+        return { maskedContent: content, violatedWords: [] };
+    }
+
+    const violatedSet = new Set<string>();
+    regex.lastIndex = 0;
+    const maskedContent = content.replace(regex, (match) => {
+        violatedSet.add(match.toLowerCase());
+        return '*'.repeat(match.length);
+    });
+
+    return { maskedContent, violatedWords: Array.from(violatedSet) };
 };

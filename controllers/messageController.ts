@@ -3,7 +3,7 @@ import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import { getIO } from '../services/socketService';
 import { MessageType } from '../types';
-import { findRestrictedWordMatch } from '../services/restrictedWordCache';
+import { maskRestrictedContent } from '../services/restrictedWordCache';
 
 //Send message
 export const sendMessage = async (
@@ -66,13 +66,22 @@ export const sendMessage = async (
         }
 
         const isTextMessage = type === MessageType.TEXT && typeof content === 'string';
-        const matchedWord = isTextMessage ? findRestrictedWordMatch(content) : null;
+        let maskedContent = content;
+        let violatedWords: string[] = [];
+
+        if (isTextMessage && typeof content === 'string') {
+            const maskedResult = maskRestrictedContent(content);
+            maskedContent = maskedResult.maskedContent;
+            violatedWords = maskedResult.violatedWords;
+        }
+
+        const matchedWord = violatedWords.length > 0 ? violatedWords[0] : null;
 
         //Create new message
         const newMessage = new Message({
             conversationId,
             senderId,
-            content,
+            content: maskedContent,
             type,
             ...(bicycleId && { bicycleId })
         });
@@ -94,24 +103,34 @@ export const sendMessage = async (
             lastMessage: (systemMessage ?? newMessage)._id
         };
 
-        let newViolationCount = conversation.violationCount || 0;
         if (matchedWord) {
-            newViolationCount += 1;
-            updateFields.violationCount = newViolationCount;
             updateFields.lockedReason = `Vi phạm từ cấm: "${matchedWord}"`;
-
-            if (newViolationCount >= 3) {
-                updateFields.lockedStatus = 'TEMP_LOCKED';
-                updateFields.lockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                updateFields.lockedReason = 'Vi phạm nội quy chat quá 3 lần';
-            }
         }
 
         const updatedConversation = await Conversation.findByIdAndUpdate(
             conversationId,
-            { $set: updateFields },
+            {
+                $set: updateFields,
+                ...(matchedWord ? { $inc: { violationCount: 1 } } : {})
+            },
             { new: true }
         );
+
+        if (matchedWord && updatedConversation) {
+            if (updatedConversation.violationCount >= 3 && updatedConversation.lockedStatus !== 'PERM_LOCKED') {
+                const lockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                await Conversation.findByIdAndUpdate(conversationId, {
+                    $set: {
+                        lockedStatus: 'TEMP_LOCKED',
+                        lockedUntil: lockUntil,
+                        lockedReason: 'Vi phạm nội quy chat từ cấm quá 3 lần'
+                    }
+                });
+                updatedConversation.lockedStatus = 'TEMP_LOCKED' as any;
+                updatedConversation.lockedUntil = lockUntil;
+                updatedConversation.lockedReason = 'Vi phạm nội quy chat từ cấm quá 3 lần';
+            }
+        }
 
         //Socket emit
         const receiverId = conversation.participants.find((id) => id.toString() !== senderId.toString());
