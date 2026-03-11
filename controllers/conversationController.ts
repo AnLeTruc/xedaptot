@@ -26,17 +26,15 @@ export const createConversation = async (
             return;
         }
 
-        //Find if not found upsert
-        const conversation = await Conversation.findOneAndUpdate(
-            { participants: { $all: [senderId, receiverId] } },
-            {
-                $setOnInsert: { participants: [senderId, receiverId] }
-            },
-            {
-                new: true,
-                upsert: true
-            }
-        );
+        let conversation = await Conversation.findOne({
+            participants: { $all: [senderId, receiverId] }
+        });
+
+        if (!conversation) {
+            conversation = await Conversation.create({
+                participants: [senderId, receiverId]
+            });
+        }
 
         res.status(200).json({
             message: 'Conversation retrieved or created successfully',
