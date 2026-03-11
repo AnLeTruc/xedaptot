@@ -50,7 +50,7 @@ export * from './brand';
 export * from './bicycle';
 export * from './address';
 export * from './disputes';
-//export * from './userpackage';
+export * from './userpackage';
 export * from './package';
 export * from './violationReport';
 
