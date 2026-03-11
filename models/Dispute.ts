@@ -37,8 +37,8 @@ const disputeSchema = new Schema<IDisputeDocument>({
         enum: ['REFUND_BUYER', 'RELEASE_SELLER', 'NONE'],
         default: 'NONE'
     },
-    createdAt?: Date,
-    resolvedAt?: Date,
+    createdAt: { type: Date },
+    resolvedAt: { type: Date },
     complainant: disputeUserSchema,
     respondent: disputeUserSchema,
     orderId: {
