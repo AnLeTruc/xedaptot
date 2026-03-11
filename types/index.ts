@@ -27,6 +27,8 @@ export interface IUser {
     passwordResetTokenHash?: string;
     passwordResetTokenExpires?: Date;
     passwordChangedAt?: Date;
+    isOnline: boolean;
+    lastActiveAt: Date;
 }
 
 //Interface Mongoose Document

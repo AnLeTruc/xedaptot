@@ -38,12 +38,14 @@ export const sendMessage = async (
             ...(bicycleId && { bicycleId })
         });
 
-        //Save message + update last message 
-        conversation.lastMessage = newMessage._id;
-
+        //Save message + update last message
         await Promise.all([
             newMessage.save(),
-            conversation.save()
+            Conversation.findByIdAndUpdate(
+                conversationId,
+                { $set: { lastMessage: newMessage._id } },
+                { new: true }
+            )
         ]);
 
         //Socket emit

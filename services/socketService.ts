@@ -7,6 +7,8 @@ const { auth } = require('../config/firebase');
 
 let io: Server;
 
+export const onlineUsers = new Map<string, string>();
+
 export const initSocketServer = (server: HttpServer) => {
     io = new Server(server, {
         cors: {
@@ -43,14 +45,21 @@ export const initSocketServer = (server: HttpServer) => {
     });
 
     //Room mapping
-    io.on('connection', (socket: Socket) => {
+    io.on('connection', async (socket: Socket) => {
         const user = (socket as any).user;
+        const userId = user._id.toString();
 
-        console.log(`User connected to socket: ${user._id}`);
+        console.log(`User connected to socket: ${userId}`);
 
         //User join own id room
-        socket.join(user._id.toString());
-        console.log(`User ${user._id} joined room: ${user._id}`);
+        socket.join(userId);
+        console.log(`User ${userId} joined room: ${userId}`);
+
+        // Add to online map
+        onlineUsers.set(userId, socket.id);
+        await User.findByIdAndUpdate(userId, { isOnline: true });
+        io.emit('user_online', { userId: userId });
+
 
         //Listen user typing
         socket.on('typing', (data: { receiverId: string; conversationId: string }) => {
@@ -59,7 +68,7 @@ export const initSocketServer = (server: HttpServer) => {
             //Send typping
             socket.to(data.receiverId).emit('typing', {
                 conversationId: data.conversationId,
-                senderId: user._id.toString()
+                senderId: userId
             });
         });
 
@@ -69,8 +78,21 @@ export const initSocketServer = (server: HttpServer) => {
 
             socket.to(data.receiverId).emit('stop_typing', {
                 conversationId: data.conversationId,
-                senderId: user._id.toString()
+                senderId: userId
             });
+        });
+
+        // Handle disconnect
+        socket.on('disconnect', async () => {
+            console.log(`User disconnected from socket: ${userId}`);
+
+            onlineUsers.delete(userId);
+            await User.findByIdAndUpdate(userId, {
+                isOnline: false,
+                lastActiveAt: new Date()
+            });
+
+            io.emit('user_offline', { userId: userId, lastActiveAt: new Date() });
         });
     });
     return io;
