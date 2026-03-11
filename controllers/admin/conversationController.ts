@@ -231,6 +231,14 @@ export const lockConversation = async (
         const { id } = req.params;
         const { status, duration, reason } = req.body;
 
+        if (!isValidateObjectId(id)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid conversation id'
+            });
+            return;
+        }
+
         if (!['TEMP_LOCKED', 'PERM_LOCKED'].includes(status)) {
             res.status(400).json({
                 success: false,
@@ -307,6 +315,14 @@ export const unlockConversation = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
+
+        if (!isValidateObjectId(id)) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid conversation id'
+            });
+            return;
+        }
 
         const conversation = await Conversation.findByIdAndUpdate(
             id,
