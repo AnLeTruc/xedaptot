@@ -1373,9 +1373,25 @@
             "enum": [
               "PENDING",
               "APPROVED",
-              "REJECTED"
+              "REJECTED",
+              "COMPLETED"
             ],
             "example": "PENDING"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processedBy": {
+            "type": "string"
+          },
+          "rejectedReason": {
+            "type": "string",
+            "example": "Bank account information does not match account holder"
+          },
+          "transferReference": {
+            "type": "string",
+            "example": "VCB-20260312-0001"
           },
           "createdAt": {
             "type": "string",
@@ -7370,7 +7386,7 @@
           "Wallet"
         ],
         "summary": "Create withdraw request",
-        "description": "Creates a pending withdraw request. Amount will be frozen until admin approves/rejects.",
+        "description": "Creates a pending withdraw request. A user can have up to 3 pending requests at the same time. Amount will be frozen until admin approves/rejects.",
         "security": [
           {
             "bearerAuth": []
@@ -7411,7 +7427,7 @@
             }
           },
           "400": {
-            "description": "Insufficient balance or pending request exists"
+            "description": "Insufficient balance or user already has 3 pending withdraw requests"
           },
           "401": {
             "description": "Unauthorized"
@@ -7428,6 +7444,7 @@
           "Wallet"
         ],
         "summary": "Get my withdraw requests",
+        "description": "Returns the authenticated user's withdraw requests. Statuses move through PENDING -> APPROVED -> COMPLETED, or to REJECTED if denied.",
         "security": [
           {
             "bearerAuth": []
@@ -7442,7 +7459,8 @@
               "enum": [
                 "PENDING",
                 "APPROVED",
-                "REJECTED"
+                "REJECTED",
+                "COMPLETED"
               ]
             }
           },
@@ -7511,6 +7529,331 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get withdraw requests for admin review",
+        "description": "Returns paginated withdraw requests for admins. Supports filtering by status and searching by user email or full name.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "COMPLETED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by user email or full name"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw request list for admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "withdrawRequests": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WithdrawRequest"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/approve": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Approve a withdraw request",
+        "description": "Transitions a withdraw request from PENDING to APPROVED. No wallet balances are changed at this step.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw request approved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request approved successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id or invalid state transition"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request not found"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/complete": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Complete a withdraw request",
+        "description": "Transitions a withdraw request from APPROVED to COMPLETED, updates wallet balances, stores the optional transfer reference, and sends the approval email.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transferReference": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "VCB-20260312-0001"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw request completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request completed successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id, invalid state transition, or insufficient frozen balance"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request or wallet not found"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/reject": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reject a withdraw request",
+        "description": "Rejects a withdraw request from either PENDING or APPROVED status, releases the frozen balance back to the user's available wallet balance, and sends a rejection email.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Bank account information does not match account holder"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw request rejected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request rejected successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id, invalid state transition, or insufficient frozen balance"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request or wallet not found"
           }
         }
       }
