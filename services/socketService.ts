@@ -51,6 +51,27 @@ export const initSocketServer = (server: HttpServer) => {
         //User join own id room
         socket.join(user._id.toString());
         console.log(`User ${user._id} joined room: ${user._id}`);
+
+        //Listen user typing
+        socket.on('typing', (data: { receiverId: string; conversationId: string }) => {
+            if (!data || !data.receiverId) return;
+
+            //Send typping
+            socket.to(data.receiverId).emit('typing', {
+                conversationId: data.conversationId,
+                senderId: user._id.toString()
+            });
+        });
+
+        //Listen user stop typing
+        socket.on('stop_typing', (data: { receiverId: string; conversationId: string }) => {
+            if (!data || !data.receiverId) return;
+
+            socket.to(data.receiverId).emit('stop_typing', {
+                conversationId: data.conversationId,
+                senderId: user._id.toString()
+            });
+        });
     });
     return io;
 };
