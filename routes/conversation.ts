@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createConversation, getConversations, getMessageHistory, markAsRead, getUnreadCount, hideConversation } from '../controllers/conversationController';
+import { createConversation, getConversations, getMessageHistory, markAsRead, markAsUnread, getUnreadCount, hideConversation } from '../controllers/conversationController';
 import { validate } from '../middleware/validate';
 import { createConversationSchema } from '../validations/conversationValidation';
 import { verifyToken, requireUser } from '../middleware/auth';
@@ -13,6 +13,7 @@ router.post('/', verifyToken, requireUser, validate(createConversationSchema, 'b
 router.get('/', verifyToken, requireUser, getConversations);
 router.get('/unread-count', verifyToken, requireUser, getUnreadCount);
 router.put('/:id/read', verifyToken, requireUser, markAsRead);
+router.put('/:id/unread', verifyToken, requireUser, markAsUnread);
 router.patch('/:id/hide', verifyToken, requireUser, hideConversation);
 router.get('/:id', verifyToken, requireUser, getMessageHistory);
 

@@ -352,6 +352,69 @@ export const markAsRead = async (
     }
 }
 
+// Mark as unread
+export const markAsUnread = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        if (!conversationId) {
+            res.status(400).json({
+                message: 'Conversation ID is required'
+            });
+            return;
+        }
+
+        const conversation = await Conversation.findOne({
+            _id: conversationId,
+            participants: currentUser
+        });
+
+        if (!conversation) {
+            res.status(404).json({ message: 'Không tìm thấy hội thoại' });
+            return;
+        }
+
+        //Last mess from partner
+        const lastMessageFromPartner = await Message.findOne({
+            conversationId: conversationId,
+            senderId: { $ne: currentUser }
+        }).sort({ createdAt: -1 });
+
+        if (lastMessageFromPartner) {
+            lastMessageFromPartner.isRead = false;
+            await lastMessageFromPartner.save();
+
+            await Conversation.updateOne(
+                { _id: conversationId },
+                { $unset: { [`readStatus.${currentUser.toString()}`]: "" } }
+            );
+
+            try {
+                const { getIO } = require('../services/socketService');
+                const io = getIO();
+                io.to(currentUser.toString()).emit('conversationUnread', {
+                    conversationId: conversationId
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        res.status(200).json({
+            message: 'Đánh dấu chưa đọc thành công'
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
+
 // Unread count
 export const getUnreadCount = async (
     req: Request,
