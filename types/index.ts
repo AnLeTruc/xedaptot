@@ -27,6 +27,8 @@ export interface IUser {
     passwordResetTokenHash?: string;
     passwordResetTokenExpires?: Date;
     passwordChangedAt?: Date;
+    isOnline: boolean;
+    lastActiveAt: Date;
 }
 
 //Interface Mongoose Document
@@ -66,3 +68,6 @@ export interface ICategoryDocument extends ICategory, Document {
 export * from './inspectionReport';
 export * from './notification';
 export * from './bicycleModel';
+export * from './message';
+export * from './conversation';
+export * from './restrictedWord';
