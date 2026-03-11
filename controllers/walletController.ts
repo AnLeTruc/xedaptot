@@ -388,6 +388,10 @@ export const createWithdrawRequest = async (
         await Transaction.create([{
             transactionCode: generateCode('WDR'),
             paymentMethod: 'BANK_TRANSFER',
+            data: {
+                status: 'PENDING',
+                withdrawRequestId: withdrawRequest._id.toString()
+            },
             walletId: wallet._id,
             type: 'WITHDRAW',
             amount,
