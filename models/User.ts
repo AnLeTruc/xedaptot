@@ -100,6 +100,14 @@ const userSchema = new Schema<IUserDocument>(
         passwordChangedAt: {
             type: Date,
             select: false
+        },
+        isOnline: {
+            type: Boolean,
+            default: false
+        },
+        lastActiveAt: {
+            type: Date,
+            default: Date.now
         }
     },
     {

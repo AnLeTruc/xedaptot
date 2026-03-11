@@ -34,6 +34,10 @@ const orderRouter = require('./routes/order').default;
 const bicycleModelRouter = require('./routes/bicycleModel').default;
 const walletRouter = require('./routes/wallet').default;
 const shippingRouter = require('./routes/shipping').default;
+const conversationRouter = require('./routes/conversation').default;
+const violationReportRouter = require('./routes/violationReport').default;
+const adminConversationRouter = require('./routes/admin/conversation').default;
+const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').default;
 var app = express();
 
 // Trust proxy for Render
@@ -71,9 +75,13 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/admin', adminUserRouter);
+app.use('/api/admin', adminConversationRouter);
+app.use('/api/admin', adminRestrictedWordRouter);
 app.use('/api/inspectors', inspectorRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/bicycle-models', bicycleModelRouter);
 app.use('/api/wallets', walletRouter);
 app.use('/api/shipping', shippingRouter);
+app.use('/api/conversations', conversationRouter);
+app.use('/api/violation-reports', violationReportRouter);
 module.exports = app;

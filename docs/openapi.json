@@ -66,6 +66,26 @@
     {
       "name": "Shipping",
       "description": "Shipping fee calculation (GHN)"
+    },
+    {
+      "name": "Conversation",
+      "description": "Chat conversation management"
+    },
+    {
+      "name": "Message",
+      "description": "Message management within conversations"
+    },
+    {
+      "name": "ViolationReport",
+      "description": "Violation report management"
+    },
+    {
+      "name": "Admin Conversation",
+      "description": "Admin conversation management"
+    },
+    {
+      "name": "Admin RestrictedWord",
+      "description": "Admin restricted word management"
     }
   ],
   "components": {
@@ -1546,6 +1566,226 @@
             "type": "number",
             "description": "Insurance value in VND",
             "example": 5000000
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "readStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "hiddenBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "violationCount": {
+            "type": "number",
+            "example": 0
+          },
+          "lockedStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "TEMP_LOCKED",
+              "PERM_LOCKED"
+            ],
+            "example": "NONE"
+          },
+          "lockedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lockedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "PRODUCT",
+              "SYSTEM"
+            ],
+            "example": "TEXT"
+          },
+          "bicycleId": {
+            "type": "string",
+            "nullable": true
+          },
+          "isRead": {
+            "type": "boolean",
+            "example": false
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ViolationReport": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "reporter": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "reportedUser": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "targetBicycle": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "price": {
+                "type": "number"
+              },
+              "image": {
+                "type": "string"
+              },
+              "sellerId": {
+                "type": "string"
+              }
+            }
+          },
+          "violationType": {
+            "type": "string",
+            "enum": [
+              "FRAUD",
+              "FAKE_LISTING",
+              "INAPPROPRIATE",
+              "STOLEN_BICYCLE",
+              "DUPLICATE_LISTING",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REVIEWING",
+              "RESOLVE",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          },
+          "description": {
+            "type": "string"
+          },
+          "adminNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RestrictedWord": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "word": {
+            "type": "string",
+            "example": "spam"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
@@ -4713,6 +4953,7 @@
           "Users"
         ],
         "summary": "Cancel a user package",
+        "description": "Cancels/deactivates a user package subscription.",
         "security": [
           {
             "bearerAuth": []
@@ -4725,27 +4966,23 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "User package ID"
           }
         ],
         "responses": {
           "200": {
-            "description": "Package cancelled",
+            "description": "Package cancelled successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
+                      "type": "boolean"
                     },
                     "message": {
-                      "type": "string",
-                      "example": "Package cancelled successfully"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/UserPackage"
+                      "type": "string"
                     }
                   }
                 }
@@ -4753,7 +4990,7 @@
             }
           },
           "404": {
-            "description": "User package not found"
+            "description": "Package not found"
           }
         }
       }
@@ -5269,10 +5506,16 @@
     },
     "/admin/users/dashboard": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get user dashboard stats",
         "description": "Total users, role distribution, active vs inactive, and users by month.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "year",
@@ -5293,21 +5536,47 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
-                        "year": { "type": "integer", "example": 2026 },
-                        "totalUsers": { "type": "integer", "example": 120 },
-                        "activeUsers": { "type": "integer", "example": 110 },
-                        "inactiveUsers": { "type": "integer", "example": 10 },
+                        "year": {
+                          "type": "integer",
+                          "example": 2026
+                        },
+                        "totalUsers": {
+                          "type": "integer",
+                          "example": 120
+                        },
+                        "activeUsers": {
+                          "type": "integer",
+                          "example": 110
+                        },
+                        "inactiveUsers": {
+                          "type": "integer",
+                          "example": 10
+                        },
                         "roleDistribution": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "role": { "type": "string", "enum": ["BUYER","SELLER","ADMIN","INSPECTOR"] },
-                              "count": { "type": "integer", "example": 60 }
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "BUYER",
+                                  "SELLER",
+                                  "ADMIN",
+                                  "INSPECTOR"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "example": 60
+                              }
                             }
                           }
                         },
@@ -5316,8 +5585,15 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "month": { "type": "integer", "minimum": 1, "maximum": 12 },
-                              "count": { "type": "integer", "example": 8 }
+                              "month": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "count": {
+                                "type": "integer",
+                                "example": 8
+                              }
                             }
                           }
                         }
@@ -5328,9 +5604,15 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "403": { "description": "Forbidden" },
-          "500": { "description": "Server error" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server error"
+          }
         }
       }
     },
@@ -7925,6 +8207,1534 @@
           },
           "400": {
             "description": "Order must be IN_TRANSIT to deliver"
+          }
+        }
+      }
+    },
+    "/conversations": {
+      "post": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Create or retrieve a conversation",
+        "description": "Creates a new 1-on-1 conversation with the given user, or retrieves the existing one if it already exists.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "receiverId"
+                ],
+                "properties": {
+                  "receiverId": {
+                    "type": "string",
+                    "description": "MongoDB ObjectId of the receiver",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation retrieved or created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "conversation": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot create conversation with yourself"
+          },
+          "404": {
+            "description": "Receiver user not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get user conversations list",
+        "description": "Returns a paginated list of conversations for the current user, with unread counts and last message info. Uses cursor-based pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 15,
+              "maximum": 100
+            },
+            "description": "Number of conversations per page"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor for pagination (updatedAt of last item)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "readStatus": {
+                            "type": "object"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastMessage": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "isRead": {
+                                "type": "boolean"
+                              },
+                              "senderId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "chatPartner": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "fullName": {
+                                "type": "string"
+                              },
+                              "avatarUrl": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "roles": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "unreadCount": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/conversations/unread-count": {
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get total unread message count",
+        "description": "Returns the total number of unread messages across all conversations for the current user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "unreadCount": {
+                      "type": "number",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{id}/read": {
+      "put": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Mark conversation as read",
+        "description": "Marks all unread messages from the partner as read and updates readStatus. Emits socket events.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as read successfully"
+          },
+          "404": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/conversations/{id}/unread": {
+      "put": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Mark conversation as unread",
+        "description": "Marks the last message from the partner as unread and removes readStatus entry.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as unread successfully"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/conversations/{id}/hide": {
+      "patch": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Hide a conversation (soft delete)",
+        "description": "Hides a conversation from the user's list. The conversation reappears when a new message is sent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation hidden successfully"
+          },
+          "404": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/conversations/{id}": {
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get message history for a conversation",
+        "description": "Returns paginated message history for a specific conversation. Uses cursor-based pagination, messages returned in chronological order.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Number of messages per page"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor for pagination (createdAt of oldest message)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a participant of this conversation"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/conversations/{conversationId}/messages": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Send a message in a conversation",
+        "description": "Sends a message (text or product) in the specified conversation. Automatically filters restricted words and may lock the conversation after 3 violations.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content",
+                  "type"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Message content",
+                    "example": "Hello! Is this bicycle still available?"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "TEXT",
+                      "PRODUCT"
+                    ],
+                    "description": "Message type (SYSTEM is reserved)",
+                    "example": "TEXT"
+                  },
+                  "bicycleId": {
+                    "type": "string",
+                    "description": "Required when type is PRODUCT",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Message"
+                    },
+                    "violationCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message type (SYSTEM reserved)"
+          },
+          "403": {
+            "description": "Conversation not found, no access, or conversation is locked"
+          }
+        }
+      }
+    },
+    "/conversations/messages/search": {
+      "get": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Search messages globally or within a conversation",
+        "description": "Searches messages by keyword. If conversationId is provided, searches within that conversation only. Otherwise searches across all user conversations.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search keyword"
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional conversation ID to limit search scope"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Keyword is required"
+          },
+          "403": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/violation-reports": {
+      "post": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Create a violation report",
+        "description": "Report a user for a violation related to a bicycle listing. Cannot report yourself.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportedUserId",
+                  "bicycleId",
+                  "violationType",
+                  "description"
+                ],
+                "properties": {
+                  "reportedUserId": {
+                    "type": "string",
+                    "description": "ID of the user being reported"
+                  },
+                  "bicycleId": {
+                    "type": "string",
+                    "description": "ID of the bicycle listing"
+                  },
+                  "violationType": {
+                    "type": "string",
+                    "enum": [
+                      "FRAUD",
+                      "FAKE_LISTING",
+                      "INAPPROPRIATE",
+                      "STOLEN_BICYCLE",
+                      "DUPLICATE_LISTING",
+                      "OTHER"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Detailed description (max 2000 chars)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Violation report created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot report yourself / Bicycle does not belong to reported user"
+          },
+          "404": {
+            "description": "Reported user or bicycle not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get all violation reports (with pagination)",
+        "description": "Returns all violation reports with optional status filter and pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "REVIEWING",
+                "RESOLVE",
+                "REJECTED"
+              ]
+            },
+            "description": "Filter by status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Violation reports list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ViolationReport"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/violation-reports/me": {
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get my violation reports",
+        "description": "Returns all violation reports where the current user is the reported user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User violation reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ViolationReport"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/violation-reports/{id}": {
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get a violation report by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Violation report details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Violation report not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Update violation report status (admin)",
+        "description": "Admin updates the status and optionally adds notes to a violation report.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "REVIEWING",
+                      "RESOLVE",
+                      "REJECTED"
+                    ]
+                  },
+                  "adminNotes": {
+                    "type": "string",
+                    "description": "Admin notes (max 2000 chars)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Report updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Report not found"
+          }
+        }
+      }
+    },
+    "/admin/conversations": {
+      "get": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Get all conversations (admin)",
+        "description": "Admin view of all conversations with pagination, sorting, and optional user filter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by participant user ID"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "updatedAt"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations with participant info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Get conversation messages (admin)",
+        "description": "Admin view of message history for a specific conversation. Uses cursor-based pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/lock": {
+      "put": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Lock a conversation (admin)",
+        "description": "Admin locks a conversation temporarily (with duration) or permanently. Emits socket events to participants.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "TEMP_LOCKED",
+                      "PERM_LOCKED"
+                    ]
+                  },
+                  "duration": {
+                    "type": "number",
+                    "description": "Lock duration in minutes (required for TEMP_LOCKED)",
+                    "example": 60
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Lock reason",
+                    "example": "Policy violation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid status / duration required for TEMP_LOCKED"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/unlock": {
+      "put": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Unlock a conversation (admin)",
+        "description": "Admin unlocks a locked conversation and resets violation count.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation unlocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/restricted-words": {
+      "post": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Create a restricted word",
+        "description": "Adds a new restricted word to the filter list. Word is normalized (lowercase, trimmed).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "word"
+                ],
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "example": "spam"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Restricted word created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RestrictedWord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Word is required"
+          },
+          "409": {
+            "description": "Word already exists"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Get all restricted words",
+        "description": "Returns all restricted words with optional active filter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of restricted words",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RestrictedWord"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/restricted-words/{id}": {
+      "put": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Update a restricted word",
+        "description": "Updates an existing restricted word (word text and/or active status).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restricted word updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RestrictedWord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Word must be non-empty string"
+          },
+          "404": {
+            "description": "Restricted word not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Delete a restricted word",
+        "description": "Permanently deletes a restricted word from the filter list.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restricted word deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Restricted word not found"
+          }
+        }
+      }
+    },
+    "/orders/vnpay-return": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "VNPay order payment return URL",
+        "description": "Callback URL that VNPay redirects to after payment. Handles payment verification and order status update.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed and redirect"
+          }
+        }
+      }
+    },
+    "/orders/vnpay-ipn": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "VNPay order IPN handler",
+        "description": "Instant Payment Notification handler called by VNPay server-to-server to confirm payment status.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IPN acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "RspCode": {
+                      "type": "string"
+                    },
+                    "Message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
