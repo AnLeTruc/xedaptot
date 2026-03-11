@@ -8,7 +8,7 @@ export interface IDisputeUser {
 }
 
 
-export interface IDisputeUser {
+export interface IRespondentUser {
     _id: Types.ObjectId;
     fullName: string;
     phone: string;
@@ -33,7 +33,7 @@ export type IDisputeStatus =
 
 export type IDisputeResolution =
     | 'REFUND_BUYER'
-    | 'RELEASE_SELLET'
+    | 'RELEASE_SELLER'
     | 'NONE';           // Ko có quyết định về tiền bạc -  hòa nhau
 
 
@@ -45,7 +45,7 @@ export interface IDispute {
     createAt?: Date;
     resolveAt?: Date;   // thời gian admin bấm resolve
     complainant: IDisputeUser;      // người kiện
-    respondent: IDisputeUser;        // ng bị kiện
+    respondent: IRespondentUser;        // ng bị kiện
     orderId: Types.ObjectId;
     userId: Types.ObjectId;
     reason: string;
