@@ -49,8 +49,10 @@ export interface AuthRequest extends Request {
 export * from './brand';
 export * from './bicycle';
 export * from './address';
-export * from './userpackage';
+export * from './disputes';
+//export * from './userpackage';
 export * from './package';
+export * from './violationReport';
 
 export interface ICategory {
     name: string;
