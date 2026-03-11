@@ -7,7 +7,8 @@
     "start": "node ./dist/bin/www.js",
     "dev": "ts-node-dev --respawn --transpile-only ./bin/www.js",
     "db:clean": "ts-node ./scripts/cleanDatabase.ts",
-    "db:backup-preserved": "ts-node ./scripts/backupPreservedData.ts"
+    "db:backup-preserved": "ts-node ./scripts/backupPreservedData.ts",
+    "db:restore-preserved": "ts-node ./scripts/restorePreservedData.ts"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
