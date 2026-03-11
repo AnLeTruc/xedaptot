@@ -22,5 +22,6 @@ export const approveWithdrawRequestSchema = z.object({
     transferReference: z.string()
         .trim()
         .max(100, 'Transfer reference cannot exceed 100 characters')
+        .transform(value => value === '' ? undefined : value)
         .optional()
 });
