@@ -106,8 +106,6 @@ export const approveWithdrawRequest = async (
 
     try {
         const { id } = req.params;
-        const { transferReference } = req.body as { transferReference?: string };
-        const adminId = req.user!._id;
 
         if (!isValidateObjectId(id)) {
             await session.abortTransaction();
@@ -133,6 +131,67 @@ export const approveWithdrawRequest = async (
             res.status(400).json({
                 success: false,
                 message: 'Only pending withdraw requests can be approved'
+            });
+            return;
+        }
+
+        withdrawRequest.status = 'APPROVED';
+        await withdrawRequest.save({ session });
+
+        await session.commitTransaction();
+
+        res.status(200).json({
+            success: true,
+            message: 'Withdraw request approved successfully',
+            data: withdrawRequest
+        });
+    } catch (error: any) {
+        await session.abortTransaction();
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    } finally {
+        session.endSession();
+    }
+};
+
+export const completeWithdrawRequest = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { id } = req.params;
+        const { transferReference } = req.body as { transferReference?: string };
+        const adminId = req.user!._id;
+
+        if (!isValidateObjectId(id)) {
+            await session.abortTransaction();
+            res.status(400).json({
+                success: false,
+                message: 'Invalid withdraw request id'
+            });
+            return;
+        }
+
+        const withdrawRequest = await WithdrawRequest.findById(id).session(session);
+        if (!withdrawRequest) {
+            await session.abortTransaction();
+            res.status(404).json({
+                success: false,
+                message: 'Withdraw request not found'
+            });
+            return;
+        }
+
+        if (withdrawRequest.status !== 'APPROVED') {
+            await session.abortTransaction();
+            res.status(400).json({
+                success: false,
+                message: 'Only approved withdraw requests can be completed'
             });
             return;
         }
@@ -164,7 +223,6 @@ export const approveWithdrawRequest = async (
         withdrawRequest.status = 'COMPLETED';
         withdrawRequest.processedAt = processedAt;
         withdrawRequest.processedBy = adminId;
-        withdrawRequest.rejectedReason = undefined;
         withdrawRequest.transferReference = transferReference;
         await withdrawRequest.save({ session });
 
@@ -207,7 +265,7 @@ export const approveWithdrawRequest = async (
 
         res.status(200).json({
             success: true,
-            message: 'Withdraw request approved and completed successfully',
+            message: 'Withdraw request completed successfully',
             data: withdrawRequest
         });
     } catch (error: any) {
@@ -252,11 +310,11 @@ export const rejectWithdrawRequest = async (
             return;
         }
 
-        if (withdrawRequest.status !== 'PENDING') {
+        if (!['PENDING', 'APPROVED'].includes(withdrawRequest.status)) {
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Only pending withdraw requests can be rejected'
+                message: 'Only pending or approved withdraw requests can be rejected'
             });
             return;
         }
