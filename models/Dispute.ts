@@ -17,7 +17,7 @@ const disputeUserSchema = new Schema({
         type: String,
         required: true,
     },
-}{ _id: false });
+}, { _id: false });
 
 
 
