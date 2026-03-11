@@ -7,6 +7,27 @@ interface EmailOptions {
     html: string
 }
 
+interface WithdrawEmailPayload {
+    requestId: string;
+    amount: number;
+    bankInfo: {
+        bankName: string;
+        accountNumber: string;
+        accountName: string;
+    };
+    requestedAt: Date;
+    processedAt?: Date;
+    reason?: string;
+    transferReference?: string;
+}
+
+const formatVndCurrency = (amount: number): string => `${amount.toLocaleString('vi-VN')}đ`;
+
+const formatDateTime = (value?: Date): string => {
+    if (!value) return 'N/A';
+    return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+};
+
 //Send mail function using SendGrid API
 export const sendMail = async (
     options: EmailOptions
@@ -172,6 +193,78 @@ export const sendPasswordChangedEmail = async (
     return sendMail({
         to: email,
         subject: '[Xedaptot] Your password has been changed',
+        html
+    });
+};
+
+export const sendWithdrawApprovedEmail = async (
+    email: string,
+    fullName: string,
+    payload: WithdrawEmailPayload
+): Promise<boolean> => {
+    const supportEmail = process.env.EMAIL_SUPPORT || process.env.EMAIL_USER || 'support@xedaptot.com';
+
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+            <h2 style="color: #16a34a; margin: 0 0 8px;">Withdraw Request Approved</h2>
+            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Your withdraw request has been approved and processed by the Xedaptot admin team.</p>
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 0 0 8px;"><strong>Request ID:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Amount:</strong> ${formatVndCurrency(payload.amount)}</p>
+                <p style="margin: 0 0 8px;"><strong>Bank:</strong> ${payload.bankInfo.bankName}</p>
+                <p style="margin: 0 0 8px;"><strong>Account Number:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Account Name:</strong> ${payload.bankInfo.accountName}</p>
+                <p style="margin: 0 0 8px;"><strong>Requested At:</strong> ${formatDateTime(payload.requestedAt)}</p>
+                <p style="margin: 0 0 8px;"><strong>Processed At:</strong> ${formatDateTime(payload.processedAt)}</p>
+                <p style="margin: 0;"><strong>Transfer Reference:</strong> ${payload.transferReference || 'N/A'}</p>
+            </div>
+            <p style="margin: 0 0 16px;">If you have any questions, please contact <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+        </div>
+        <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
+    </div>
+    `;
+
+    return sendMail({
+        to: email,
+        subject: '[Xedaptot] Your withdraw request has been approved',
+        html
+    });
+};
+
+export const sendWithdrawRejectedEmail = async (
+    email: string,
+    fullName: string,
+    payload: WithdrawEmailPayload
+): Promise<boolean> => {
+    const supportEmail = process.env.EMAIL_SUPPORT || process.env.EMAIL_USER || 'support@xedaptot.com';
+
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+            <h2 style="color: #dc2626; margin: 0 0 8px;">Withdraw Request Rejected</h2>
+            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Your withdraw request was rejected by the Xedaptot admin team.</p>
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 0 0 8px;"><strong>Request ID:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Amount:</strong> ${formatVndCurrency(payload.amount)}</p>
+                <p style="margin: 0 0 8px;"><strong>Bank:</strong> ${payload.bankInfo.bankName}</p>
+                <p style="margin: 0 0 8px;"><strong>Account Number:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Account Name:</strong> ${payload.bankInfo.accountName}</p>
+                <p style="margin: 0 0 8px;"><strong>Requested At:</strong> ${formatDateTime(payload.requestedAt)}</p>
+                <p style="margin: 0 0 8px;"><strong>Processed At:</strong> ${formatDateTime(payload.processedAt)}</p>
+                <p style="margin: 0;"><strong>Reason:</strong> ${payload.reason || 'No reason provided'}</p>
+            </div>
+            <p style="margin: 0 0 16px;">The frozen amount has been released back to your wallet. If you need support, contact <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+        </div>
+        <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
+    </div>
+    `;
+
+    return sendMail({
+        to: email,
+        subject: '[Xedaptot] Your withdraw request was rejected',
         html
     });
 };

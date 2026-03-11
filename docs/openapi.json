@@ -7370,7 +7370,7 @@
           "Wallet"
         ],
         "summary": "Create withdraw request",
-        "description": "Creates a pending withdraw request. Amount will be frozen until admin approves/rejects.",
+        "description": "Creates a pending withdraw request. A user can have up to 3 pending requests at the same time. Amount will be frozen until admin approves/rejects.",
         "security": [
           {
             "bearerAuth": []
@@ -7411,7 +7411,7 @@
             }
           },
           "400": {
-            "description": "Insufficient balance or pending request exists"
+            "description": "Insufficient balance or user already has 3 pending withdraw requests"
           },
           "401": {
             "description": "Unauthorized"

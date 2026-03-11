@@ -70,6 +70,7 @@ export interface IWithdrawRequest {
     processedAt?: Date;
     processedBy?: Types.ObjectId;
     rejectedReason?: string;
+    transferReference?: string;
 }
 
 export interface IWithdrawRequestDocument extends IWithdrawRequest, Document {
