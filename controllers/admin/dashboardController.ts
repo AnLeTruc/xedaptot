@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { getSummaryData } from '../../services/summaryService';
+import { getBicyclesChart } from '../../services/chartService';
+import { BicyclesChartQueryInput } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
   req: Request,
@@ -32,6 +34,28 @@ export const getSummaryStats = async (
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    });
+  }
+};
+
+//Bicyles Status Chart
+export const getBicyclesStatusChart = async (
+  req: Request<any, any, any, any>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { year } = req.query;
+
+    const data = await getBicyclesChart(year);
+
+    res.status(200).json({
+      success: true,
+      data
+    });
+
+  } catch (error : any) {
+    res.status(500).json({
+      message: error.message
     });
   }
 };

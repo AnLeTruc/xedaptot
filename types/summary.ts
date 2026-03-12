@@ -20,3 +20,14 @@ export interface SummaryQuery{
     year?: number;
 }
 
+//Bicycle Chart
+export interface BicyclesStatusCount{
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    count: number;
+}
+
+export interface BicyclesChartResult {
+    data: BicyclesStatusCount[];
+    total: number;
+}
+
