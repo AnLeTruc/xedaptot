@@ -67,17 +67,27 @@ export function buildBicycleFilter(query: any, userRoles: string[] = []): any {
         clauses.push({ $or: ors });
     }
 
-    // Location: provinceId, provinceName (regex), districtId, wardCode
-    const locationConditions: any[] = [];
-    if (query.provinceId) locationConditions.push({ 'location.provinceId': toNumber(query.provinceId) });
-    if (query.districtId) locationConditions.push({ 'location.districtId': toNumber(query.districtId) });
-    if (query.wardCode) locationConditions.push({ 'location.wardCode': query.wardCode });
+    const provinceIdNum = toNumber(query.provinceId);
+    const districtIdNum = toNumber(query.districtId);
+    if (provinceIdNum !== undefined) {
+        filter['location.provinceId'] = provinceIdNum;
+    }
+    if (districtIdNum !== undefined) {
+        filter['location.districtId'] = districtIdNum;
+    }
+    if (query.wardCode) {
+        filter['location.wardCode'] = String(query.wardCode);
+    }
+
     if (query.provinceName) {
         const regex = new RegExp(escapeRegExp(String(query.provinceName)), 'i');
-        locationConditions.push({ 'location.provinceName': regex });
-        locationConditions.push({ 'location.city': regex });
+        clauses.push({
+            $or: [
+                { 'location.provinceName': regex },
+                { 'location.districtName': regex }
+            ]
+        });
     }
-    if (locationConditions.length > 0) clauses.push({ $or: locationConditions });
 
     // Colors handled above; search text
     if (query.search) {
