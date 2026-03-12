@@ -8,11 +8,28 @@ import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../servic
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-        wallet = await Wallet.create({ userId });
+    try {
+        const wallet = await Wallet.findOneAndUpdate(
+            { userId },
+            { $setOnInsert: { userId } },
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        );
+
+        return wallet;
+    } catch (error: any) {
+        if (error?.code === 11000) {
+            const existingWallet = await Wallet.findOne({ userId });
+            if (existingWallet) {
+                return existingWallet;
+            }
+        }
+
+        throw error;
     }
-    return wallet;
 };
 
 const generateCode = (prefix: string) => {
@@ -39,7 +56,7 @@ export const getMyWallet = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to load wallet. Please try again later.'
         });
     }
 };
@@ -85,7 +102,7 @@ export const getTransactions = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to load wallet transactions. Please try again later.'
         });
     }
 };
@@ -148,7 +165,7 @@ export const depositToWallet = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to initialize wallet deposit. Please try again later.'
         });
     }
 };

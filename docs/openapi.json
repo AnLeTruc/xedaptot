@@ -2083,6 +2083,54 @@
       }
     },
     "/brands/{id}": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "Get brand by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Brand ID (MongoDB ObjectId)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Brand"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Brand"

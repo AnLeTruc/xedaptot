@@ -9,6 +9,7 @@
     "db:clean": "ts-node ./scripts/cleanDatabase.ts",
     "db:backup-preserved": "ts-node ./scripts/backupPreservedData.ts",
     "db:restore-preserved": "ts-node ./scripts/restorePreservedData.ts",
+    "db:migrate-brand-ids": "ts-node ./scripts/migrateBrandIdsToObjectId.ts",
     "wallet:add-balance": "ts-node ./scripts/addWalletBalance.ts"
   },
   "dependencies": {
