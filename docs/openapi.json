@@ -1781,6 +1781,72 @@
           }
         }
       },
+      "ViolationReportCreateRequest": {
+        "type": "object",
+        "required": [
+          "reportedUserId",
+          "bicycleId",
+          "violationType",
+          "description"
+        ],
+        "properties": {
+          "reportedUserId": {
+            "type": "string",
+            "description": "ID of the user being reported"
+          },
+          "bicycleId": {
+            "type": "string",
+            "description": "ID of the bicycle listing"
+          },
+          "violationType": {
+            "type": "string",
+            "enum": [
+              "FRAUD",
+              "FAKE_LISTING",
+              "INAPPROPRIATE",
+              "STOLEN_BICYCLE",
+              "DUPLICATE_LISTING",
+              "OTHER"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description (max 2000 chars)",
+            "maxLength": 2000
+          }
+        },
+        "example": {
+          "reportedUserId": "6650f1d0c0a6f1c2a1b2c3d4",
+          "bicycleId": "6650f2e3a4b5c6d7e8f90123",
+          "violationType": "FRAUD",
+          "description": "Người bán yêu cầu chuyển khoản trước và không cho xem xe."
+        }
+      },
+      "ViolationReportUpdateRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "REVIEWING",
+              "RESOLVE",
+              "REJECTED"
+            ]
+          },
+          "adminNotes": {
+            "type": "string",
+            "description": "Admin notes (max 2000 chars)",
+            "maxLength": 2000
+          }
+        },
+        "example": {
+          "status": "REVIEWING",
+          "adminNotes": "Đã liên hệ các bên, đang xác minh giao dịch."
+        }
+      },
       "RestrictedWord": {
         "type": "object",
         "properties": {
@@ -9040,9 +9106,12 @@
           "required": true,
           "content": {
             "application/json": {
-                  "schema": {
+                "schema": {
                 "type": "object",
-                "required": ["type", "content"],
+                  "required": [
+                    "type",
+                    "content"
+                  ],
                 "properties": {
                   "content": {
                     "type": "string",
@@ -9061,7 +9130,7 @@
                     "example": "64d1b5b5b5b5b5b5b5b5b5b5"
                   }
                 }
-              ,
+              },
               "examples": {
                 "textMessage": {
                   "summary": "Text message",
@@ -9189,38 +9258,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "reportedUserId",
-                  "bicycleId",
-                  "violationType",
-                  "description"
-                ],
-                "properties": {
-                  "reportedUserId": {
-                    "type": "string",
-                    "description": "ID of the user being reported"
-                  },
-                  "bicycleId": {
-                    "type": "string",
-                    "description": "ID of the bicycle listing"
-                  },
-                  "violationType": {
-                    "type": "string",
-                    "enum": [
-                      "FRAUD",
-                      "FAKE_LISTING",
-                      "INAPPROPRIATE",
-                      "STOLEN_BICYCLE",
-                      "DUPLICATE_LISTING",
-                      "OTHER"
-                    ]
-                  },
-                  "description": {
-                    "type": "string",
-                    "description": "Detailed description (max 2000 chars)"
-                  }
-                }
+                "$ref": "#/components/schemas/ViolationReportCreateRequest"
               }
             }
           }
@@ -9252,6 +9290,9 @@
           },
           "404": {
             "description": "Reported user or bicycle not found"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
@@ -9338,6 +9379,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -9375,6 +9419,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -9421,6 +9468,9 @@
           },
           "404": {
             "description": "Violation report not found"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
@@ -9450,24 +9500,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "status"
-                ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "REVIEWING",
-                      "RESOLVE",
-                      "REJECTED"
-                    ]
-                  },
-                  "adminNotes": {
-                    "type": "string",
-                    "description": "Admin notes (max 2000 chars)"
-                  }
-                }
+                "$ref": "#/components/schemas/ViolationReportUpdateRequest"
               }
             }
           }
@@ -9496,6 +9529,9 @@
           },
           "404": {
             "description": "Report not found"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -10139,5 +10175,4 @@
       }
     }
   }
-}
 }

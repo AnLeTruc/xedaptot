@@ -3,17 +3,17 @@ import { IViolationReportDocument } from '../types/violationReport';
 
 const violationReportSchema = new Schema<IViolationReportDocument>({
     reporter: {
-        id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        _id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         fullName: { type: String, required: true },
         email: { type: String },
     },
     reportedUser: {
-        id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        _id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         fullName: { type: String, required: true },
         email: { type: String },
     },
     targetBicycle: {
-        id: { type: Schema.Types.ObjectId, ref: 'Bicycle', required: true },
+        _id: { type: Schema.Types.ObjectId, ref: 'Bicycle', required: true },
         title: { type: String, required: true },
         price: { type: Number, required: true },
         image: { type: String },
@@ -45,7 +45,7 @@ const violationReportSchema = new Schema<IViolationReportDocument>({
 
 
 violationReportSchema.index({ 'reporter._id': 1, status: 1 });
-violationReportSchema.index({ 'reportedUser_.id': 1, status: 1 });
+violationReportSchema.index({ 'reportedUser._id': 1, status: 1 });
 violationReportSchema.index({ status: 1 });
 
 
