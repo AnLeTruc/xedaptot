@@ -14,6 +14,7 @@ const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
 
 // Start Cronjobs
 startCleanupJob();
+
 //Cronjob releasing funds
 cron.schedule('* * * * *', releaseFundsJob);
 cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
