@@ -10,6 +10,9 @@
     "db:backup-preserved": "ts-node ./scripts/backupPreservedData.ts",
     "db:restore-preserved": "ts-node ./scripts/restorePreservedData.ts",
     "db:migrate-brand-ids": "ts-node ./scripts/migrateBrandIdsToObjectId.ts",
+    "db:migrate-category-ids": "ts-node ./scripts/migrateCategoryIdsToObjectId.ts",
+    "db:migrate-bicyclemodel-ids": "ts-node ./scripts/migrateBicycleModelIdsToObjectId.ts",
+    "db:migrate-package-ids": "ts-node ./scripts/migratePackageIdsToObjectId.ts",
     "wallet:add-balance": "ts-node ./scripts/addWalletBalance.ts"
   },
   "dependencies": {

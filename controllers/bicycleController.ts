@@ -10,6 +10,26 @@ import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
 import { buildFullAddress } from '../utils/address';
 
+const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: number[] } | null | undefined => {
+    if (!coordinates) {
+        return undefined;
+    }
+
+    if (
+        coordinates.type !== 'Point'
+        || !Array.isArray(coordinates.coordinates)
+        || coordinates.coordinates.length !== 2
+        || coordinates.coordinates.some((value: unknown) => typeof value !== 'number' || !Number.isFinite(value))
+    ) {
+        return null;
+    }
+
+    return {
+        type: 'Point' as const,
+        coordinates: coordinates.coordinates
+    };
+};
+
 // GET /api/bicycles/my
 export const getMyBicycles = async (
     req: AuthRequest,
@@ -319,6 +339,15 @@ export const createBicycle = async (
             return;
         }
 
+        const geoPoint = getValidatedGeoPoint(location.coordinates);
+        if (location.coordinates && !geoPoint) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid map coordinates. Please provide [longitude, latitude].'
+            });
+            return;
+        }
+
         const locationData = {
             provinceId: location.provinceId,
             districtId: location.districtId,
@@ -333,7 +362,7 @@ export const createBicycle = async (
                 districtName: resolvedLocation.districtName,
                 provinceName: resolvedLocation.provinceName
             }),
-            coordinates: location.coordinates
+            coordinates: geoPoint ?? undefined
         };
 
         const bicycle = await Bicycle.create({
@@ -451,6 +480,16 @@ export const updateBicycle = async (
                 });
                 return;
             }
+
+            const geoPoint = getValidatedGeoPoint(location.coordinates);
+            if (location.coordinates && !geoPoint) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid map coordinates. Please provide [longitude, latitude].'
+                });
+                return;
+            }
+
             updateData.location = {
                 provinceId: location.provinceId,
                 districtId: location.districtId,
@@ -465,7 +504,7 @@ export const updateBicycle = async (
                     districtName: resolvedLocation.districtName,
                     provinceName: resolvedLocation.provinceName
                 }),
-                coordinates: location.coordinates
+                coordinates: geoPoint ?? undefined
             };
         }
         if (images) updateData.images = images;
