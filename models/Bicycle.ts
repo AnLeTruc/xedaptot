@@ -108,7 +108,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             },
             avatarUrl: {
                 type: String,
-                required: [true, 'Seller avatar is required']
+                default: ''
             },
             reputationScore: {
                 type: Number,
