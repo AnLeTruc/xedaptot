@@ -14,6 +14,7 @@ const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
 
 // Start Cronjobs
 startCleanupJob();
+
 //Cronjob releasing funds
 cron.schedule('* * * * *', releaseFundsJob);
 cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
@@ -29,11 +30,16 @@ const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
 const adminInspectorRouter = require('./routes/admin/inspector').default;
 const adminUserRouter = require('./routes/admin/user').default;
+const adminWalletRouter = require('./routes/admin/wallet').default;
 const inspectorRouter = require('./routes/inspector').default;
 const orderRouter = require('./routes/order').default;
 const bicycleModelRouter = require('./routes/bicycleModel').default;
 const walletRouter = require('./routes/wallet').default;
 const shippingRouter = require('./routes/shipping').default;
+const conversationRouter = require('./routes/conversation').default;
+const violationReportRouter = require('./routes/violationReport').default;
+const adminConversationRouter = require('./routes/admin/conversation').default;
+const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').default;
 var app = express();
 
 // Trust proxy for Render
@@ -71,9 +77,14 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/admin', adminUserRouter);
+app.use('/api/admin', adminWalletRouter);
+app.use('/api/admin', adminConversationRouter);
+app.use('/api/admin', adminRestrictedWordRouter);
 app.use('/api/inspectors', inspectorRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/bicycle-models', bicycleModelRouter);
 app.use('/api/wallets', walletRouter);
 app.use('/api/shipping', shippingRouter);
+app.use('/api/conversations', conversationRouter);
+app.use('/api/violation-reports', violationReportRouter);
 module.exports = app;

@@ -49,6 +49,11 @@ const withdrawRequestSchema = new Schema<IWithdrawRequestDocument>(
         rejectedReason: {
             type: String,
             maxlength: [500, 'Rejected reason cannot exceed 500 characters']
+        },
+        transferReference: {
+            type: String,
+            trim: true,
+            maxlength: [100, 'Transfer reference cannot exceed 100 characters']
         }
     },
     {
