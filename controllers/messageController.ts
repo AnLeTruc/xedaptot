@@ -44,7 +44,7 @@ export const sendMessage = async (
 
         const now = new Date();
         if (conversation.lockedStatus === 'PERM_LOCKED') {
-            res.status(403).json({
+            res.status(200).json({
                 message: 'Hội thoại đã bị khóa vĩnh viễn',
                 lockedStatus: conversation.lockedStatus
             });
@@ -53,7 +53,7 @@ export const sendMessage = async (
 
         if (conversation.lockedStatus === 'TEMP_LOCKED') {
             if (conversation.lockedUntil && conversation.lockedUntil > now) {
-                res.status(403).json({
+                res.status(200).json({
                     message: `Hội thoại đã bị khóa đến ${conversation.lockedUntil.toISOString()}`,
                     lockedStatus: conversation.lockedStatus,
                     lockedUntil: conversation.lockedUntil
