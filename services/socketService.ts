@@ -17,7 +17,11 @@ export const onlineUsers = new Map<string, Set<string>>();
 export const initSocketServer = (server: HttpServer) => {
     io = new Server(server, {
         cors: {
-            origin: allowedSocketOrigins.length ? allowedSocketOrigins : false,
+            origin: (origin, callback) => {
+                if (!origin) return callback(null, true);
+                if (allowedSocketOrigins.includes(origin)) return callback(null, true);
+                callback(new Error('not allowed'));
+            },
             methods: ["GET", "POST"],
             credentials: true,
         }
