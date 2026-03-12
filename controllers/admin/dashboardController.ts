@@ -2,9 +2,13 @@ import { Request, Response } from 'express';
 import { getSummaryData } from '../../services/summaryService';
 import { 
     getBicyclesChart,
-    getTopBrandsChart 
+    getTopBrandsChart,
+    getTopCategoriesChart  
 } from '../../services/chartService';
-import { TopBrandsQueryInput } from '../../validations/summaryValidation';
+import { 
+    TopBrandsQueryInput,
+    TopCategoriesQueryInput 
+ } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
   req: Request,
@@ -84,3 +88,26 @@ export const getTopBrandsChartController = async (
     });
   }
 };
+
+//Top cate
+export const getTopCategoriesChartController = async (
+  req: Request<{}, {}, {}, TopCategoriesQueryInput>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { limit = 5, status = 'APPROVED', year } = req.query;
+
+    const data = await getTopCategoriesChart(limit, status, year);
+
+    res.status(200).json({
+      success: true,
+      data
+    });
+
+  } catch (error:any) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+

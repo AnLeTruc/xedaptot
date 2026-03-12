@@ -1,6 +1,12 @@
 import Bicycle from '../models/Bicycle';
 import Brand from '../models/Brand';
-import { BicyclesChartResult,  BrandChartResult, BrandChartItem} from '../types/summary';
+import { 
+    BicyclesChartResult,
+    BrandChartResult, 
+    BrandChartItem,
+    TopCategoriesResult,
+    CategoryChartItem 
+} from '../types/summary';
 
 //Ratio bicycles by status
 export const getBicyclesChart = async (
@@ -74,7 +80,7 @@ export const getTopBrandsChart = async (
     },
 
     { $sort: { count: -1 } },
-    { $limit: limit }
+    { $limit: Number(limit) }
   ]);
 
   const total = result.reduce((sum, item) => sum + item.count, 0);
@@ -90,3 +96,50 @@ export const getTopBrandsChart = async (
 
   return { data, total };
 };
+
+//Top category
+export const getTopCategoriesChart = async (
+  limit: number = 5,
+  status: string = 'APPROVED',
+  year?: number
+): Promise<TopCategoriesResult> => {
+
+  const matchStage: Record<string, unknown> = {};
+
+  if (status !== 'ALL') matchStage.status = status;
+  if (year) {
+    matchStage.createdAt = {
+      $gte: new Date(`${year}-01-01`),
+      $lte: new Date(`${year}-12-31T23:59:59`)
+    };
+  }
+
+  const result = await Bicycle.aggregate([
+    { $match: matchStage },
+    {
+      $group: {
+        _id: '$category._id',
+        categoryName: { $first: '$category.name' },
+        count: { $sum: 1 }
+      }
+    },
+
+    { $sort: { count: -1 } },
+    { $limit: Number(limit) }
+  ]);
+
+  const total = result.reduce((sum, item) => sum + item.count, 0);
+
+  const data: CategoryChartItem[] = result.map((item) => ({
+    categoryId: item._id?.toString() ?? 'unknown',
+    categoryName: item.categoryName ?? 'Unknown',
+    count: item.count,
+    percentage: total > 0
+      ? Math.round((item.count / total) * 100 * 10) / 10
+      : 0
+  }));
+
+  return { data, total };
+};
+
+

@@ -2,13 +2,15 @@ import { Router } from 'express';
 import { 
   getSummaryStats, 
   getBicyclesStatusChart, 
-  getTopBrandsChartController
+  getTopBrandsChartController,
+  getTopCategoriesChartController  
 } from '../../controllers/admin/dashboardController';
 import { validate } from '../../middleware/validate';
 import { 
   summaryQuerySchema, 
   bicyclesChartQuerySchema, 
-  topBrandsQuerySchema
+  topBrandsQuerySchema,
+  topCategoriesQuerySchema  
 } from '../../validations/summaryValidation';
 
 
@@ -33,6 +35,13 @@ router.get(
   '/charts/top-brands',
   validate(topBrandsQuerySchema),
   getTopBrandsChartController
+);
+
+//Top cate
+router.get(
+  '/charts/top-categories',
+  validate(topCategoriesQuerySchema),
+  getTopCategoriesChartController
 );
 
 export default router;

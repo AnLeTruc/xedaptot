@@ -43,3 +43,16 @@ export interface BrandChartResult{
     data: BrandChartItem[];
     total: number; //Total bicycle of brand
 }
+
+//Top category chart
+export interface CategoryChartItem {
+  categoryId: string;
+  categoryName: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TopCategoriesResult {
+  data: CategoryChartItem[];
+  total: number;
+}
