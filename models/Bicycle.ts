@@ -154,7 +154,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
 
 bicycleSchema.index({ title: 'text', description: 'text' });
 
-bicycleSchema.index({ 'location.coordinates': '2dsphere' });
+bicycleSchema.index({ 'location.coordinates': '2dsphere' }, { sparse: true });
 
 
 const Bicycle = mongoose.model<IBicycleDocument>('Bicycle', bicycleSchema);
