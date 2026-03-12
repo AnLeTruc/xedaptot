@@ -31,3 +31,15 @@ export interface BicyclesChartResult {
     total: number;
 }
 
+//Top brand chart
+export interface BrandChartItem {
+    brandId: string;
+    brandName: string;
+    count: number;
+    percentage: number; //% -> total
+}
+
+export interface BrandChartResult{
+    data: BrandChartItem[];
+    total: number; //Total bicycle of brand
+}

@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import { getSummaryData } from '../../services/summaryService';
-import { getBicyclesChart } from '../../services/chartService';
-import { BicyclesChartQueryInput } from '../../validations/summaryValidation';
+import { 
+    getBicyclesChart,
+    getTopBrandsChart 
+} from '../../services/chartService';
+import { TopBrandsQueryInput } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
   req: Request,
@@ -54,6 +57,28 @@ export const getBicyclesStatusChart = async (
     });
 
   } catch (error : any) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+//Top brand chart
+export const getTopBrandsChartController = async (
+  req: Request<{}, {}, {}, TopBrandsQueryInput>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { limit = 5, status = 'APPROVED', year } = req.query;
+
+    const data = await getTopBrandsChart(limit, status, year);
+
+    res.status(200).json({
+      success: true,
+      data
+    });
+
+  } catch (error:any) {
     res.status(500).json({
       message: error.message
     });
