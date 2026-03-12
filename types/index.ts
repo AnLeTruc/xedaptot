@@ -48,12 +48,6 @@ export interface AuthRequest extends Request {
     };
 };
 
-export * from './brand';
-export * from './bicycle';
-export * from './address';
-export * from './userpackage';
-export * from './package';
-
 export interface ICategory {
     name: string;
     description?: string;
@@ -65,9 +59,15 @@ export interface ICategoryDocument extends ICategory, Document {
     updatedAt: Date;
 }
 
+export * from './brand';
+export * from './bicycle';
+export * from './address';
+export * from './userpackage';
+export * from './package';
 export * from './inspectionReport';
 export * from './notification';
 export * from './bicycleModel';
 export * from './message';
 export * from './conversation';
 export * from './restrictedWord';
+export * from './summary';
