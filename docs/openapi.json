@@ -4144,6 +4144,30 @@
             }
           },
           {
+            "name": "model",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by bicycle model id"
+          },
+          {
+            "name": "brands",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of brand ids to filter (e.g. id1,id2)"
+          },
+          {
+            "name": "colors",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of colors (case-insensitive)"
+          },
+          {
             "name": "sellerId",
             "in": "query",
             "description": "Filter bicycles by seller ID",
@@ -4166,12 +4190,82 @@
             }
           },
           {
+            "name": "usageMin",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Minimum usage months"
+          },
+          {
+            "name": "usageMax",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Maximum usage months"
+          },
+          {
+            "name": "yearMin",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Minimum manufacturing year"
+          },
+          {
+            "name": "yearMax",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Maximum manufacturing year"
+          },
+          {
+            "name": "inspectionStatus",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "REQUESTED",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
             "name": "provinceId",
             "in": "query",
             "schema": {
               "type": "integer"
             },
             "description": "Filter by GHN provinceId"
+          },
+          {
+            "name": "districtId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by GHN districtId"
+          },
+          {
+            "name": "wardCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provinceName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by province or city name (partial, case-insensitive)"
           },
           {
             "name": "search",

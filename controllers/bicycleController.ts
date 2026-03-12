@@ -9,6 +9,7 @@ import UserPackage from '../models/UserPackage';
 import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
 import { buildFullAddress } from '../utils/address';
+import buildBicycleFilter from '../utils/filter';
 
 const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: number[] } | null | undefined => {
     if (!coordinates) {
@@ -82,97 +83,39 @@ export const getAllBicycles = async (
     res: Response
 ): Promise<void> => {
     try {
-        const {
-            status,
-            condition,
-            category,
-            brand,
-            sellerId,
-            minPrice,
-            maxPrice,
-            provinceId,
-            provinceName,
-            search,
-            page = 1,
-            limit = 10,
-            sort = '-createdAt'  // Mặc định sort mới nhất
-        } = req.query;
-        const filter: any = {};
-        if (provinceId || provinceName) {
-            const locationConditions: any[] = [];
-            if (provinceId) {
-                locationConditions.push({ 'location.provinceId': Number(provinceId) });
-            }
-            if (provinceName) {
-                const nameRegex = new RegExp(provinceName as string, 'i');
-                locationConditions.push({ 'location.provinceName': nameRegex });
-                locationConditions.push({ 'location.city': nameRegex });
-            }
-            if (locationConditions.length > 0) {
-                filter.$or = locationConditions;
-            }
-        }
-
         const userRoles = req.user?.roles || [];
         const isPrivileged = userRoles.includes('ADMIN') || userRoles.includes('INSPECTOR');
 
-        if (isPrivileged) {
-            if (status) {
-                filter.status = status;
-            }
-        } else {
-            if (status && status !== 'APPROVED') {
+        // Build base filter from query params
+        const baseFilter: any = buildBicycleFilter(req.query || {}, userRoles);
+
+        // Enforce status visibility for non-privileged users
+        if (!isPrivileged) {
+            // if non-privileged, always only show APPROVED
+            if (req.query.status && String(req.query.status) !== 'APPROVED') {
                 res.status(403).json({
                     success: false,
                     message: 'Access denied. You can only view APPROVED bicycles.'
                 });
                 return;
             }
-            filter.status = 'APPROVED';
+            baseFilter.status = 'APPROVED';
         }
 
-        // Seller filter
-        if (sellerId) {
-            filter['seller._id'] = sellerId;
-        }
-
-        if (condition) {
-            filter.condition = condition;
-        }
-        if (category) {
-            filter['category._id'] = category;
-        }
-        if (brand) {
-            filter['brand._id'] = brand;
-        }
-
-        // Price range
-        if (minPrice || maxPrice) {
-            filter.price = {};
-            if (minPrice) filter.price.$gte = Number(minPrice);
-            if (maxPrice) filter.price.$lte = Number(maxPrice);
-        }
-
-
-        // Text search
-        if (search) {
-            filter.$text = { $search: search as string };
-        }
-
-
-        // Pagination
-        const pageNum = Number(page);
-        const limitNum = Number(limit);
+        // Pagination params
+        const pageNum = Math.max(1, Number(req.query.page) || 1);
+        const limitNum = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
         const skip = (pageNum - 1) * limitNum;
 
+        const sort = (req.query.sort as string) || '-createdAt';
 
         // Query
         const [bicycles, total] = await Promise.all([
-            Bicycle.find(filter)
-                .sort(sort as string)
+            Bicycle.find(baseFilter)
+                .sort(sort)
                 .skip(skip)
                 .limit(limitNum),
-            Bicycle.countDocuments(filter)
+            Bicycle.countDocuments(baseFilter)
         ]);
         res.status(200).json({
             success: true,
