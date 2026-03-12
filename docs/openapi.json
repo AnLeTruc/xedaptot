@@ -9040,25 +9040,19 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
+                  "schema": {
                 "type": "object",
-                "required": [
-                  "content",
-                  "type"
-                ],
+                "required": ["type", "content"],
                 "properties": {
                   "content": {
                     "type": "string",
-                    "description": "Message content",
+                    "description": "Message content. For IMAGE messages, provide a publicly accessible URL returned by POST /upload (field `image`).",
                     "example": "Hello! Is this bicycle still available?"
                   },
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "TEXT",
-                      "PRODUCT"
-                    ],
-                    "description": "Message type (SYSTEM is reserved)",
+                    "enum": ["TEXT", "PRODUCT", "IMAGE"],
+                    "description": "Message type (SYSTEM is reserved for server use)",
                     "example": "TEXT"
                   },
                   "bicycleId": {
@@ -9066,6 +9060,20 @@
                     "description": "Required when type is PRODUCT",
                     "example": "64d1b5b5b5b5b5b5b5b5b5b5"
                   }
+                }
+              ,
+              "examples": {
+                "textMessage": {
+                  "summary": "Text message",
+                  "value": { "type": "TEXT", "content": "Hello! Is this bicycle still available?" }
+                },
+                "productMessage": {
+                  "summary": "Product link message",
+                  "value": { "type": "PRODUCT", "bicycleId": "64d1b5b5b5b5b5b5b5b5b5b5", "content": "Check this product" }
+                },
+                "imageMessage": {
+                  "summary": "Image message (use uploaded file URL)",
+                  "value": { "type": "IMAGE", "content": "https://res.cloudinary.com/.../xedaptot/products/abcd.jpg" }
                 }
               }
             }
