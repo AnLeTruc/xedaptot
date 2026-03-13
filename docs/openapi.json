@@ -10234,10 +10234,10 @@
         }
       }
     },
-    "/admin/charts/listings": {
+    "/admin/charts/bicycles": {
       "get": {
           "tags": ["Dashboard"],
-          "summary": "Get bicycle listings chart by status",
+          "summary": "Get bicycles status chart",
           "security": [{ "bearerAuth": [] }],
           "parameters": [
             {
