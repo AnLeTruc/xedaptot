@@ -60,7 +60,13 @@ export const createConversation = async (
 
         res.status(200).json({
             message: 'Conversation retrieved or created successfully',
-            conversation
+            conversation: {
+                ...conversation.toObject(),
+                violationCount: conversation.violationCount ?? 0,
+                lockedStatus: conversation.lockedStatus ?? 'NONE',
+                lockedUntil: conversation.lockedUntil ?? null,
+                lockedReason: conversation.lockedReason ?? null
+            }
         });
     } catch (error: any) {
         res.status(500).json({
