@@ -4,12 +4,14 @@ import {
     getBicyclesChart,
     getTopBrandsChart,
     getTopCategoriesChart,
-    getTopSellersChart       
+    getTopSellersChart,       
 } from '../../services/chartService';
+import { getWithdrawalsStats } from '../../services/financeService';
 import { 
     TopBrandsQueryInput,
     TopCategoriesQueryInput,
-    TopSellersQueryInput  
+    TopSellersQueryInput,
+    WithdrawalsQueryInput   
  } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
@@ -122,6 +124,25 @@ export const getTopSellersChartController = async (
     const { limit = 5, year } = req.query as unknown as TopSellersQueryInput;
 
     const data = await getTopSellersChart(Number(limit), year);
+
+    res.status(200).json({ success: true, data });
+
+  } catch (error:any) {
+     res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+//Withdraw res
+export const getWithdrawals = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { year } = req.query as unknown as WithdrawalsQueryInput;
+
+    const data = await getWithdrawalsStats(year ? Number(year) : undefined);
 
     res.status(200).json({ success: true, data });
 

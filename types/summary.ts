@@ -70,3 +70,11 @@ export interface TopSellersResult {
   data: SellerChartItem[];
   total: number; 
 }
+
+//Withdraw res
+export interface WithdrawalResult {
+  totalPending: number;
+  totalAmount: number; 
+}
+
+

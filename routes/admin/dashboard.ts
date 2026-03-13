@@ -4,7 +4,8 @@ import {
   getBicyclesStatusChart, 
   getTopBrandsChartController,
   getTopCategoriesChartController,
-  getTopSellersChartController     
+  getTopSellersChartController,
+  getWithdrawals      
 } from '../../controllers/admin/dashboardController';
 import { validate } from '../../middleware/validate';
 import { 
@@ -12,7 +13,8 @@ import {
   bicyclesChartQuerySchema, 
   topBrandsQuerySchema,
   topCategoriesQuerySchema,
-  topSellersQuerySchema           
+  topSellersQuerySchema,
+  withdrawalsQuerySchema            
 } from '../../validations/summaryValidation';
 
 
@@ -51,6 +53,13 @@ router.get(
   '/charts/top-sellers',
   validate(topSellersQuerySchema),
   getTopSellersChartController
+);
+
+//Withdraw res
+router.get(
+  '/finance/withdrawals',
+  validate(withdrawalsQuerySchema),
+  getWithdrawals
 );
 
 export default router;

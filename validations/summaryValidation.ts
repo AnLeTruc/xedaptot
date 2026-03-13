@@ -70,6 +70,13 @@ export const topSellersQuerySchema = z.object({
   year: yearSchema
 });
 
+//Withdraw res
+export const withdrawalsQuerySchema = z.object({
+  year: yearSchema
+});
+
+
+export type WithdrawalsQueryInput = z.infer<typeof withdrawalsQuerySchema>;
 export type TopSellersQueryInput = z.infer<typeof topSellersQuerySchema>;
 export type TopCategoriesQueryInput = z.infer<typeof topCategoriesQuerySchema>;
 export type TopBrandsQueryInput = z.infer<typeof topBrandsQuerySchema>;
