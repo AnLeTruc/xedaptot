@@ -149,3 +149,15 @@ export const getDisputes = async (
 
 
 
+
+
+
+export const getDisputeById = async (req: AuthRequest, res: Response) => {
+    try {
+        const dispute = await Dispute.findById(req.params.id);
+        if (!dispute) return res.status(404).json({ success: false, message: 'Không tìm thấy khiếu nại' });
+        return res.status(200).json({ success: true, dispute });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+};

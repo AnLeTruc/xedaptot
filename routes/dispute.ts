@@ -9,5 +9,5 @@ const router = Router();
 router.use(verifyToken, requireUser);
 router.post('/', validate(createDisputeSchema, 'body'), ctrl.createDispute);
 router.get('/', ctrl.getDisputes);
-
+router.get('/:id', ctrl.getDisputeById);
 export default router;
