@@ -12,15 +12,15 @@ const router = Router();
 router.use(verifyToken, requireUser);
 
 router.get('/me', ctrl.getMyViolationReports);
-router.get('/:id', ctrl.getViolationReportById)
+router.get('/check', ctrl.checkViolationReport);
+router.get('/', ctrl.getAllViolationReports);
 router.post(
     '/',
     validate(createViolationReportSchema, 'body'),
     ctrl.createViolationReport
 );
 
+router.get('/:id', ctrl.getViolationReportById);
+router.put('/:id', validate(updateViolationReportSchema, 'body'), ctrl.updateViolationReport);
 
-router.get('/', ctrl.getAllViolationReports);
-router.put('/:id', validate(updateViolationReportSchema, 'body'),
-    ctrl.updateViolationReport);
 export default router;

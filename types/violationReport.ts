@@ -54,6 +54,7 @@ export interface IViolationReport {
     status: ViolationStatus;
     description: string;
     adminNotes?: string;
+    images?: string[];
 }
 
 

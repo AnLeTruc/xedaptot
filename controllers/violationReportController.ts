@@ -11,7 +11,7 @@ export const createViolationReport = async (
 ): Promise<any> => {
     try {
         const userId = req.user!._id;
-        const { reportedUserId, bicycleId, violationType, description } = req.body;
+        const { reportedUserId, bicycleId, violationType, description, images } = req.body;
 
         if (userId.toString() === reportedUserId) {
             return res.status(400).json({
@@ -71,6 +71,7 @@ export const createViolationReport = async (
             },
             violationType,
             description,
+            images: images || [],
         });
 
         res.status(201).json({
@@ -202,6 +203,37 @@ export const updateViolationReport = async (req: AuthRequest, res: Response) => 
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to update violation report',
+        });
+    }
+};
+
+
+
+
+
+export const checkViolationReport = async (
+    req: AuthRequest,
+    res: Response
+): Promise<any> => {
+    try {
+        const userId = req.user!._id;
+        const { bicycleId, reportedUserId } = req.query;
+
+        const existing = await ViolationReport.findOne({
+            'reporter._id': userId,
+            'targetBicycle._id': bicycleId,
+            'reportedUser._id': reportedUserId,
+        });
+
+        res.json({
+            success: true,
+            hasReported: !!existing,
+            reportId: existing?._id ?? null,
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to check violation report',
         });
     }
 };
