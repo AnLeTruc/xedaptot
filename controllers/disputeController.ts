@@ -161,3 +161,120 @@ export const getDisputeById = async (req: AuthRequest, res: Response) => {
         return res.status(500).json({ success: false, message: 'Lỗi server' });
     }
 };
+
+
+
+
+export const resolveDispute = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        const { resolution, reason } = req.body;
+        const disputeId = req.params.id;
+        const dispute = await Dispute.findById(disputeId);
+        if (!dispute) return res.status(404).json({ success: false, message: 'Không tìm thấy khiếu nại' });
+        if (dispute.status === 'RESOLVED')
+            return res.status(400).json({
+                success: false,
+                message: 'Đã giải quyết khiếu nại'
+            });
+
+
+        const order = await Order.findById(dispute.orderId);
+        if (!order) return res.status(404).json({
+            success: false,
+            message: 'Không tìm thấy đơn hàng'
+        });
+
+        const escrowAmount = order.amounts.escrowAmount || 0;
+        // người mua thắng khiếu nại
+        if (resolution === 'REFUND_BUYER') {
+            const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+            if (!buyerWallet) return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy ví người mua'
+            });
+
+            if (buyerWallet && escrowAmount > 0) {
+                buyerWallet.frozenBalance -= escrowAmount;
+                buyerWallet.availableBalance += escrowAmount;
+                await buyerWallet.save();
+                await Transaction.create({
+                    walletId: buyerWallet._id,
+                    type: 'REFUND',
+                    amount: escrowAmount,
+                    orderId: order._id,
+                    balanceBefore: buyerWallet.availableBalance,
+                    balanceAfter: buyerWallet.availableBalance + escrowAmount,
+                    paymentMethod: 'SYSTEM',
+                    transactionCode: generateCode('REFUND'),
+                    description: reason || 'Hoàn tiền tranh chấp đơn đặt xe ' + order.orderCode,
+                })
+            }
+
+            order.status = 'CANCELLED';
+            order.cancelledAt = new Date();
+            order.cancelReason = reason || 'Đơn hủy do Admin phán quyết khiếu nại(hoàn tiền cho người mua)';
+            order.amounts.escrowAmount = 0;
+
+            let newBicycleStatus = 'APPROVED';
+            if (dispute.disputeType === 'FAKE_ITEM') {
+                newBicycleStatus = 'REJECTED';
+            } else if (dispute.disputeType === 'DAMAGED_ITEM') {
+                newBicycleStatus = 'PENDING';
+            }
+            await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: newBicycleStatus });
+
+
+            // người bán thắng   
+        } else if (resolution === 'RELEASE_SELLER') {
+            const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+            if (buyerWallet && escrowAmount > 0) {
+                buyerWallet.frozenBalance -= escrowAmount;   // người mua trả tiền
+                await buyerWallet.save();
+
+            }
+            const sellerWallet = await Wallet.findOne({ userId: order.seller._id });
+            if (sellerWallet && escrowAmount > 0) {
+                sellerWallet.frozenBalance -= escrowAmount;
+                sellerWallet.availableBalance += escrowAmount;
+                await sellerWallet.save();
+                await Transaction.create({
+                    walletId: sellerWallet._id,
+                    type: 'ESCROW_RELEASE',
+                    amount: escrowAmount,
+                    orderId: order._id,
+                    balanceBefore: sellerWallet.availableBalance - escrowAmount,
+                    balanceAfter: sellerWallet.availableBalance,
+                    paymentMethod: 'SYSTEM',
+                    transactionCode: generateCode('EARN'),
+                    description: 'Nhận tiền từ khiếu nại' + order.orderCode,
+                });
+            }
+            // ĐƠN GIAO THÀNH CÔNG ( HOÀN TẤT THU TIỀN )
+            order.status = 'FUNDS_RELEASED';
+            order.amounts.escrowAmount = 0; // rút sạch
+
+            // hòa giải (rút đơn)
+        } else if (resolution === 'NONE') {
+            order.status = 'DELIVERED';
+        }
+        await order.save();
+        dispute.status = 'RESOLVED';
+        dispute.resolvedAt = new Date();
+        dispute.resolution = resolution;
+        await dispute.save();
+        return res.status(200).json({
+            success: true,
+            message: 'Đã giải quyết khiếu nại',
+            dispute
+        });
+
+    } catch (error: any) {
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi server'
+        })
+    }
+}
