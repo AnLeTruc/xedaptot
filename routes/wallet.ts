@@ -28,4 +28,5 @@ router.post('/withdraw', validate(withdrawSchema, 'body'), ctrl.createWithdrawRe
 // GET /api/wallets/withdraw-requests - Get my withdraw requests
 router.get('/withdraw-requests', ctrl.getWithdrawRequests);
 
+
 export default router;
