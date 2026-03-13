@@ -3,14 +3,16 @@ import {
   getSummaryStats, 
   getBicyclesStatusChart, 
   getTopBrandsChartController,
-  getTopCategoriesChartController  
+  getTopCategoriesChartController,
+  getTopSellersChartController     
 } from '../../controllers/admin/dashboardController';
 import { validate } from '../../middleware/validate';
 import { 
   summaryQuerySchema, 
   bicyclesChartQuerySchema, 
   topBrandsQuerySchema,
-  topCategoriesQuerySchema  
+  topCategoriesQuerySchema,
+  topSellersQuerySchema           
 } from '../../validations/summaryValidation';
 
 
@@ -42,6 +44,13 @@ router.get(
   '/charts/top-categories',
   validate(topCategoriesQuerySchema),
   getTopCategoriesChartController
+);
+
+//Top sellers
+router.get(
+  '/charts/top-sellers',
+  validate(topSellersQuerySchema),
+  getTopSellersChartController
 );
 
 export default router;

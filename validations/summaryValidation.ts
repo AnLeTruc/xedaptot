@@ -64,6 +64,13 @@ export const topCategoriesQuerySchema = z.object({
   year: yearSchema
 });
 
+//Top sellers chart
+export const topSellersQuerySchema = z.object({
+  limit: limitSchema,
+  year: yearSchema
+});
+
+export type TopSellersQueryInput = z.infer<typeof topSellersQuerySchema>;
 export type TopCategoriesQueryInput = z.infer<typeof topCategoriesQuerySchema>;
 export type TopBrandsQueryInput = z.infer<typeof topBrandsQuerySchema>;
 export type BicyclesChartQueryInput = z.infer<typeof bicyclesChartQuerySchema>;

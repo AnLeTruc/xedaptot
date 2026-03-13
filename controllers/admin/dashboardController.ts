@@ -3,11 +3,13 @@ import { getSummaryData } from '../../services/summaryService';
 import { 
     getBicyclesChart,
     getTopBrandsChart,
-    getTopCategoriesChart  
+    getTopCategoriesChart,
+    getTopSellersChart       
 } from '../../services/chartService';
 import { 
     TopBrandsQueryInput,
-    TopCategoriesQueryInput 
+    TopCategoriesQueryInput,
+    TopSellersQueryInput  
  } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
@@ -106,6 +108,25 @@ export const getTopCategoriesChartController = async (
 
   } catch (error:any) {
     res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+//Top sellers
+export const getTopSellersChartController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { limit = 5, year } = req.query as unknown as TopSellersQueryInput;
+
+    const data = await getTopSellersChart(Number(limit), year);
+
+    res.status(200).json({ success: true, data });
+
+  } catch (error:any) {
+     res.status(500).json({
       message: error.message
     });
   }

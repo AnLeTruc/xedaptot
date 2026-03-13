@@ -56,3 +56,17 @@ export interface TopCategoriesResult {
   data: CategoryChartItem[];
   total: number;
 }
+
+//Top sellers chart
+export interface SellerChartItem {
+  sellerId: string;
+  sellerName: string;
+  avatarUrl: string;
+  successOrders: number;
+  percentage: number;
+}
+
+export interface TopSellersResult {
+  data: SellerChartItem[];
+  total: number; 
+}

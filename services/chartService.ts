@@ -1,11 +1,14 @@
 import Bicycle from '../models/Bicycle';
 import Brand from '../models/Brand';
+import Order from '../models/Order';
 import { 
     BicyclesChartResult,
     BrandChartResult, 
     BrandChartItem,
     TopCategoriesResult,
-    CategoryChartItem 
+    CategoryChartItem,
+    TopSellersResult,
+    SellerChartItem 
 } from '../types/summary';
 
 //Ratio bicycles by status
@@ -142,4 +145,50 @@ export const getTopCategoriesChart = async (
   return { data, total };
 };
 
+//Top sellers
+export const getTopSellersChart = async (
+  limit: number = 5,
+  year?: number
+): Promise<TopSellersResult> => {
+
+  const matchStage: Record<string, unknown> = {
+    status: 'DELIVERED' //Success order
+  };
+
+    if (year) {
+        matchStage.updatedAt = {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31T23:59:59`)
+        };
+  }
+
+  const result = await Order.aggregate([
+    { $match: matchStage },
+    {
+      $group: {
+        _id: '$seller._id',
+        sellerName: { $first: '$seller.fullName' },
+        avatarUrl: { $first: '$seller.avatarUrl' },
+        successOrders: { $sum: 1 }
+      }
+    },
+
+    { $sort: { successOrders: -1 } },
+    { $limit: Number(limit) }
+  ]);
+
+  const total = result.reduce((sum, item) => sum + item.successOrders, 0);
+
+  const data: SellerChartItem[] = result.map((item) => ({
+    sellerId: item._id?.toString() ?? 'unknown',
+    sellerName: item.sellerName ?? 'Unknown',
+    avatarUrl: item.avatarUrl ?? '',
+    successOrders: item.successOrders,
+    percentage: total > 0
+      ? Math.round((item.successOrders / total) * 100 * 10) / 10
+      : 0
+  }));
+
+  return { data, total };
+};
 
