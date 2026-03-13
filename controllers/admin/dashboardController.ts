@@ -74,7 +74,7 @@ export const getBicyclesStatusChart = async (
 
 //Top brand chart
 export const getTopBrandsChartController = async (
-  req: Request<{}, {}, {}, TopBrandsQueryInput>,
+  req: Request<any, any, any, any>,
   res: Response
 ): Promise<void> => {
   try {
@@ -96,7 +96,7 @@ export const getTopBrandsChartController = async (
 
 //Top cate
 export const getTopCategoriesChartController = async (
-  req: Request<{}, {}, {}, TopCategoriesQueryInput>,
+  req: Request<any, any, any, any>,
   res: Response
 ): Promise<void> => {
   try {
