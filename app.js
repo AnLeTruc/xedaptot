@@ -40,7 +40,7 @@ const conversationRouter = require('./routes/conversation').default;
 const violationReportRouter = require('./routes/violationReport').default;
 const adminConversationRouter = require('./routes/admin/conversation').default;
 const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').default;
-const adminSummaryRouter = require('./routes/admin/dashboard.ts').default;
+const adminSummaryRouter = require('./routes/admin/dashboard').default;
 var app = express();
 
 // Trust proxy for Render
