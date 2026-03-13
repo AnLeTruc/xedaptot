@@ -75,7 +75,12 @@ export const withdrawalsQuerySchema = z.object({
   year: yearSchema
 });
 
+//AOV
+export const aovQuerySchema = z.object({
+  year: yearSchema
+});
 
+export type AOVQueryInput = z.infer<typeof aovQuerySchema>;
 export type WithdrawalsQueryInput = z.infer<typeof withdrawalsQuerySchema>;
 export type TopSellersQueryInput = z.infer<typeof topSellersQuerySchema>;
 export type TopCategoriesQueryInput = z.infer<typeof topCategoriesQuerySchema>;

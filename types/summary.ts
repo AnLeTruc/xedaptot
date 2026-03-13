@@ -77,4 +77,10 @@ export interface WithdrawalResult {
   totalAmount: number; 
 }
 
+//AOV
+export interface AOVResult {
+  totalRevenue: number;   
+  totalOrders: number;   
+  aov: number;          
+}
 

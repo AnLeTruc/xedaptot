@@ -6,12 +6,13 @@ import {
     getTopCategoriesChart,
     getTopSellersChart,       
 } from '../../services/chartService';
-import { getWithdrawalsStats } from '../../services/financeService';
+import { getWithdrawalsStats, getAOVStats  } from '../../services/financeService';
 import { 
     TopBrandsQueryInput,
     TopCategoriesQueryInput,
     TopSellersQueryInput,
-    WithdrawalsQueryInput   
+    WithdrawalsQueryInput,
+    AOVQueryInput    
  } from '../../validations/summaryValidation';
 
 export const getSummaryStats = async (
@@ -152,4 +153,24 @@ export const getWithdrawals = async (
     });
   }
 };
+
+//AOV
+export const getAOV = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { year } = req.query as unknown as AOVQueryInput;
+
+    const data = await getAOVStats(year ? Number(year) : undefined);
+
+    res.status(200).json({ success: true, data });
+
+  } catch (error:any) {
+     res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
 

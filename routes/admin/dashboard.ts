@@ -5,7 +5,8 @@ import {
   getTopBrandsChartController,
   getTopCategoriesChartController,
   getTopSellersChartController,
-  getWithdrawals      
+  getWithdrawals,
+  getAOV       
 } from '../../controllers/admin/dashboardController';
 import { validate } from '../../middleware/validate';
 import { 
@@ -14,7 +15,8 @@ import {
   topBrandsQuerySchema,
   topCategoriesQuerySchema,
   topSellersQuerySchema,
-  withdrawalsQuerySchema            
+  withdrawalsQuerySchema,
+  aovQuerySchema             
 } from '../../validations/summaryValidation';
 
 
@@ -60,6 +62,13 @@ router.get(
   '/finance/withdrawals',
   validate(withdrawalsQuerySchema),
   getWithdrawals
+);
+
+//AOV
+router.get(
+  '/finance/aov',
+  validate(aovQuerySchema),
+  getAOV
 );
 
 export default router;
