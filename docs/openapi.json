@@ -10173,6 +10173,377 @@
           }
         }
       }
+    },
+    "/admin/stats/summary": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard summary stats",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "schema": {
+              "type": "string",
+              "enum": ["week", "month", "quarter", "year", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": { "type": "integer", "example": 2026 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalUsers": {
+                          "type": "object",
+                          "properties": {
+                            "total": { "type": "integer", "example": 1520 },
+                            "new": { "type": "integer", "example": 43 }
+                          }
+                        },
+                        "activeListings": { "type": "integer", "example": 210 },
+                        "totalRevenue": { "type": "number", "example": 15400000 },
+                        "successOrders": { "type": "integer", "example": 87 },
+                        "escrowAmount": { "type": "number", "example": 9200000 },
+                        "paidSubscriptions": { "type": "integer", "example": 34 },
+                        "period": { "type": "string", "example": "month" },
+                        "year": { "type": "integer", "example": 2026 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid period value" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - Admin only" }
+        }
+      }
+    },
+    "/admin/charts/listings": {
+      "get": {
+          "tags": ["Dashboard"],
+          "summary": "Get bicycle listings chart by status",
+          "security": [{ "bearerAuth": [] }],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "year",
+              "schema": { "type": "integer", "example": 2026 }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Listing status distribution",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": { "type": "boolean", "example": true },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN"]
+                                },
+                                "count": { "type": "integer", "example": 45 }
+                              }
+                            }
+                          },
+                          "total": { "type": "integer", "example": 285 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": { "description": "Unauthorized" },
+            "403": { "description": "Forbidden - Admin only" }
+          }
+        }
+      },
+  
+  "/admin/charts/top-brands": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 bicycle brands by listing count",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "status",
+          "schema": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "REJECTED", "ALL"],
+            "default": "APPROVED"
+          }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top brands by listing count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "brandId": { "type": "string", "example": "664abc..." },
+                            "brandName": { "type": "string", "example": "Trek" },
+                            "count": { "type": "integer", "example": 85 },
+                            "percentage": { "type": "number", "example": 35.4 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 240 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
     }
+  },
+  "/admin/charts/top-categories": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 bicycle categories by listing count",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "status",
+          "schema": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN", "ALL"],
+            "default": "APPROVED"
+          }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top categories by listing count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "categoryId": { "type": "string", "example": "664abc..." },
+                            "categoryName": { "type": "string", "example": "Road" },
+                            "count": { "type": "integer", "example": 95 },
+                            "percentage": { "type": "number", "example": 39.6 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 240 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/charts/top-sellers": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 sellers by successful orders",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top sellers by order count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "sellerId": { "type": "string", "example": "664abc..." },
+                            "sellerName": { "type": "string", "example": "Nguyen Van A" },
+                            "avatarUrl": { "type": "string", "example": "https://..." },
+                            "successOrders": { "type": "integer", "example": 42 },
+                            "percentage": { "type": "number", "example": 35.0 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 120 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/finance/withdrawals": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get pending withdrawal requests stats",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Withdrawal statistics",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "totalPending": { "type": "integer", "example": 12 },
+                      "totalAmount": { "type": "number", "example": 45000000 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/finance/aov": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get average order value (AOV)",
+      "description": "Tính AOV = Tổng tiền từ xe bán thành công / Tổng đơn",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "AOV statistics",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "totalRevenue": { "type": "number", "example": 231100000 },
+                      "totalOrders": { "type": "integer", "example": 87 },
+                      "aov": { "type": "number", "example": 2656321 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  }    
+
   }
 }
