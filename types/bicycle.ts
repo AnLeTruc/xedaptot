@@ -6,7 +6,7 @@ export interface IApprovalHistoryEntry {
     reason?: string;
     actorId?: Types.ObjectId;
     actorName?: string;
-    actorRole?: 'ADMIN' | 'SELLER';
+    actorRole?: 'ADMIN' | 'SELLER' | 'INSPECTOR';
     createdAt?: Date;
 }
 
