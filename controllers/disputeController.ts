@@ -5,6 +5,7 @@ import Order from '../models/Order';
 import Wallet from '../models/Wallet';
 import { getOrCreateWallet } from './walletController';
 import Bicycle from '../models/Bicycle';
+import Transaction from '../models/Transaction';
 
 
 
@@ -25,10 +26,12 @@ export const createDispute = async (
         const userId = req.user!._id;
 
         const order = await Order.findById(orderId);
-        if (!order) return res.status(404).json({
-            success: false,
-            message: 'Order không tồn tại'
-        });
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order không tồn tại'
+            });
+        }
 
         const isBuyer = order.buyer._id.toString() === userId.toString();
         const isSeller = order.seller._id.toString() === userId.toString();
@@ -76,6 +79,9 @@ export const createDispute = async (
                 fullName: respondent.fullName,
                 phone: respondent.phone
             },
+            orderId,
+            userId,
+            reason,
             evidenceImage: evidenceImages || []
         });
 
@@ -88,7 +94,7 @@ export const createDispute = async (
         return res.status(201).json({
             success: true,
             message: 'Tạo đơn khiếu nại thành công',
-            data: dispute
+            dispute
         });
     } catch (error) {
         console.log(error);
@@ -98,3 +104,48 @@ export const createDispute = async (
         });
     }
 }
+
+
+
+
+// xem và lọc theo ng dùng
+export const getDisputes = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        const userId = req.user!._id;
+        const role = req.user!.roles;
+
+
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+        let query: any = {};
+        if (!req.user!.roles.includes('ADMIN')) {
+            query = { $or: [{ 'complainant._id': userId }, { 'respondent._id': userId }] };
+        }
+
+        const disputes = await Dispute.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        const total = await Dispute.countDocuments(query);
+        return res.status(200).json({
+            success: true,
+            data: disputes,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+};
+
+
+
