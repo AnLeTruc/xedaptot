@@ -118,7 +118,8 @@ export const updateBicycleSchema = z.object({
 export const updateBicycleStatusSchema = z.object({
     status: z.enum(['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'], {
         message: 'Status must be: PENDING, APPROVED, SOLD, HIDDEN, or REJECTED'
-    })
+    }),
+    reason: z.string().max(500).optional()
 });
 
 

@@ -262,23 +262,20 @@ export const createBicycle = async (
             return;
         }
 
+        // Tìm gói còn lượt đăng (kể cả gói đã huỷ — lượt còn lại vẫn dùng được), ưu tiên gói cũ nhất
         const activePackage = await UserPackage.findOne({
             userId: req.user._id,
-            status: 'ACTIVE'
-        });
+            postRemaining: { $gt: 0 },
+            status: { $in: ['ACTIVE', 'CANCELLED'] }
+        }).sort({ purchasedAt: 1 });
 
         if (!activePackage) {
+            const hasAnyPackage = await UserPackage.exists({ userId: req.user._id });
             res.status(403).json({
                 success: false,
-                message: 'Bạn chưa có gói đăng tin. Vui lòng mua gói để tiếp tục.'
-            });
-            return;
-        }
-
-        if (activePackage.postRemaining <= 0) {
-            res.status(403).json({
-                success: false,
-                message: `Bạn đã dùng hết ${activePackage.package.postLimit} lượt đăng của gói "${activePackage.package.name}". Vui lòng mua gói mới.`
+                message: hasAnyPackage
+                    ? 'Bạn đã dùng hết lượt đăng tin. Vui lòng mua gói mới.'
+                    : 'Bạn chưa có gói đăng tin. Vui lòng mua gói để tiếp tục.'
             });
             return;
         }
@@ -541,8 +538,14 @@ export const updateBicycle = async (
             };
         }
 
-        // Sau khi sửa, chuyển về PENDING để chờ duyệt lại
-        updateData.status = 'PENDING';
+        // Nếu listing đang REJECTED thì đánh dấu đã có thay đổi, KHÔNG tự chuyển PENDING
+        // Seller phải gọi POST /resubmit sau khi sửa xong
+        if (bicycle.status === 'REJECTED') {
+            updateData.hasChangedSinceRejection = true;
+        } else {
+            // Các trạng thái khác (APPROVED, HIDDEN...) → chuyển về PENDING để duyệt lại
+            updateData.status = 'PENDING';
+        }
 
         const updatedBicycle = await Bicycle.findByIdAndUpdate(
             id,
@@ -616,33 +619,51 @@ export const getBicycleStatus = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
-
-        const { status } = req.body;
+        const { status, reason } = req.body;
 
         const bicycle = await Bicycle.findById(id);
         if (!bicycle) {
-            res.status(404).json({
-                success: false,
-                message: 'Bicycle not found'
-            })
+            res.status(404).json({ success: false, message: 'Bicycle not found' });
             return;
         }
 
-        // Phân quyền
         const isOwner = req.user?._id.toString() == bicycle.seller._id.toString();
         const isAdmin = req.user?.roles?.includes('ADMIN');
+        const isInspector = req.user?.roles?.includes('INSPECTOR');
+        const isPrivileged = isAdmin || isInspector;
 
         const adminOnlyStatus = ['APPROVED', 'REJECTED'];
         const ownerOnlyStatus = ['SOLD', 'HIDDEN', 'PENDING'];
 
         if (adminOnlyStatus.includes(status)) {
-            if (!isAdmin) {
+            if (!isPrivileged) {
                 res.status(403).json({
                     success: false,
-                    message: 'Only admin can approve or reject bicycles'
+                    message: 'Only admin or inspector can approve or reject bicycles'
                 });
                 return;
             }
+
+            const actorRole = isAdmin ? 'ADMIN' : 'INSPECTOR';
+
+            // Lưu lịch sử duyệt
+            bicycle.approvalHistory = bicycle.approvalHistory ?? [];
+            bicycle.approvalHistory.push({
+                status,
+                reason: reason || undefined,
+                actorId: req.user!._id,
+                actorName: req.user!.fullName,
+                actorRole,
+            });
+
+            if (status === 'REJECTED') {
+                bicycle.rejectionReason = reason || 'Không đáp ứng yêu cầu duyệt';
+                bicycle.hasChangedSinceRejection = false;
+            } else if (status === 'APPROVED') {
+                bicycle.rejectionReason = undefined;
+                bicycle.hasChangedSinceRejection = false;
+            }
+
         } else if (ownerOnlyStatus.includes(status)) {
             if (!isOwner) {
                 res.status(403).json({
@@ -652,10 +673,7 @@ export const getBicycleStatus = async (
                 return;
             }
         } else {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid status'
-            });
+            res.status(400).json({ success: false, message: 'Invalid status' });
             return;
         }
 
@@ -666,12 +684,69 @@ export const getBicycleStatus = async (
             success: true,
             message: 'Bicycle status updated successfully',
             data: bicycle
-        })
-    } catch (error: any) {
-        res.status(500).json({
-            success: false,
-            message: error.message
         });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+// POST /api/bicycles/:id/resubmit
+export const resubmitBicycle = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const bicycle = await Bicycle.findById(id);
+
+        if (!bicycle) {
+            res.status(404).json({ success: false, message: 'Bicycle not found' });
+            return;
+        }
+
+        if (bicycle.seller._id.toString() !== req.user!._id.toString()) {
+            res.status(403).json({ success: false, message: 'Chỉ chủ sở hữu mới có thể nộp lại tin đăng' });
+            return;
+        }
+
+        if (bicycle.status !== 'REJECTED') {
+            res.status(400).json({
+                success: false,
+                message: 'Chỉ có thể nộp lại tin đăng bị từ chối'
+            });
+            return;
+        }
+
+        if (!bicycle.hasChangedSinceRejection) {
+            res.status(400).json({
+                success: false,
+                message: 'Bạn cần cập nhật thông tin tin đăng trước khi nộp lại'
+            });
+            return;
+        }
+
+        bicycle.status = 'PENDING';
+        bicycle.hasChangedSinceRejection = false;
+        bicycle.rejectionReason = undefined;
+        bicycle.approvalHistory = bicycle.approvalHistory ?? [];
+        bicycle.approvalHistory.push({
+            status: 'PENDING',
+            reason: 'Seller nộp lại sau khi bị từ chối',
+            actorId: req.user!._id,
+            actorName: req.user!.fullName,
+            actorRole: 'SELLER',
+        });
+
+        await bicycle.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Tin đăng đã được nộp lại, đang chờ duyệt',
+            data: bicycle
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
