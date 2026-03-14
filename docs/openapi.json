@@ -499,6 +499,49 @@
           "inspectionReportId": {
             "type": "string"
           },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "hasChangedSinceRejection": {
+            "type": "boolean",
+            "default": false
+          },
+          "approvalHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "APPROVED",
+                    "REJECTED"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "actorId": {
+                  "type": "string"
+                },
+                "actorName": {
+                  "type": "string"
+                },
+                "actorRole": {
+                  "type": "string",
+                  "enum": [
+                    "ADMIN",
+                    "SELLER"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
           "category": {
             "type": "object",
             "properties": {
@@ -635,49 +678,6 @@
                 },
                 "displayOrder": {
                   "type": "number"
-                },
-                "rejectionReason": {
-                  "type": "string"
-                },
-                "hasChangedSinceRejection": {
-                  "type": "boolean",
-                  "default": false
-                },
-                "approvalHistory": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "status": {
-                        "type": "string",
-                        "enum": [
-                          "PENDING",
-                          "APPROVED",
-                          "REJECTED"
-                        ]
-                      },
-                      "reason": {
-                        "type": "string"
-                      },
-                      "actorId": {
-                        "type": "string"
-                      },
-                      "actorName": {
-                        "type": "string"
-                      },
-                      "actorRole": {
-                        "type": "string",
-                        "enum": [
-                          "ADMIN",
-                          "SELLER"
-                        ]
-                      },
-                      "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                      }
-                    }
-                  }
                 }
               }
             }
