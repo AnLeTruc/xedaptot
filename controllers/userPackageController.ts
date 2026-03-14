@@ -56,22 +56,29 @@ export const getMyActivePackage = async (
     try {
         const userId = req.user?._id;
 
-        const activePackage = await UserPackage.findOne({
-            userId,
-            status: 'ACTIVE'
-        });
+        // Trạng thái gói = gói mới nhất (bất kể ACTIVE/CANCELLED/EXPIRED)
+        const latestPackage = await UserPackage.findOne({ userId }).sort({ purchasedAt: -1 });
 
-        if (!activePackage) {
+        if (!latestPackage) {
             res.status(404).json({
                 success: false,
-                message: 'No active package found'
+                message: 'Bạn chưa có gói đăng tin nào'
             });
             return;
         }
 
+        // Số lần đăng cộng dồn qua tất cả gói còn lượt (ACTIVE + CANCELLED)
+        const [agg] = await UserPackage.aggregate([
+            { $match: { userId, postRemaining: { $gt: 0 }, status: { $in: ['ACTIVE', 'CANCELLED'] } } },
+            { $group: { _id: null, total: { $sum: '$postRemaining' } } }
+        ]);
+
         res.status(200).json({
             success: true,
-            data: activePackage
+            data: {
+                ...latestPackage.toObject(),
+                totalPostRemaining: agg?.total ?? 0
+            }
         });
     } catch (error: any) {
         res.status(500).json({
@@ -135,11 +142,15 @@ export const purchasePackage = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
-        // Kiểm tra user đã có gói ACTIVE chưa
-        const existingActive = await UserPackage.findOne({ userId, status: 'ACTIVE' }).session(session);
+        // Kiểm tra user đã có gói ACTIVE chưa (bỏ qua gói FREE — gói FREE không chặn mua gói khác)
+        const existingActive = await UserPackage.findOne({
+            userId,
+            status: 'ACTIVE',
+            'package.code': { $ne: 'FREE' }
+        }).session(session);
         if (existingActive) {
             await session.abortTransaction(); session.endSession();
-            res.status(400).json({ success: false, message: 'You already have an active package. Please cancel it first.' });
+            res.status(400).json({ success: false, message: 'Bạn đang có gói hoạt động. Vui lòng huỷ gói hiện tại trước khi mua gói mới.' });
             return;
         }
 

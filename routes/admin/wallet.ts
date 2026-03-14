@@ -3,7 +3,8 @@ import {
     approveWithdrawRequest,
     completeWithdrawRequest,
     getWithdrawRequestsAdmin,
-    rejectWithdrawRequest
+    rejectWithdrawRequest,
+    getAllTransactionsAdmin
 } from '../../controllers/admin/walletController';
 import { verifyToken, requireAdmin } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
@@ -22,5 +23,5 @@ router.get('/withdraw-requests', validate(adminWithdrawRequestsQuerySchema, 'que
 router.put('/withdraw-requests/:id/approve', validate(adminWithdrawRequestIdParamSchema, 'params'), approveWithdrawRequest);
 router.put('/withdraw-requests/:id/complete', validate(adminWithdrawRequestIdParamSchema, 'params'), validate(completeWithdrawRequestSchema, 'body'), completeWithdrawRequest);
 router.put('/withdraw-requests/:id/reject', validate(adminWithdrawRequestIdParamSchema, 'params'), validate(rejectWithdrawRequestSchema, 'body'), rejectWithdrawRequest);
-
+router.get('/transactions', getAllTransactionsAdmin);
 export default router;

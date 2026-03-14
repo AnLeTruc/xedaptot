@@ -15,7 +15,6 @@ const disputeUserSchema = new Schema({
     },
     phone: {
         type: String,
-        required: true,
     },
 }, { _id: false });
 
