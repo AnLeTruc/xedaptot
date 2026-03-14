@@ -39,6 +39,11 @@ const violationReportSchema = new Schema<IViolationReportDocument>({
         trim: true,
         maxlength: [2000, 'Admin notes cannot exceed 2000 characters'],
     },
+    images: [
+        {
+            url: { type: String, required: true },
+        }
+    ],
 }, {
     timestamps: true,
 })
@@ -47,7 +52,7 @@ const violationReportSchema = new Schema<IViolationReportDocument>({
 violationReportSchema.index({ 'reporter._id': 1, status: 1 });
 violationReportSchema.index({ 'reportedUser._id': 1, status: 1 });
 violationReportSchema.index({ status: 1 });
-
+violationReportSchema.index({ 'reporter._id': 1, 'targetBicycle._id': 1 });
 
 const ViolationReport = mongoose.model<IViolationReportDocument>(
     'ViolationReport',
