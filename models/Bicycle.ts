@@ -2,6 +2,14 @@ import mongoose, { Schema } from 'mongoose';
 import { IBicycleDocument } from '../types/bicycle';
 import { addressSubSchema } from './schemas/addressSchema';
 
+const approvalHistorySchema = new Schema({
+    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], required: true },
+    reason: { type: String },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    actorName: { type: String },
+    actorRole: { type: String, enum: ['ADMIN', 'SELLER'] },
+}, { _id: false, timestamps: { createdAt: true, updatedAt: false } });
+
 
 const bicycleSchema = new Schema<IBicycleDocument>(
     {
@@ -144,7 +152,10 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             displayOrder: {
                 type: Number,
                 default: 0
-            }
+            },
+            rejectionReason: { type: String },
+            approvalHistory: { type: [approvalHistorySchema], default: [] },
+            hasChangedSinceRejection: { type: Boolean, default: false }
         }]
     },
     {
