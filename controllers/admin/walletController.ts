@@ -7,6 +7,7 @@ import Wallet from '../../models/Wallet';
 import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
+import { match } from 'node:assert';
 
 const getWithdrawTransaction = async (
     walletId: mongoose.Types.ObjectId,
@@ -299,6 +300,95 @@ export const completeWithdrawRequest = async (
         session.endSession();
     }
 };
+
+
+
+export const getAllTransactionsAdmin = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { type, walletId, orderId, search, page = 1, limit = 10 } = req.query as {
+            type?: string;
+            walletId?: string;
+            orderId?: string;
+            search?: string;
+            page?: number;
+            limit?: number;
+        };
+
+        const filter: any = {};
+        if (type) {
+            filter.type = type;
+        }
+        if (walletId) {
+            filter.walletId = walletId;
+        }
+        if (orderId) {
+            filter.orderId = orderId;
+        }
+        // Vì Transaction không lưu trực tiếp user info,
+        // mà lưu walletId → phải tìm ngược: User → Wallet → Transaction
+        if (search) {
+            const matchedUsers = await User.find({
+                $or: [
+                    { email: { $regex: search, $options: 'i' } },
+                    { fullName: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            if (matchedUsers.length === 0) {
+                res.status(200).json({
+                    success: true,
+                    data: {
+                        transactions: [],
+                        pagination: { page: Number(page), limit: Number(limit) }
+                    }
+                });
+                return;
+            }
+
+            const walletIds = await Wallet.find({
+                userId: { $in: matchedUsers.map(user => user._id) }
+            }).select('_id');
+
+            filter.walletId = { $in: walletIds.map(wallet => wallet._id) };
+        }
+
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(50, Math.max(1, Number(limit)));
+        const [transactions, total] = await Promise.all([
+            Transaction.find(filter)
+                .populate({
+                    path: 'walletId',
+                    select: 'userId',
+                    populate: { path: 'userId', select: 'fullName email phone' }
+                })
+                .populate('orderId', 'orderCode status')
+                .sort({ createdAt: -1 })
+                .skip((pageNum - 1) * limitNum)
+                .limit(limitNum),
+            Transaction.countDocuments(filter)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                transactions,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages: Math.ceil(total / limitNum)
+                }
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
 
 export const rejectWithdrawRequest = async (
     req: AuthRequest,
