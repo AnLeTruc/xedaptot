@@ -188,6 +188,14 @@
               "email"
             ]
           },
+          "isOnline": {
+            "type": "boolean",
+            "example": false
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -463,6 +471,7 @@
             "enum": [
               "PENDING",
               "APPROVED",
+              "RESERVED",
               "SOLD",
               "HIDDEN",
               "REJECTED"
@@ -471,6 +480,24 @@
           "isInspected": {
             "type": "boolean",
             "example": false
+          },
+          "inspectionStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REQUESTED",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED"
+            ],
+            "default": "PENDING"
+          },
+          "assignedInspectorId": {
+            "type": "string"
+          },
+          "inspectionReportId": {
+            "type": "string"
           },
           "category": {
             "type": "object",
@@ -608,6 +635,49 @@
                 },
                 "displayOrder": {
                   "type": "number"
+                },
+                "rejectionReason": {
+                  "type": "string"
+                },
+                "hasChangedSinceRejection": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "approvalHistory": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "APPROVED",
+                          "REJECTED"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "actorId": {
+                        "type": "string"
+                      },
+                      "actorName": {
+                        "type": "string"
+                      },
+                      "actorRole": {
+                        "type": "string",
+                        "enum": [
+                          "ADMIN",
+                          "SELLER"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1774,6 +1844,17 @@
           "adminNotes": {
             "type": "string",
             "nullable": true
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "createdAt": {
             "type": "string",
