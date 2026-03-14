@@ -215,16 +215,10 @@ export const resolveDispute = async (
 
             order.status = 'CANCELLED';
             order.cancelledAt = new Date();
-            order.cancelReason = reason || 'Đơn hủy do Admin phán quyết khiếu nại(hoàn tiền cho người mua)';
+            order.cancelReason = reason || 'Đơn hủy do Admin phán quyết khiếu nại (hoàn tiền cho người mua)';
             order.amounts.escrowAmount = 0;
 
-            let newBicycleStatus = 'APPROVED';
-            if (dispute.disputeType === 'FAKE_ITEM') {
-                newBicycleStatus = 'REJECTED';
-            } else if (dispute.disputeType === 'DAMAGED_ITEM') {
-                newBicycleStatus = 'PENDING';
-            }
-            await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: newBicycleStatus });
+            await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
 
 
             // người bán thắng   

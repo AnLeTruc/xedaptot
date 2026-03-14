@@ -152,11 +152,11 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             displayOrder: {
                 type: Number,
                 default: 0
-            },
-            rejectionReason: { type: String },
-            approvalHistory: { type: [approvalHistorySchema], default: [] },
-            hasChangedSinceRejection: { type: Boolean, default: false }
-        }]
+            }
+        }],
+        rejectionReason: { type: String },
+        approvalHistory: { type: [approvalHistorySchema], default: [] },
+        hasChangedSinceRejection: { type: Boolean, default: false }
     },
     {
         timestamps: true
