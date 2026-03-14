@@ -129,7 +129,8 @@ export const getDisputes = async (
         const disputes = await Dispute.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .populate("orderId", "orderCode amounts");
         const total = await Dispute.countDocuments(query);
         return res.status(200).json({
             success: true,
@@ -154,7 +155,8 @@ export const getDisputes = async (
 
 export const getDisputeById = async (req: AuthRequest, res: Response) => {
     try {
-        const dispute = await Dispute.findById(req.params.id);
+        const dispute = await Dispute.findById(req.params.id)
+            .populate("orderId", "orderCode amounts");
         if (!dispute) return res.status(404).json({ success: false, message: 'Không tìm thấy khiếu nại' });
         return res.status(200).json({ success: true, dispute });
     } catch (error) {
