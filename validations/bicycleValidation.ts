@@ -21,6 +21,22 @@ const specificationsSchema = z.object({
 }).optional();
 
 
+const geoPointSchema = z.object({
+    type: z.literal('Point').optional().default('Point'),
+    coordinates: z.array(z.number()).length(2, 'Map coordinates must include [longitude, latitude]')
+}).superRefine((value, context) => {
+    const [longitude, latitude] = value.coordinates;
+
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['coordinates'],
+            message: 'Map coordinates must include valid [longitude, latitude] numbers'
+        });
+    }
+});
+
+
 
 
 const locationSchema = z.object({
@@ -28,10 +44,7 @@ const locationSchema = z.object({
     districtId: z.number().int().positive('District ID (GHN) is required'),
     wardCode: z.string().min(1, 'Ward Code (GHN) is required'),
     street: z.string().max(200).optional(),
-    coordinates: z.object({
-        type: z.literal('Point').optional(),
-        coordinates: z.array(z.number()).length(2).optional()
-    }).optional()
+    coordinates: geoPointSchema.optional()
 });
 
 
@@ -105,7 +118,8 @@ export const updateBicycleSchema = z.object({
 export const updateBicycleStatusSchema = z.object({
     status: z.enum(['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'], {
         message: 'Status must be: PENDING, APPROVED, SOLD, HIDDEN, or REJECTED'
-    })
+    }),
+    reason: z.string().max(500).optional()
 });
 
 

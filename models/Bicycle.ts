@@ -2,6 +2,14 @@ import mongoose, { Schema } from 'mongoose';
 import { IBicycleDocument } from '../types/bicycle';
 import { addressSubSchema } from './schemas/addressSchema';
 
+const approvalHistorySchema = new Schema({
+    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], required: true },
+    reason: { type: String },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    actorName: { type: String },
+    actorRole: { type: String, enum: ['ADMIN', 'SELLER'] },
+}, { _id: false, timestamps: { createdAt: true, updatedAt: false } });
+
 
 const bicycleSchema = new Schema<IBicycleDocument>(
     {
@@ -108,7 +116,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
             },
             avatarUrl: {
                 type: String,
-                required: [true, 'Seller avatar is required']
+                default: ''
             },
             reputationScore: {
                 type: Number,
@@ -145,7 +153,10 @@ const bicycleSchema = new Schema<IBicycleDocument>(
                 type: Number,
                 default: 0
             }
-        }]
+        }],
+        rejectionReason: { type: String },
+        approvalHistory: { type: [approvalHistorySchema], default: [] },
+        hasChangedSinceRejection: { type: Boolean, default: false }
     },
     {
         timestamps: true
@@ -154,7 +165,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
 
 bicycleSchema.index({ title: 'text', description: 'text' });
 
-bicycleSchema.index({ 'location.coordinates': '2dsphere' });
+bicycleSchema.index({ 'location.coordinates': '2dsphere' }, { sparse: true });
 
 
 const Bicycle = mongoose.model<IBicycleDocument>('Bicycle', bicycleSchema);

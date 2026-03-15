@@ -34,8 +34,7 @@ export const addressSubSchema = {
     coordinates: {
         type: {
             type: String,
-            enum: ['Point'],
-            default: 'Point'
+            enum: ['Point']
         },
         coordinates: {
             type: [Number]

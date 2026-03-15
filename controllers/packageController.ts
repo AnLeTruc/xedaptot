@@ -66,7 +66,7 @@ export const createPackage = async (
     res: Response
 ): Promise<void> => {
     try {
-        const { name, code, price, postLimit, isActive } = req.body;
+        const { name, code, price, postLimit, isActive, isPopular } = req.body;
         const existingPackage = await Package.findOne({ code: code.toUpperCase() });
         if (existingPackage) {
             res.status(400).json({
@@ -80,7 +80,8 @@ export const createPackage = async (
             code,
             price,
             postLimit,
-            isActive: isActive ?? true
+            isActive: isActive ?? true,
+            isPopular: isPopular ?? false
         });
         res.status(201).json({
             success: true,
@@ -106,7 +107,7 @@ export const updatePackage = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
-        const { name, code, price, postLimit, isActive } = req.body;
+        const { name, code, price, postLimit, isActive, isPopular } = req.body;
         const packageItem = await Package.findById(id);
         if (!packageItem) {
             res.status(404).json({
@@ -130,6 +131,7 @@ export const updatePackage = async (
         if (price !== undefined) packageItem.price = price;
         if (postLimit !== undefined) packageItem.postLimit = postLimit;
         if (isActive !== undefined) packageItem.isActive = isActive;
+        if (isPopular !== undefined) packageItem.isPopular = isPopular;
         await packageItem.save();
         res.json({
             success: true,

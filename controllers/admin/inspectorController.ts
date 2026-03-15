@@ -51,7 +51,7 @@ export const createInspector = async (
                 email,
                 password: defaultPassword,
                 displayName: fullName,
-                emailVerified: false
+                emailVerified: true
             });
         } catch (firebaseError: any) {
             // Check if user already exists in Firebase
@@ -71,7 +71,7 @@ export const createInspector = async (
             fullName,
             phone,
             roles: ['INSPECTOR'],
-            isVerified: false,
+            isVerified: true,
             isActive: true,
             authProvider: 'email',
             reputationScore: 0,

@@ -8,7 +8,8 @@ export type TransactionType =
     | 'ESCROW_RELEASE'  // Escrow → seller wallet
     | 'REFUND'          // Hoàn tiền cho buyer
     | 'FORFEIT'         // Buyer hủy sau confirm → seller nhận cọc
-    | 'WITHDRAW';       // Seller rút tiền
+    | 'WITHDRAW'        // Seller rút tiền
+    | 'PACKAGE_PURCHASE'; // Mua gói dịch vụ
 
 export type PaymentMethod = 'WALLET' | 'SYSTEM' | 'BANK_TRANSFER' | 'VNPAY';
 
@@ -69,6 +70,7 @@ export interface IWithdrawRequest {
     processedAt?: Date;
     processedBy?: Types.ObjectId;
     rejectedReason?: string;
+    transferReference?: string;
 }
 
 export interface IWithdrawRequestDocument extends IWithdrawRequest, Document {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as ctrl from '../controllers/walletController';
-import { verifyToken, requireUser } from '../middleware/auth';
+import { verifyToken, requireUser, requireVerifiedUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { withdrawSchema, depositSchema } from '../validations/walletValidation';
 
@@ -11,7 +11,7 @@ router.get('/vnpay-return', ctrl.vnpayReturn);
 router.get('/vnpay-ipn', ctrl.vnpayIPN);
 
 // All routes below require authentication
-router.use(verifyToken, requireUser);
+router.use(verifyToken, requireUser, requireVerifiedUser);
 
 // GET /api/wallets/me - Get my wallet info
 router.get('/me', ctrl.getMyWallet);
@@ -27,5 +27,6 @@ router.post('/withdraw', validate(withdrawSchema, 'body'), ctrl.createWithdrawRe
 
 // GET /api/wallets/withdraw-requests - Get my withdraw requests
 router.get('/withdraw-requests', ctrl.getWithdrawRequests);
+
 
 export default router;

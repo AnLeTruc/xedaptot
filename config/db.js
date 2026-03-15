@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { initRestrictedWordCache } = require('../services/restrictedWordCache');
 
 const connectDB = async () => {
     try {
@@ -7,6 +8,9 @@ const connectDB = async () => {
         });
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+        await initRestrictedWordCache();
+        console.log('Restricted word cache initialized');
 
         //Connection event
         mongoose.connection.on('error', (err) => {

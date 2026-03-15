@@ -66,6 +66,30 @@
     {
       "name": "Shipping",
       "description": "Shipping fee calculation (GHN)"
+    },
+    {
+      "name": "Conversation",
+      "description": "Chat conversation management"
+    },
+    {
+      "name": "Message",
+      "description": "Message management within conversations"
+    },
+    {
+      "name": "ViolationReport",
+      "description": "Violation report management"
+    },
+    {
+      "name": "Admin Conversation",
+      "description": "Admin conversation management"
+    },
+    {
+      "name": "Admin RestrictedWord",
+      "description": "Admin restricted word management"
+    },
+    {
+      "name": "Dispute",
+      "description": "Dispute management endpoints"
     }
   ],
   "components": {
@@ -163,6 +187,14 @@
               "google",
               "email"
             ]
+          },
+          "isOnline": {
+            "type": "boolean",
+            "example": false
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "createdAt": {
             "type": "string",
@@ -439,6 +471,7 @@
             "enum": [
               "PENDING",
               "APPROVED",
+              "RESERVED",
               "SOLD",
               "HIDDEN",
               "REJECTED"
@@ -447,6 +480,67 @@
           "isInspected": {
             "type": "boolean",
             "example": false
+          },
+          "inspectionStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REQUESTED",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED"
+            ],
+            "default": "PENDING"
+          },
+          "assignedInspectorId": {
+            "type": "string"
+          },
+          "inspectionReportId": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "hasChangedSinceRejection": {
+            "type": "boolean",
+            "default": false
+          },
+          "approvalHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "PENDING",
+                    "APPROVED",
+                    "REJECTED"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "actorId": {
+                  "type": "string"
+                },
+                "actorName": {
+                  "type": "string"
+                },
+                "actorRole": {
+                  "type": "string",
+                  "enum": [
+                    "ADMIN",
+                    "SELLER"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
           },
           "category": {
             "type": "object",
@@ -1353,9 +1447,25 @@
             "enum": [
               "PENDING",
               "APPROVED",
-              "REJECTED"
+              "REJECTED",
+              "COMPLETED"
             ],
             "example": "PENDING"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processedBy": {
+            "type": "string"
+          },
+          "rejectedReason": {
+            "type": "string",
+            "example": "Bank account information does not match account holder"
+          },
+          "transferReference": {
+            "type": "string",
+            "example": "VCB-20260312-0001"
           },
           "createdAt": {
             "type": "string",
@@ -1548,10 +1658,349 @@
             "example": 5000000
           }
         }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "readStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "hiddenBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "violationCount": {
+            "type": "number",
+            "example": 0
+          },
+          "lockedStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "TEMP_LOCKED",
+              "PERM_LOCKED"
+            ],
+            "example": "NONE"
+          },
+          "lockedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lockedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "PRODUCT",
+              "SYSTEM"
+            ],
+            "example": "TEXT"
+          },
+          "bicycleId": {
+            "type": "string",
+            "nullable": true
+          },
+          "isRead": {
+            "type": "boolean",
+            "example": false
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ViolationReport": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "reporter": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "reportedUser": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "targetBicycle": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "price": {
+                "type": "number"
+              },
+              "image": {
+                "type": "string"
+              },
+              "sellerId": {
+                "type": "string"
+              }
+            }
+          },
+          "violationType": {
+            "type": "string",
+            "enum": [
+              "FRAUD",
+              "FAKE_LISTING",
+              "INAPPROPRIATE",
+              "STOLEN_BICYCLE",
+              "DUPLICATE_LISTING",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REVIEWING",
+              "RESOLVE",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          },
+          "description": {
+            "type": "string"
+          },
+          "adminNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ViolationReportCreateRequest": {
+        "type": "object",
+        "required": [
+          "reportedUserId",
+          "bicycleId",
+          "violationType",
+          "description"
+        ],
+        "properties": {
+          "reportedUserId": {
+            "type": "string",
+            "description": "ID of the user being reported"
+          },
+          "bicycleId": {
+            "type": "string",
+            "description": "ID of the bicycle listing"
+          },
+          "violationType": {
+            "type": "string",
+            "enum": [
+              "FRAUD",
+              "FAKE_LISTING",
+              "INAPPROPRIATE",
+              "STOLEN_BICYCLE",
+              "DUPLICATE_LISTING",
+              "OTHER"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description (max 2000 chars)",
+            "maxLength": 2000
+          }
+        },
+        "example": {
+          "reportedUserId": "6650f1d0c0a6f1c2a1b2c3d4",
+          "bicycleId": "6650f2e3a4b5c6d7e8f90123",
+          "violationType": "FRAUD",
+          "description": "Người bán yêu cầu chuyển khoản trước và không cho xem xe."
+        }
+      },
+      "ViolationReportUpdateRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "REVIEWING",
+              "RESOLVE",
+              "REJECTED"
+            ]
+          },
+          "adminNotes": {
+            "type": "string",
+            "description": "Admin notes (max 2000 chars)",
+            "maxLength": 2000
+          }
+        },
+        "example": {
+          "status": "REVIEWING",
+          "adminNotes": "Đã liên hệ các bên, đang xác minh giao dịch."
+        }
+      },
+      "RestrictedWord": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "word": {
+            "type": "string",
+            "example": "spam"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DisputeUser": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+          "fullName": { "type": "string", "example": "Nguyen Van A" },
+          "phone": { "type": "string", "example": "0901234567" }
+        }
+      },
+      "Dispute": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+          "disputeType": {
+            "type": "string",
+            "enum": ["ITEM_NOT_AS_DESCRIBED", "ITEM_NOT_RECEIVED", "DAMAGED_ITEM", "FAKE_ITEM", "OTHER"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "UNDER_REVIEW", "RESOLVED", "REJECTED"],
+            "example": "PENDING"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": ["REFUND_BUYER", "RELEASE_SELLER", "NONE"],
+            "example": "NONE"
+          },
+          "complainant": { "$ref": "#/components/schemas/DisputeUser" },
+          "respondent": { "$ref": "#/components/schemas/DisputeUser" },
+          "orderId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+          "userId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+          "reason": { "type": "string", "example": "Item arrived with scratches not shown in listing" },
+          "evidenceImage": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["https://example.com/evidence1.jpg"]
+          },
+          "resolvedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
       }
     }
   },
   "paths": {
+
     "/auth/change-password": {
       "post": {
         "tags": [
@@ -1827,6 +2276,54 @@
       }
     },
     "/brands/{id}": {
+      "get": {
+        "tags": [
+          "Brand"
+        ],
+        "summary": "Get brand by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Brand ID (MongoDB ObjectId)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Brand"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Brand"
@@ -4092,6 +4589,58 @@
         }
       }
     },
+    "/bicycles/{id}/resubmit": {
+      "post": {
+        "tags": [
+          "Bicycle"
+        ],
+        "summary": "Resubmit a rejected bicycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bicycle resubmitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Bicycle" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Only rejected and modified bicycles can be resubmitted"
+          },
+          "403": {
+            "description": "Only the owner can resubmit"
+          },
+          "404": {
+            "description": "Bicycle not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/bicycles/{id}/status": {
       "put": {
         "tags": [
@@ -4713,6 +5262,7 @@
           "Users"
         ],
         "summary": "Cancel a user package",
+        "description": "Cancels/deactivates a user package subscription.",
         "security": [
           {
             "bearerAuth": []
@@ -4725,27 +5275,23 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "User package ID"
           }
         ],
         "responses": {
           "200": {
-            "description": "Package cancelled",
+            "description": "Package cancelled successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
+                      "type": "boolean"
                     },
                     "message": {
-                      "type": "string",
-                      "example": "Package cancelled successfully"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/UserPackage"
+                      "type": "string"
                     }
                   }
                 }
@@ -4753,7 +5299,115 @@
             }
           },
           "404": {
-            "description": "User package not found"
+            "description": "Package not found"
+          }
+        }
+      }
+    },
+    "/admin/transactions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all transactions",
+        "description": "Retrieve all transactions with filters and pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "walletId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "transactions": {
+                          "type": "array",
+                          "items": { "type": "object" }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": { "type": "integer" },
+                            "limit": { "type": "integer" },
+                            "total": { "type": "integer" },
+                            "totalPages": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid token"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
@@ -5269,10 +5923,16 @@
     },
     "/admin/users/dashboard": {
       "get": {
-        "tags": ["Admin"],
+        "tags": [
+          "Admin"
+        ],
         "summary": "Get user dashboard stats",
         "description": "Total users, role distribution, active vs inactive, and users by month.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "year",
@@ -5293,21 +5953,47 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
-                        "year": { "type": "integer", "example": 2026 },
-                        "totalUsers": { "type": "integer", "example": 120 },
-                        "activeUsers": { "type": "integer", "example": 110 },
-                        "inactiveUsers": { "type": "integer", "example": 10 },
+                        "year": {
+                          "type": "integer",
+                          "example": 2026
+                        },
+                        "totalUsers": {
+                          "type": "integer",
+                          "example": 120
+                        },
+                        "activeUsers": {
+                          "type": "integer",
+                          "example": 110
+                        },
+                        "inactiveUsers": {
+                          "type": "integer",
+                          "example": 10
+                        },
                         "roleDistribution": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "role": { "type": "string", "enum": ["BUYER","SELLER","ADMIN","INSPECTOR"] },
-                              "count": { "type": "integer", "example": 60 }
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "BUYER",
+                                  "SELLER",
+                                  "ADMIN",
+                                  "INSPECTOR"
+                                ]
+                              },
+                              "count": {
+                                "type": "integer",
+                                "example": 60
+                              }
                             }
                           }
                         },
@@ -5316,8 +6002,15 @@
                           "items": {
                             "type": "object",
                             "properties": {
-                              "month": { "type": "integer", "minimum": 1, "maximum": 12 },
-                              "count": { "type": "integer", "example": 8 }
+                              "month": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                              },
+                              "count": {
+                                "type": "integer",
+                                "example": 8
+                              }
                             }
                           }
                         }
@@ -5328,9 +6021,15 @@
               }
             }
           },
-          "401": { "description": "Unauthorized" },
-          "403": { "description": "Forbidden" },
-          "500": { "description": "Server error" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server error"
+          }
         }
       }
     },
@@ -6470,6 +7169,88 @@
         }
       }
     },
+    "/orders/{id}/pay-vnpay": {
+      "post": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "Pay for an order via VNPay",
+        "description": "Create a VNPay payment URL for the order. Amount is calculated from order status (deposit/full/remaining).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Order ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bankCode": {
+                    "type": "string",
+                    "description": "Optional VNPay bank code",
+                    "example": "NCB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "VNPay payment URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paymentUrl": {
+                          "type": "string",
+                          "example": "https://sandbox.vnpayment.vn/paymentv2/..."
+                        },
+                        "txnRef": {
+                          "type": "string",
+                          "example": "OPY-ABC123"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "example": 1500000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payment state or reservation expired"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
     "/orders/{id}/cancel": {
       "put": {
         "tags": [
@@ -7006,7 +7787,7 @@
           "Wallet"
         ],
         "summary": "Create withdraw request",
-        "description": "Creates a pending withdraw request. Amount will be frozen until admin approves/rejects.",
+        "description": "Creates a pending withdraw request. A user can have up to 3 pending requests at the same time. Amount will be frozen until admin approves/rejects.",
         "security": [
           {
             "bearerAuth": []
@@ -7047,7 +7828,7 @@
             }
           },
           "400": {
-            "description": "Insufficient balance or pending request exists"
+            "description": "Insufficient balance or user already has 3 pending withdraw requests"
           },
           "401": {
             "description": "Unauthorized"
@@ -7064,6 +7845,7 @@
           "Wallet"
         ],
         "summary": "Get my withdraw requests",
+        "description": "Returns the authenticated user's withdraw requests. Statuses move through PENDING -> APPROVED -> COMPLETED, or to REJECTED if denied.",
         "security": [
           {
             "bearerAuth": []
@@ -7078,7 +7860,8 @@
               "enum": [
                 "PENDING",
                 "APPROVED",
-                "REJECTED"
+                "REJECTED",
+                "COMPLETED"
               ]
             }
           },
@@ -7147,6 +7930,331 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get withdraw requests for admin review",
+        "description": "Returns paginated withdraw requests for admins. Supports filtering by status and searching by user email or full name.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "COMPLETED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search by user email or full name"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw request list for admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "withdrawRequests": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WithdrawRequest"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/approve": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Approve a withdraw request",
+        "description": "Transitions a withdraw request from PENDING to APPROVED. No wallet balances are changed at this step.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw request approved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request approved successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id or invalid state transition"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request not found"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/complete": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Complete a withdraw request",
+        "description": "Transitions a withdraw request from APPROVED to COMPLETED, updates wallet balances, stores the optional transfer reference, and sends the approval email.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transferReference": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "VCB-20260312-0001"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw request completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request completed successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id, invalid state transition, or insufficient frozen balance"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request or wallet not found"
+          }
+        }
+      }
+    },
+    "/admin/withdraw-requests/{id}/reject": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reject a withdraw request",
+        "description": "Rejects a withdraw request from either PENDING or APPROVED status, releases the frozen balance back to the user's available wallet balance, and sends a rejection email.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Bank account information does not match account holder"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw request rejected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Withdraw request rejected successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/WithdrawRequest"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request id, invalid state transition, or insufficient frozen balance"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Withdraw request or wallet not found"
           }
         }
       }
@@ -7846,6 +8954,2130 @@
           }
         }
       }
+    },
+    "/conversations": {
+      "post": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Create or retrieve a conversation",
+        "description": "Creates a new 1-on-1 conversation with the given user, or retrieves the existing one if it already exists.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "receiverId"
+                ],
+                "properties": {
+                  "receiverId": {
+                    "type": "string",
+                    "description": "MongoDB ObjectId of the receiver",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation retrieved or created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "conversation": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot create conversation with yourself"
+          },
+          "404": {
+            "description": "Receiver user not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get user conversations list",
+        "description": "Returns a paginated list of conversations for the current user, with unread counts and last message info. Uses cursor-based pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 15,
+              "maximum": 100
+            },
+            "description": "Number of conversations per page"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor for pagination (updatedAt of last item)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "readStatus": {
+                            "type": "object"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastMessage": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "isRead": {
+                                "type": "boolean"
+                              },
+                              "senderId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "chatPartner": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "fullName": {
+                                "type": "string"
+                              },
+                              "avatarUrl": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "roles": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "unreadCount": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/conversations/unread-count": {
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get total unread message count",
+        "description": "Returns the total number of unread messages across all conversations for the current user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "unreadCount": {
+                      "type": "number",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{id}/read": {
+      "put": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Mark conversation as read",
+        "description": "Marks all unread messages from the partner as read and updates readStatus. Emits socket events.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as read successfully"
+          },
+          "404": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/conversations/{id}/unread": {
+      "put": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Mark conversation as unread",
+        "description": "Marks the last message from the partner as unread and removes readStatus entry.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked as unread successfully"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/conversations/{id}/hide": {
+      "patch": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Hide a conversation (soft delete)",
+        "description": "Hides a conversation from the user's list. The conversation reappears when a new message is sent.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation hidden successfully"
+          },
+          "404": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/conversations/{id}": {
+      "get": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Get message history for a conversation",
+        "description": "Returns paginated message history for a specific conversation. Uses cursor-based pagination, messages returned in chronological order.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Number of messages per page"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor for pagination (createdAt of oldest message)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a participant of this conversation"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/conversations/{conversationId}/messages": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Send a message in a conversation",
+        "description": "Sends a message (text or product) in the specified conversation. Automatically filters restricted words and may lock the conversation after 3 violations.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+                "schema": {
+                "type": "object",
+                  "required": [
+                    "type",
+                    "content"
+                  ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Message content. For IMAGE messages, provide a publicly accessible URL returned by POST /upload (field `image`).",
+                    "example": "Hello! Is this bicycle still available?"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["TEXT", "PRODUCT", "IMAGE"],
+                    "description": "Message type (SYSTEM is reserved for server use)",
+                    "example": "TEXT"
+                  },
+                  "bicycleId": {
+                    "type": "string",
+                    "description": "Required when type is PRODUCT",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              },
+              "examples": {
+                "textMessage": {
+                  "summary": "Text message",
+                  "value": { "type": "TEXT", "content": "Hello! Is this bicycle still available?" }
+                },
+                "productMessage": {
+                  "summary": "Product link message",
+                  "value": { "type": "PRODUCT", "bicycleId": "64d1b5b5b5b5b5b5b5b5b5b5", "content": "Check this product" }
+                },
+                "imageMessage": {
+                  "summary": "Image message (use uploaded file URL)",
+                  "value": { "type": "IMAGE", "content": "https://res.cloudinary.com/.../xedaptot/products/abcd.jpg" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Message"
+                    },
+                    "violationCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid message type (SYSTEM reserved)"
+          },
+          "403": {
+            "description": "Conversation not found, no access, or conversation is locked"
+          }
+        }
+      }
+    },
+    "/conversations/messages/search": {
+      "get": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Search messages globally or within a conversation",
+        "description": "Searches messages by keyword. If conversationId is provided, searches within that conversation only. Otherwise searches across all user conversations.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search keyword"
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional conversation ID to limit search scope"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Keyword is required"
+          },
+          "403": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
+    "/violation-reports": {
+      "post": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Create a violation report",
+        "description": "Report a user for a violation related to a bicycle listing. Cannot report yourself.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationReportCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Violation report created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot report yourself / Bicycle does not belong to reported user"
+          },
+          "404": {
+            "description": "Reported user or bicycle not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get all violation reports (with pagination)",
+        "description": "Returns all violation reports with optional status filter and pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "REVIEWING",
+                "RESOLVE",
+                "REJECTED"
+              ]
+            },
+            "description": "Filter by status"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Violation reports list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ViolationReport"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/violation-reports/check": {
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Check if user has already reported",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bicycleId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportedUserId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "hasReported": { "type": "boolean" },
+                    "reportId": { "type": "string", "nullable": true }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/violation-reports/me": {
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get my violation reports",
+        "description": "Returns all violation reports where the current user is the reported user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User violation reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ViolationReport"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/violation-reports/{id}": {
+      "get": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Get a violation report by ID",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Violation report details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Violation report not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Update violation report status (admin)",
+        "description": "Admin updates the status and optionally adds notes to a violation report.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationReportUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Report updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ViolationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Report not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/admin/conversations": {
+      "get": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Get all conversations (admin)",
+        "description": "Admin view of all conversations with pagination, sorting, and optional user filter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by participant user ID"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "default": "updatedAt"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations with participant info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Get conversation messages (admin)",
+        "description": "Admin view of message history for a specific conversation. Uses cursor-based pagination.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Message"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/lock": {
+      "put": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Lock a conversation (admin)",
+        "description": "Admin locks a conversation temporarily (with duration) or permanently. Emits socket events to participants.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "TEMP_LOCKED",
+                      "PERM_LOCKED"
+                    ]
+                  },
+                  "duration": {
+                    "type": "number",
+                    "description": "Lock duration in minutes (required for TEMP_LOCKED)",
+                    "example": 60
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Lock reason",
+                    "example": "Policy violation"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid status / duration required for TEMP_LOCKED"
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/conversations/{id}/unlock": {
+      "put": {
+        "tags": [
+          "Admin Conversation"
+        ],
+        "summary": "Unlock a conversation (admin)",
+        "description": "Admin unlocks a locked conversation and resets violation count.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation unlocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found"
+          }
+        }
+      }
+    },
+    "/admin/restricted-words": {
+      "post": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Create a restricted word",
+        "description": "Adds a new restricted word to the filter list. Word is normalized (lowercase, trimmed).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "word"
+                ],
+                "properties": {
+                  "word": {
+                    "type": "string",
+                    "example": "spam"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Restricted word created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RestrictedWord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Word is required"
+          },
+          "409": {
+            "description": "Word already exists"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Get all restricted words",
+        "description": "Returns all restricted words with optional active filter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of restricted words",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RestrictedWord"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/restricted-words/{id}": {
+      "put": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Update a restricted word",
+        "description": "Updates an existing restricted word (word text and/or active status).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "word": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restricted word updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RestrictedWord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Word must be non-empty string"
+          },
+          "404": {
+            "description": "Restricted word not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin RestrictedWord"
+        ],
+        "summary": "Delete a restricted word",
+        "description": "Permanently deletes a restricted word from the filter list.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restricted word deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Restricted word not found"
+          }
+        }
+      }
+    },
+    "/orders/vnpay-return": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "VNPay order payment return URL",
+        "description": "Callback URL that VNPay redirects to after payment. Handles payment verification and order status update.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed and redirect"
+          }
+        }
+      }
+    },
+    "/orders/vnpay-ipn": {
+      "get": {
+        "tags": [
+          "Order"
+        ],
+        "summary": "VNPay order IPN handler",
+        "description": "Instant Payment Notification handler called by VNPay server-to-server to confirm payment status.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vnp_TxnRef",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_ResponseCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vnp_SecureHash",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IPN acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "RspCode": {
+                      "type": "string"
+                    },
+                    "Message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stats/summary": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard summary stats",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "schema": {
+              "type": "string",
+              "enum": ["week", "month", "quarter", "year", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": { "type": "integer", "example": 2026 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalUsers": {
+                          "type": "object",
+                          "properties": {
+                            "total": { "type": "integer", "example": 1520 },
+                            "new": { "type": "integer", "example": 43 }
+                          }
+                        },
+                        "activeListings": { "type": "integer", "example": 210 },
+                        "totalRevenue": { "type": "number", "example": 15400000 },
+                        "successOrders": { "type": "integer", "example": 87 },
+                        "escrowAmount": { "type": "number", "example": 9200000 },
+                        "paidSubscriptions": { "type": "integer", "example": 34 },
+                        "period": { "type": "string", "example": "month" },
+                        "year": { "type": "integer", "example": 2026 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid period value" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden - Admin only" }
+        }
+      }
+    },
+    "/admin/charts/bicycles": {
+      "get": {
+          "tags": ["Dashboard"],
+          "summary": "Get bicycles status chart",
+          "security": [{ "bearerAuth": [] }],
+          "parameters": [
+            {
+              "in": "query",
+              "name": "year",
+              "schema": { "type": "integer", "example": 2026 }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Listing status distribution",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": { "type": "boolean", "example": true },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN"]
+                                },
+                                "count": { "type": "integer", "example": 45 }
+                              }
+                            }
+                          },
+                          "total": { "type": "integer", "example": 285 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": { "description": "Unauthorized" },
+            "403": { "description": "Forbidden - Admin only" }
+          }
+        }
+      },
+  
+  "/admin/charts/top-brands": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 bicycle brands by listing count",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "status",
+          "schema": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "REJECTED", "ALL"],
+            "default": "APPROVED"
+          }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top brands by listing count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "brandId": { "type": "string", "example": "664abc..." },
+                            "brandName": { "type": "string", "example": "Trek" },
+                            "count": { "type": "integer", "example": 85 },
+                            "percentage": { "type": "number", "example": 35.4 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 240 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
     }
+  },
+  "/admin/charts/top-categories": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 bicycle categories by listing count",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "status",
+          "schema": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN", "ALL"],
+            "default": "APPROVED"
+          }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top categories by listing count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "categoryId": { "type": "string", "example": "664abc..." },
+                            "categoryName": { "type": "string", "example": "Road" },
+                            "count": { "type": "integer", "example": 95 },
+                            "percentage": { "type": "number", "example": 39.6 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 240 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/charts/top-sellers": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get top 5 sellers by successful orders",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
+        },
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Top sellers by order count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "sellerId": { "type": "string", "example": "664abc..." },
+                            "sellerName": { "type": "string", "example": "Nguyen Van A" },
+                            "avatarUrl": { "type": "string", "example": "https://..." },
+                            "successOrders": { "type": "integer", "example": 42 },
+                            "percentage": { "type": "number", "example": 35.0 }
+                          }
+                        }
+                      },
+                      "total": { "type": "integer", "example": 120 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/finance/withdrawals": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get pending withdrawal requests stats",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Withdrawal statistics",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "totalPending": { "type": "integer", "example": 12 },
+                      "totalAmount": { "type": "number", "example": 45000000 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/admin/finance/aov": {
+    "get": {
+      "tags": ["Dashboard"],
+      "summary": "Get average order value (AOV)",
+      "description": "Tính AOV = Tổng tiền từ xe bán thành công / Tổng đơn",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "year",
+          "schema": { "type": "integer", "example": 2026 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "AOV statistics",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "totalRevenue": { "type": "number", "example": 231100000 },
+                      "totalOrders": { "type": "integer", "example": 87 },
+                      "aov": { "type": "number", "example": 2656321 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "403": { "description": "Forbidden - Admin only" }
+      }
+    }
+  },
+  "/disputes": {
+    "post": {
+      "tags": ["Dispute"],
+      "summary": "Create a dispute",
+      "description": "Buyer or Seller creates a dispute for an order that is in DELIVERED / WAITING_REMAINING_PAYMENT / COMPLETED status.",
+      "security": [{ "bearerAuth": [] }],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["orderId", "disputeType", "reason"],
+              "properties": {
+                "orderId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+                "disputeType": {
+                  "type": "string",
+                  "enum": ["ITEM_NOT_AS_DESCRIBED", "ITEM_NOT_RECEIVED", "DAMAGED_ITEM", "FAKE_ITEM", "OTHER"]
+                },
+                "reason": { "type": "string", "maxLength": 2000, "example": "Item arrived with scratches not shown in listing" },
+                "evidenceImages": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "example": ["https://example.com/evidence1.jpg"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Dispute created successfully",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "message": { "type": "string", "example": "Tạo đơn khiếu nại thành công" },
+                  "dispute": { "$ref": "#/components/schemas/Dispute" }
+                }
+              }
+            }
+          }
+        },
+        "400": { "description": "Invalid order status or dispute already exists" },
+        "403": { "description": "User is not buyer or seller of this order" },
+        "404": { "description": "Order not found" },
+        "500": { "description": "Server error" }
+      }
+    },
+    "get": {
+      "tags": ["Dispute"],
+      "summary": "Get disputes (paginated)",
+      "description": "Returns disputes belonging to the current user. Admin sees all disputes.",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "query",
+          "name": "page",
+          "schema": { "type": "integer", "default": 1 }
+        },
+        {
+          "in": "query",
+          "name": "limit",
+          "schema": { "type": "integer", "default": 10 }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "List of disputes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "data": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/Dispute" }
+                  },
+                  "pagination": {
+                    "type": "object",
+                    "properties": {
+                      "page": { "type": "integer", "example": 1 },
+                      "limit": { "type": "integer", "example": 10 },
+                      "total": { "type": "integer", "example": 5 },
+                      "totalPages": { "type": "integer", "example": 1 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "401": { "description": "Unauthorized" },
+        "500": { "description": "Server error" }
+      }
+    }
+  },
+  "/disputes/{id}": {
+    "get": {
+      "tags": ["Dispute"],
+      "summary": "Get dispute by ID",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": { "type": "string" },
+          "description": "Dispute ID"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Dispute detail",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "dispute": { "$ref": "#/components/schemas/Dispute" }
+                }
+              }
+            }
+          }
+        },
+        "404": { "description": "Dispute not found" },
+        "500": { "description": "Server error" }
+      }
+    }
+  },
+  "/disputes/{id}/resolve": {
+    "put": {
+      "tags": ["Dispute"],
+      "summary": "Resolve a dispute (Admin)",
+      "description": "Admin resolves a dispute by choosing a resolution: REFUND_BUYER, RELEASE_SELLER, or NONE (withdraw).",
+      "security": [{ "bearerAuth": [] }],
+      "parameters": [
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": { "type": "string" },
+          "description": "Dispute ID"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["resolution"],
+              "properties": {
+                "resolution": {
+                  "type": "string",
+                  "enum": ["REFUND_BUYER", "RELEASE_SELLER", "NONE"]
+                },
+                "reason": {
+                  "type": "string",
+                  "example": "Buyer provided valid evidence of damage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Dispute resolved",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": { "type": "boolean", "example": true },
+                  "message": { "type": "string", "example": "Đã giải quyết khiếu nại" },
+                  "dispute": { "$ref": "#/components/schemas/Dispute" }
+                }
+              }
+            }
+          }
+        },
+        "400": { "description": "Dispute already resolved" },
+        "404": { "description": "Dispute or Order not found" },
+        "500": { "description": "Server error" }
+      }
+    }
+  }
+
   }
 }

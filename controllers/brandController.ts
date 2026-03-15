@@ -60,6 +60,34 @@ export const getAllBrands = async (
     }
 };
 
+export const getBrandById = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+        const brand = await Brand.findById(id);
+
+        if (!brand) {
+            res.status(404).json({
+                success: false,
+                message: 'Brand not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: brand
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to fetch brand'
+        });
+    }
+};
+
 //Create brand
 export const createBrand = async (
     req: Request,

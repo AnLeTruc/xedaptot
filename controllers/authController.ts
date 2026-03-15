@@ -199,38 +199,43 @@ export const firebaseAuth = async (
 
         const existingUser = await User.findOne({ email });
 
-        // Generate custom token and exchange for idToken + refreshToken
-        const customToken = await auth.createCustomToken(uid);
-        const tokenResponse = await fetch(
-            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: customToken, returnSecureToken: true }),
-            }
-        );
-        const tokenData: any = await tokenResponse.json();
-
-        if (!tokenResponse.ok) {
-            res.status(500).json({
-                success: false,
-                message: 'Failed to generate session tokens'
-            });
-            return;
-        }
-
+        // Have user with same mail
         if (existingUser) {
+            if (existingUser.authProvider !== authProvider) {
+                res.status(400).json({
+                    success: false,
+                    message: `Email đã đăng ký với ${existingUser.authProvider}. Không thể đăng nhập/đăng ký bằng ${authProvider}.`
+                });
+                return;
+            }
             if (existingUser.firebaseUId !== uid) {
                 res.status(400).json({
                     success: false,
-                    message: `Email already registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+                    message: `Email đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng đúng tài khoản để đăng nhập.`
+                });
+                return;
+            }
+
+            const customToken = await auth.createCustomToken(uid);
+            const tokenResponse = await fetch(
+                `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+                }
+            );
+            const tokenData: any = await tokenResponse.json();
+            if (!tokenResponse.ok) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Failed to generate session tokens'
                 });
                 return;
             }
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
             await existingUser.save();
-
             res.status(200).json({
                 success: true,
                 message: 'User logged in successfully',
@@ -250,6 +255,24 @@ export const firebaseAuth = async (
             return;
         }
 
+        //Create
+        const customToken = await auth.createCustomToken(uid);
+        const tokenResponse = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+            }
+        );
+        const tokenData: any = await tokenResponse.json();
+        if (!tokenResponse.ok) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to generate session tokens'
+            });
+            return;
+        }
         const newUser = await User.create({
             firebaseUId: uid,
             email: email || '',
@@ -261,10 +284,7 @@ export const firebaseAuth = async (
             isActive: true,
             authProvider
         });
-
         await assignFreePackage(newUser._id);
-
-
         res.status(201).json({
             success: true,
             message: 'User registered successfully',

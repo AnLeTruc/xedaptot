@@ -10,12 +10,15 @@ const { generalLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { startCleanupJob } = require('./services/cleanupService');
 const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
+const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
 
-// Start Cronjob
+// Start Cronjobs
 startCleanupJob();
+
 //Cronjob releasing funds
 cron.schedule('* * * * *', releaseFundsJob);
-console.log('[Cronjob] Release funds job scheduled: every MINUTE (TEST)');
+cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
+console.log('[Cronjob] Jobs scheduled (Release Funds & Cleanup Expired)');
 
 //Routes
 const authRouter = require('./routes/auth').default;
@@ -27,11 +30,18 @@ const uploadRouter = require('./routes/uploadRoutes').default;
 const packageRouter = require('./routes/package').default;
 const adminInspectorRouter = require('./routes/admin/inspector').default;
 const adminUserRouter = require('./routes/admin/user').default;
+const adminWalletRouter = require('./routes/admin/wallet').default;
 const inspectorRouter = require('./routes/inspector').default;
 const orderRouter = require('./routes/order').default;
 const bicycleModelRouter = require('./routes/bicycleModel').default;
 const walletRouter = require('./routes/wallet').default;
 const shippingRouter = require('./routes/shipping').default;
+const conversationRouter = require('./routes/conversation').default;
+const violationReportRouter = require('./routes/violationReport').default;
+const adminConversationRouter = require('./routes/admin/conversation').default;
+const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').default;
+const adminSummaryRouter = require('./routes/admin/dashboard').default;
+const disputeRouter = require('./routes/dispute').default;
 var app = express();
 
 // Trust proxy for Render
@@ -69,9 +79,17 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/packages', packageRouter);
 app.use('/api/admin', adminInspectorRouter);
 app.use('/api/admin', adminUserRouter);
+app.use('/api/admin', adminWalletRouter);
+app.use('/api/admin', adminConversationRouter);
+app.use('/api/admin', adminRestrictedWordRouter);
 app.use('/api/inspectors', inspectorRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/bicycle-models', bicycleModelRouter);
 app.use('/api/wallets', walletRouter);
 app.use('/api/shipping', shippingRouter);
+app.use('/api/conversations', conversationRouter);
+app.use('/api/violation-reports', violationReportRouter);
+app.use('/api/admin', adminSummaryRouter);
+app.use('/api/disputes', disputeRouter);
+
 module.exports = app;

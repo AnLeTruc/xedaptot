@@ -8,17 +8,36 @@ import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../servic
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-        wallet = await Wallet.create({ userId });
+    try {
+        const wallet = await Wallet.findOneAndUpdate(
+            { userId },
+            { $setOnInsert: { userId } },
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            }
+        );
+
+        return wallet;
+    } catch (error: any) {
+        if (error?.code === 11000) {
+            const existingWallet = await Wallet.findOne({ userId });
+            if (existingWallet) {
+                return existingWallet;
+            }
+        }
+
+        throw error;
     }
-    return wallet;
 };
 
 const generateCode = (prefix: string) => {
     const d = new Date().toISOString().replace(/[-T:.Z]/g, ''); // Remove all special chars
     return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
 };
+
+const MAX_PENDING_WITHDRAW_REQUESTS = 3;
 
 
 // GET /wallets/me - Get my wallet
@@ -37,7 +56,7 @@ export const getMyWallet = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to load wallet. Please try again later.'
         });
     }
 };
@@ -83,7 +102,7 @@ export const getTransactions = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to load wallet transactions. Please try again later.'
         });
     }
 };
@@ -146,7 +165,7 @@ export const depositToWallet = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: 'Failed to initialize wallet deposit. Please try again later.'
         });
     }
 };
@@ -348,17 +367,21 @@ export const createWithdrawRequest = async (
             return;
         }
 
-        // Check if there's a pending withdraw request
-        const pendingRequest = await WithdrawRequest.findOne({
+        // Allow a user to keep at most 3 pending withdraw requests at a time
+        const pendingRequestCount = await WithdrawRequest.countDocuments({
             userId,
             status: 'PENDING'
         }).session(session);
 
-        if (pendingRequest) {
+        if (pendingRequestCount >= MAX_PENDING_WITHDRAW_REQUESTS) {
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'You already have a pending withdraw request'
+                message: `You can only have up to ${MAX_PENDING_WITHDRAW_REQUESTS} pending withdraw requests`,
+                data: {
+                    pendingRequestCount,
+                    maxPendingRequests: MAX_PENDING_WITHDRAW_REQUESTS
+                }
             });
             return;
         }
@@ -382,6 +405,10 @@ export const createWithdrawRequest = async (
         await Transaction.create([{
             transactionCode: generateCode('WDR'),
             paymentMethod: 'BANK_TRANSFER',
+            data: {
+                status: 'PENDING',
+                withdrawRequestId: withdrawRequest._id.toString()
+            },
             walletId: wallet._id,
             type: 'WITHDRAW',
             amount,

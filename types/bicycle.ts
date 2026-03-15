@@ -1,6 +1,15 @@
 import { Document, Types } from "mongoose";
 import { IAddress } from './address';
 
+export interface IApprovalHistoryEntry {
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    reason?: string;
+    actorId?: Types.ObjectId;
+    actorName?: string;
+    actorRole?: 'ADMIN' | 'SELLER' | 'INSPECTOR';
+    createdAt?: Date;
+}
+
 export type BicycleCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
 export type BicycleStatus = 'PENDING' | 'APPROVED' | 'RESERVED' | 'SOLD' | 'HIDDEN' | 'REJECTED';
@@ -70,6 +79,9 @@ export interface IBicycle {
     specifications?: IBicycleSpecifications;
     location?: IAddress;
     images?: IBicycleImage[];
+    rejectionReason?: string;
+    approvalHistory?: IApprovalHistoryEntry[];
+    hasChangedSinceRejection?: boolean;
 }
 
 export interface IBicycleDocument extends IBicycle, Omit<Document, 'model'> {

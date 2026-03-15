@@ -96,6 +96,30 @@ export const requireUser = async (
     next();
 }
 
+export const requireVerifiedUser = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    if (!req.user) {
+        res.status(401).json({
+            success: false,
+            message: 'User does not register with system',
+        });
+        return;
+    }
+
+    if (!req.user.isVerified) {
+        res.status(403).json({
+            success: false,
+            message: 'Please verify your account before using wallet features.',
+        });
+        return;
+    }
+
+    next();
+}
+
 // Require Admin role
 export const requireAdmin = async (
     req: AuthRequest,
