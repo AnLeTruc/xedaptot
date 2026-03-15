@@ -557,11 +557,12 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         const refund = order.amounts.escrowAmount;
         if (refund > 0 && buyerWallet) {
             const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+            const txnCode = generateCode('TXN');
             buyerWallet.frozenBalance -= refund;
             await buyerWallet.save();
 
             await Transaction.create({
-                transactionCode: generateCode('TXN'),
+                transactionCode: txnCode,
                 paymentMethod: 'SYSTEM',
                 walletId: buyerWallet._id,
                 type: 'REFUND',
@@ -573,7 +574,7 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
             });
 
             order.transactions.push({
-                transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+                transactionCode: txnCode, type: 'REFUND', amount: refund, status: 'SUCCESS',
                 createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
                 balanceBefore: balBefore, balanceAfter: balBefore + refund,
                 description: `Seller rejected - Refund - ${order.orderCode}`,
