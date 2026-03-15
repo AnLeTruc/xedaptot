@@ -2,7 +2,7 @@ import { Document, Types } from "mongoose";
 import { IAddress } from './address';
 
 export interface IApprovalHistoryEntry {
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'VIOLATED';
     reason?: string;
     actorId?: Types.ObjectId;
     actorName?: string;
@@ -12,7 +12,7 @@ export interface IApprovalHistoryEntry {
 
 export type BicycleCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
-export type BicycleStatus = 'PENDING' | 'APPROVED' | 'RESERVED' | 'SOLD' | 'HIDDEN' | 'REJECTED';
+export type BicycleStatus = 'PENDING' | 'APPROVED' | 'RESERVED' | 'SOLD' | 'HIDDEN' | 'REJECTED' | 'VIOLATED';
 
 export type InspectionStatus = 'PENDING' | 'REQUESTED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 
