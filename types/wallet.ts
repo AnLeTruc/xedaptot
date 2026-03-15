@@ -9,7 +9,8 @@ export type TransactionType =
     | 'REFUND'          // Hoàn tiền cho buyer
     | 'FORFEIT'         // Buyer hủy sau confirm → seller nhận cọc
     | 'WITHDRAW'        // Seller rút tiền
-    | 'PACKAGE_PURCHASE'; // Mua gói dịch vụ
+    | 'PACKAGE_PURCHASE'  // Mua gói dịch vụ
+    | 'SHIPPING_FEE';     // Phí vận chuyển
 
 export type PaymentMethod = 'WALLET' | 'SYSTEM' | 'BANK_TRANSFER' | 'VNPAY';
 

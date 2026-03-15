@@ -2,6 +2,7 @@ import User from '../models/User';
 import Listing from '../models/Bicycle';
 import Order from '../models/Order';
 import Subscription from '../models/Package';
+import Transaction from '../models/Transaction';
 import { getDateRange } from '../utils/dateRange';
 
 export interface SummaryResult {
@@ -45,12 +46,15 @@ export const getSummaryData = async (
   }
   const activeListings = await Listing.countDocuments(listingFilter);
 
-  //totalRevenue
-  const revenueFilter: Record<string, unknown> = { status: 'completed' };
+  //totalRevenue — doanh thu từ gói đăng tin đã thanh toán qua VNPay
+  const revenueFilter: Record<string, unknown> = {
+    type: 'PACKAGE_PURCHASE',
+    'data.status': 'SUCCESS',
+  };
   if (dateRange) {
     revenueFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
-  const revenueResult = await Subscription.aggregate([
+  const revenueResult = await Transaction.aggregate([
     { $match: revenueFilter },
     { $group: { _id: null, total: { $sum: '$amount' } } }
   ]);
@@ -64,9 +68,13 @@ export const getSummaryData = async (
   const successOrders = await Order.countDocuments(orderFilter);
 
   //escrowAmount
+  const escrowFilter: Record<string, unknown> = { 'amounts.escrowAmount': { $gt: 0 } };
+  if (dateRange) {
+    escrowFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
+  }
   const escrowResult = await Order.aggregate([
-    { $match: orderFilter },
-    { $group: { _id: null, total: { $sum: '$escrowAmount' } } }
+    { $match: escrowFilter },
+    { $group: { _id: null, total: { $sum: '$amounts.escrowAmount' } } }
   ]);
   const escrowAmount = escrowResult[0]?.total ?? 0;
 
