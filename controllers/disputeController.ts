@@ -199,20 +199,20 @@ export const resolveDispute = async (
             });
 
             if (buyerWallet && escrowAmount > 0) {
+                const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
                 buyerWallet.frozenBalance -= escrowAmount;
-                buyerWallet.availableBalance += escrowAmount;
                 await buyerWallet.save();
                 await Transaction.create({
                     walletId: buyerWallet._id,
                     type: 'REFUND',
                     amount: escrowAmount,
                     orderId: order._id,
-                    balanceBefore: buyerWallet.availableBalance,
-                    balanceAfter: buyerWallet.availableBalance + escrowAmount,
+                    balanceBefore: balBefore,
+                    balanceAfter: balBefore + escrowAmount,
                     paymentMethod: 'SYSTEM',
                     transactionCode: generateCode('REFUND'),
                     description: reason || 'Hoàn tiền tranh chấp đơn đặt xe ' + order.orderCode,
-                })
+                });
             }
 
             order.status = 'CANCELLED';
@@ -223,34 +223,53 @@ export const resolveDispute = async (
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
 
 
-            // người bán thắng   
+            // người bán thắng
         } else if (resolution === 'RELEASE_SELLER') {
             const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
-            if (buyerWallet && escrowAmount > 0) {
-                buyerWallet.frozenBalance -= escrowAmount;   // người mua trả tiền
-                await buyerWallet.save();
+            const sellerRelease = order.amounts.pricing.finalPrice;
+            const shippingFee = order.amounts.shippingFee ?? 0;
 
+            if (buyerWallet) {
+                buyerWallet.frozenBalance -= (sellerRelease + shippingFee);
+                await buyerWallet.save();
             }
-            const sellerWallet = await Wallet.findOne({ userId: order.seller._id });
-            if (sellerWallet && escrowAmount > 0) {
-                sellerWallet.frozenBalance -= escrowAmount;
-                sellerWallet.availableBalance += escrowAmount;
+
+            const sellerWallet = await getOrCreateWallet(order.seller._id);
+            if (sellerRelease > 0) {
+                const sellerBalBefore = sellerWallet.totalEarn - sellerWallet.totalWithdrawn - sellerWallet.frozenBalance;
+                sellerWallet.totalEarn += sellerRelease;
+                sellerWallet.totalReceived += sellerRelease;
                 await sellerWallet.save();
                 await Transaction.create({
                     walletId: sellerWallet._id,
                     type: 'ESCROW_RELEASE',
-                    amount: escrowAmount,
+                    amount: sellerRelease,
                     orderId: order._id,
-                    balanceBefore: sellerWallet.availableBalance - escrowAmount,
-                    balanceAfter: sellerWallet.availableBalance,
+                    balanceBefore: sellerBalBefore,
+                    balanceAfter: sellerBalBefore + sellerRelease,
                     paymentMethod: 'SYSTEM',
                     transactionCode: generateCode('EARN'),
-                    description: 'Nhận tiền từ khiếu nại' + order.orderCode,
+                    description: 'Nhận tiền từ khiếu nại ' + order.orderCode,
+                });
+            }
+
+            // Phí ship về doanh thu platform
+            if (shippingFee > 0) {
+                await Transaction.create({
+                    walletId: buyerWallet!._id,
+                    type: 'SHIPPING_FEE',
+                    amount: shippingFee,
+                    orderId: order._id,
+                    balanceBefore: 0,
+                    balanceAfter: 0,
+                    paymentMethod: 'SYSTEM',
+                    transactionCode: generateCode('SHIP'),
+                    description: 'Tien giao hang ve he thong cho don - ' + order.orderCode,
                 });
             }
             // ĐƠN GIAO THÀNH CÔNG ( HOÀN TẤT THU TIỀN )
             order.status = 'FUNDS_RELEASED';
-            order.amounts.escrowAmount = 0; // rút sạch
+            order.amounts.escrowAmount = 0;
 
             // hòa giải (rút đơn)
         } else if (resolution === 'NONE') {
