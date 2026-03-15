@@ -5,7 +5,10 @@ import Package from '../models/Package';
 import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
 import { getOrCreateWallet } from './walletController';
+import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import mongoose from 'mongoose';
+
+const VNP_PKG_RETURN_URL = process.env.VNP_PKG_RETURN_URL
 
 const generateCode = (prefix: string) => {
     const d = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
@@ -130,110 +133,187 @@ export const getUserPackageById = async (
 // POST /api/user-packages/purchase
 // Purchase a new package
 export const purchasePackage = async (req: AuthRequest, res: Response): Promise<void> => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
         const userId = req.user?._id;
         const { packageId } = req.body;
 
         if (!packageId) {
-            await session.abortTransaction(); session.endSession();
             res.status(400).json({ success: false, message: 'Package ID is required' });
             return;
         }
 
-        // Kiểm tra user đã có gói ACTIVE chưa (bỏ qua gói FREE — gói FREE không chặn mua gói khác)
+        // Kiểm tra user đã có gói ACTIVE chưa (bỏ qua gói FREE)
         const existingActive = await UserPackage.findOne({
             userId,
             status: 'ACTIVE',
             'package.code': { $ne: 'FREE' }
-        }).session(session);
+        });
         if (existingActive) {
-            await session.abortTransaction(); session.endSession();
             res.status(400).json({ success: false, message: 'Bạn đang có gói hoạt động. Vui lòng huỷ gói hiện tại trước khi mua gói mới.' });
             return;
         }
 
         // Tìm package
-        const packageItem = await Package.findById(packageId).session(session);
+        const packageItem = await Package.findById(packageId);
         if (!packageItem) {
-            await session.abortTransaction(); session.endSession();
             res.status(404).json({ success: false, message: 'Package not found' });
             return;
         }
         if (!packageItem.isActive) {
-            await session.abortTransaction(); session.endSession();
             res.status(400).json({ success: false, message: 'This package is not available' });
             return;
         }
 
-        // Lấy ví
-        await getOrCreateWallet(userId as mongoose.Types.ObjectId);
-        const walletDoc = await Wallet.findOne({ userId }).session(session);
-        if (!walletDoc) {
-            await session.abortTransaction(); session.endSession();
-            res.status(500).json({ success: false, message: 'Wallet not found' });
-            return;
-        }
+        // Lấy / tạo ví
+        const walletDoc = await getOrCreateWallet(userId as mongoose.Types.ObjectId);
 
-        // Kiểm tra số dư
-        const availableBalance = walletDoc.totalEarn - walletDoc.totalWithdrawn - walletDoc.frozenBalance;
-        if (availableBalance < packageItem.price) {
-            await session.abortTransaction(); session.endSession();
-            res.status(400).json({
-                success: false,
-                message: `Số dư không đủ. Cần: ${packageItem.price.toLocaleString('vi-VN')}đ, Khả dụng: ${availableBalance.toLocaleString('vi-VN')}đ`
-            });
-            return;
-        }
+        // Tạo giao dịch PENDING
+        const txnRef = generateCode('PKG');
+        const currentBalance = walletDoc.totalEarn - walletDoc.totalWithdrawn - walletDoc.frozenBalance;
 
-        // Tạo Transaction
-        const [transaction] = await Transaction.create([{
-            transactionCode: generateCode('PKG'),
-            paymentMethod: 'WALLET',
+        await Transaction.create({
+            transactionCode: txnRef,
+            paymentMethod: 'VNPAY',
             walletId: walletDoc._id,
             type: 'PACKAGE_PURCHASE',
             amount: packageItem.price,
-            balanceBefore: availableBalance,
-            balanceAfter: availableBalance - packageItem.price,
-            description: `Mua gói đăng tin: ${packageItem.name} (${packageItem.code})`
-        }], { session });
-
-        // Trừ ví
-        walletDoc.totalWithdrawn += packageItem.price;
-        await walletDoc.save({ session });
-
-        // Tạo UserPackage
-        const [userPackage] = await UserPackage.create([{
-            userId,
-            packageId: packageItem._id,
-            package: { _id: packageItem._id, name: packageItem.name, code: packageItem.code, postLimit: packageItem.postLimit },
-            postedUsed: 0,
-            postRemaining: packageItem.postLimit,
-            status: 'ACTIVE',
-            purchasedAt: new Date(),
-            transactionId: transaction._id
-        }], { session });
-
-        await session.commitTransaction();
-        session.endSession();
-
-        res.status(201).json({
-            success: true,
-            message: 'Mua gói thành công',
+            balanceBefore: currentBalance,
+            balanceAfter: 0,    // sẽ cập nhật khi callback
+            description: `Mua gói đăng tin: ${packageItem.name} (${packageItem.code})`,
+            paymentGateway: 'VNPAY',
+            gatewayTransactionId: '',
+            gatewayResponseCode: '',
             data: {
-                userPackage,
-                transaction: {
-                    code: transaction.transactionCode,
-                    amount: transaction.amount,
-                    balanceBefore: transaction.balanceBefore,
-                    balanceAfter: transaction.balanceAfter
-                }
-            }
+                status: 'PENDING',
+                userId: userId!.toString(),
+                packageId: packageItem._id.toString(),
+                packageSnapshot: {
+                    _id: packageItem._id,
+                    name: packageItem.name,
+                    code: packageItem.code,
+                    postLimit: packageItem.postLimit,
+                },
+            },
+        });
+
+        // Lấy IP
+        let ipAddr = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+            || req.socket.remoteAddress
+            || '127.0.0.1';
+        if (ipAddr === '::1') ipAddr = '127.0.0.1';
+        if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
+
+        const paymentUrl = createPaymentUrl({
+            amount: packageItem.price,
+            orderId: txnRef,
+            orderInfo: `Mua+goi+${packageItem.code}`,
+            ipAddr,
+            returnUrl: VNP_PKG_RETURN_URL,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Khởi tạo thanh toán thành công',
+            data: { paymentUrl, txnRef },
         });
     } catch (error: any) {
-        await session.abortTransaction();
-        session.endSession();
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
+// GET /api/user/vnpay-return
+export const packageVnpayReturn = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const vnpParams = req.query as Record<string, string>;
+
+        // Verify chữ ký
+        const isValid = verifyReturnUrl(vnpParams);
+        if (!isValid) {
+            res.status(400).json({ success: false, message: 'Invalid signature from VNPay' });
+            return;
+        }
+
+        const txnRef = vnpParams['vnp_TxnRef'];
+        const responseCode = vnpParams['vnp_ResponseCode'];
+        const gatewayTxnId = vnpParams['vnp_TransactionNo'] || '';
+
+        // Tìm giao dịch PENDING
+        const transaction = await Transaction.findOne({
+            transactionCode: txnRef,
+            type: 'PACKAGE_PURCHASE',
+            'data.status': 'PENDING',
+        });
+
+        if (!transaction) {
+            res.status(404).json({ success: false, message: 'Transaction not found or already processed' });
+            return;
+        }
+
+        const frontendUrl = process.env.FRONTEND_URL || '';
+
+        // Thanh toán thất bại
+        if (responseCode !== '00') {
+            transaction.data = { ...transaction.data, status: 'FAILED' };
+            transaction.gatewayResponseCode = responseCode;
+            transaction.gatewayTransactionId = gatewayTxnId;
+            await transaction.save();
+
+            if (frontendUrl) {
+                res.redirect(`${frontendUrl}/packages?purchase=failed&code=${responseCode}`);
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: getResponseMessage(responseCode),
+                    data: { txnRef, responseCode },
+                });
+            }
+            return;
+        }
+
+        // Thanh toán thành công → kích hoạt gói
+        const { userId, packageId, packageSnapshot } = transaction.data as {
+            userId: string;
+            packageId: string;
+            packageSnapshot: { _id: string; name: string; code: string; postLimit: number };
+        };
+
+        const wallet = await Wallet.findById(transaction.walletId);
+        const balanceBefore = wallet
+            ? wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance
+            : transaction.balanceBefore;
+
+        // Tạo UserPackage
+        const userPackage = await UserPackage.create({
+            userId,
+            packageId,
+            package: packageSnapshot,
+            postedUsed: 0,
+            postRemaining: packageSnapshot.postLimit,
+            status: 'ACTIVE',
+            purchasedAt: new Date(),
+            transactionId: transaction._id,
+        });
+
+        // Cập nhật transaction
+        transaction.balanceBefore = balanceBefore;
+        transaction.balanceAfter = balanceBefore;
+        transaction.gatewayTransactionId = gatewayTxnId;
+        transaction.gatewayResponseCode = responseCode;
+        transaction.data = { ...transaction.data, status: 'SUCCESS' };
+        await transaction.save();
+
+        if (frontendUrl) {
+            res.redirect(`${frontendUrl}/packages?purchase=success&package=${packageSnapshot.code}`);
+        } else {
+            res.status(200).json({
+                success: true,
+                message: `Mua gói ${packageSnapshot.name} thành công`,
+                data: { txnRef, userPackage },
+            });
+        }
+    } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
     }
 };

@@ -211,6 +211,49 @@ export const updateViolationReport = async (req: AuthRequest, res: Response) => 
 
 
 
+export const violateBicycle = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+
+        const bicycle = await Bicycle.findById(id);
+        if (!bicycle) {
+            res.status(404).json({ success: false, message: 'Bicycle not found' });
+            return;
+        }
+
+        if (bicycle.status === 'VIOLATED') {
+            res.status(400).json({ success: false, message: 'Tin đăng đã ở trạng thái vi phạm' });
+            return;
+        }
+
+        bicycle.status = 'VIOLATED';
+        bicycle.approvalHistory = bicycle.approvalHistory ?? [];
+        bicycle.approvalHistory.push({
+            status: 'VIOLATED',
+            reason: reason || 'Vi phạm chính sách nền tảng',
+            actorId: req.user!._id,
+            actorName: req.user!.fullName,
+            actorRole: 'ADMIN',
+        });
+
+        await bicycle.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Đã đánh dấu tin đăng vi phạm',
+            data: bicycle,
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+
 export const checkViolationReport = async (
     req: AuthRequest,
     res: Response
