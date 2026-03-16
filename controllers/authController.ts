@@ -539,8 +539,8 @@ export const emailLogin = async (
 
         if (!response.ok) {
             const errorMessage = data.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-                ? 'Invalid email or password'
-                : data.error?.message || 'Login failed';
+                ? 'Email hoặc mật khẩu không chính xác'
+                : data.error?.message || 'Đăng nhập thất bại';
 
             res.status(401).json({
                 success: false,
