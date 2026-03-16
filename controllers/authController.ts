@@ -482,6 +482,7 @@ export const emailRegister = async (
                 id: newUser._id,
                 email: newUser.email,
                 fullName: newUser.fullName,
+                avatarUrl: newUser.avatarUrl,
                 roles: newUser.roles,
                 authProvider: newUser.authProvider,
                 isVerified: newUser.isVerified,
@@ -538,8 +539,8 @@ export const emailLogin = async (
 
         if (!response.ok) {
             const errorMessage = data.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-                ? 'Invalid email or password'
-                : data.error?.message || 'Login failed';
+                ? 'Email hoặc mật khẩu không chính xác'
+                : data.error?.message || 'Đăng nhập thất bại';
 
             res.status(401).json({
                 success: false,
@@ -557,6 +558,7 @@ export const emailLogin = async (
                 id: user?._id,
                 email: data.email,
                 fullName: user?.fullName,
+                avatarUrl: user?.avatarUrl,
                 roles: user?.roles,
                 authProvider: user?.authProvider,
                 isVerified: user?.isVerified,
