@@ -202,9 +202,18 @@ export const firebaseAuth = async (
         // Have user with same mail
         if (existingUser) {
             if (existingUser.authProvider !== authProvider) {
+                const firebaseUser = await auth.getUser(uid);
+                const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+
+                if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
+                    await auth.updateUser(uid, {
+                        providerToUnlink: 'google.com'
+                    });
+                }
+
                 res.status(400).json({
                     success: false,
-                    message: `Email đã đăng ký với ${existingUser.authProvider}. Không thể đăng nhập/đăng ký bằng ${authProvider}.`
+                    message: `Email đã đăng ký với ${existingUser.authProvider}.`
                 });
                 return;
             }
@@ -538,13 +547,33 @@ export const emailLogin = async (
         const data: any = await response.json();
 
         if (!response.ok) {
-            const errorMessage = data.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-                ? 'Email hoặc mật khẩu không chính xác'
-                : data.error?.message || 'Đăng nhập thất bại';
+            if (data.error?.message === 'INVALID_LOGIN_CREDENTIALS') {
+                const dbUser = await User.findOne({ email });
+                if (dbUser) {
+                    try {
+                        const firebaseUser = await auth.getUserByEmail(email);
+                        const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+
+                        if (linkedProviders.includes('google.com') && !linkedProviders.includes('password')) {
+                            res.status(401).json({
+                                success: false,
+                                message: 'Tài khoản của bạn đã bị ảnh hưởng bởi đăng nhập Google. Vui lòng đặt lại mật khẩu.'
+                            });
+                            return;
+                        }
+                    } catch (_) { }
+                }
+
+                res.status(401).json({
+                    success: false,
+                    message: 'Email hoặc mật khẩu không chính xác'
+                });
+                return;
+            }
 
             res.status(401).json({
                 success: false,
-                message: errorMessage
+                message: data.error?.message || 'Đăng nhập thất bại'
             });
             return;
         }
@@ -1233,11 +1262,33 @@ export const changePassword = async (
         // Generate new custom token so client can re-authenticate
         const customToken = await auth.createCustomToken(user.firebaseUId);
 
+        // Đổi luôn sang idToken + refreshToken
+        const tokenExchangeResponse = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+            }
+        );
+
+        const tokenData: any = await tokenExchangeResponse.json();
+
+        if (!tokenExchangeResponse.ok) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to generate session tokens after password change'
+            });
+            return;
+        }
+
         res.status(200).json({
             success: true,
             message: 'Password changed successfully',
             data: {
-                customToken
+                idToken: tokenData.idToken,
+                refreshToken: tokenData.refreshToken,
+                expiresIn: tokenData.expiresIn,
             }
         });
 
