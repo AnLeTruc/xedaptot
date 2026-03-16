@@ -511,6 +511,69 @@ export const getUnreadCount = async (
     }
 }
 
+// Start support conversation
+export const startSupportConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = (req as any).user?._id;
+
+        const admins = await User.find({ roles: { $in: ['ADMIN'] } }).select('_id fullName avatarUrl');
+        if (admins.length === 0) {
+            res.status(503).json({ message: 'Không có người hỗ trợ nào khả dụng' });
+            return;
+        }
+
+        // Check if user already has a conversation with any admin
+        const adminIds = admins.map(a => a._id);
+        const existing = await Conversation.findOne({
+            $and: [
+                { participants: userId },
+                { participants: { $in: adminIds } }
+            ]
+        });
+
+        if (existing) {
+            const partnerId = existing.participants.find(p => p.toString() !== userId.toString());
+            const partner = admins.find(a => a._id.toString() === partnerId?.toString());
+            res.status(200).json({
+                conversationId: existing._id,
+                partner: {
+                    _id: partner?._id,
+                    fullName: partner?.fullName ?? 'Hỗ trợ BikeConnect',
+                    avatarUrl: partner?.avatarUrl ?? null,
+                }
+            });
+            return;
+        }
+
+        const counts = await Promise.all(
+            admins.map(async (admin) => ({
+                admin,
+                count: await Conversation.countDocuments({ participants: admin._id })
+            }))
+        );
+        counts.sort((a, b) => a.count - b.count);
+        const selectedAdmin = counts[0].admin;
+
+        const conversation = await Conversation.create({
+            participants: [userId, selectedAdmin._id]
+        });
+
+        res.status(201).json({
+            conversationId: conversation._id,
+            partner: {
+                _id: selectedAdmin._id,
+                fullName: selectedAdmin.fullName ?? 'Hỗ trợ BikeConnect',
+                avatarUrl: selectedAdmin.avatarUrl ?? null,
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Hide a conversation (Soft delete)
 export const hideConversation = async (
     req: Request,

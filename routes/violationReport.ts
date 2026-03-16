@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as ctrl from '../controllers/violationReportController';
-import { verifyToken, requireUser } from '../middleware/auth';
+import { verifyToken, requireUser, requireAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
     createViolationReportSchema,
@@ -22,5 +22,6 @@ router.post(
 
 router.get('/:id', ctrl.getViolationReportById);
 router.put('/:id', validate(updateViolationReportSchema, 'body'), ctrl.updateViolationReport);
+router.patch('/bicycles/:id/violate', requireAdmin, ctrl.violateBicycle);
 
 export default router;

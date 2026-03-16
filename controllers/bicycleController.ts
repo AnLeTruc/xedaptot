@@ -729,6 +729,8 @@ export const resubmitBicycle = async (
         bicycle.status = 'PENDING';
         bicycle.hasChangedSinceRejection = false;
         bicycle.rejectionReason = undefined;
+        bicycle.inspectionStatus = 'PENDING';
+        bicycle.assignedInspectorId = undefined;
         bicycle.approvalHistory = bicycle.approvalHistory ?? [];
         bicycle.approvalHistory.push({
             status: 'PENDING',
