@@ -5281,6 +5281,62 @@
         }
       }
     },
+    "/users/packages/vnpay-return": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "VNPay payment callback for packages",
+        "description": "Handle VNPay redirection after package purchase attempt. Redirects to frontend with results.",
+        "parameters": [
+          {
+            "name": "vnp_TxnRef",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vnp_ResponseCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend package page with purchase status"
+          },
+          "200": {
+            "description": "Success message if no frontend URL is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature or payment failed"
+          }
+        }
+      }
+    },
     "/users/packages/active": {
       "get": {
         "tags": [
@@ -10116,6 +10172,75 @@
           },
           "404": {
             "description": "Report not found"
+          }
+        }
+      }
+    },
+    "/violation-reports/bicycles/{id}/violate": {
+      "patch": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Mark bicycle as violating (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Bicycle ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Inappropriate content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bicycle marked as violated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Bicycle"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Already violated"
+          },
+          "404": {
+            "description": "Bicycle not found"
           }
         }
       }
