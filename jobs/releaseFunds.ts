@@ -2,6 +2,7 @@ import Order from '../models/Order';
 import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
 import { ORDER_TIMEOUTS } from '../types/order';
+import { notifyEscrowReleased } from '../services/notificationService';
 
 // Helper function để generate transaction code
 const generateCode = (prefix: string) => {
@@ -100,6 +101,9 @@ export const releaseFundsJob = async () => {
                 } as any);
 
                 await order.save();
+
+                //Noti 
+                notifyEscrowReleased(order.seller._id.toString(), order._id.toString(), order.orderCode);
 
                 console.log(`[RELEASE] Order ${order.orderCode}: ${release}đ → Seller ${order.seller._id}`);
             } catch (error: any) {

@@ -6,6 +6,7 @@ import Wallet from '../models/Wallet';
 import { getOrCreateWallet } from './walletController';
 import Bicycle from '../models/Bicycle';
 import Transaction from '../models/Transaction';
+import * as notificationService from '../services/notificationService';
 
 
 
@@ -90,6 +91,12 @@ export const createDispute = async (
         // Mục đích là để cản thằng job "releaseFundsJob" không tự động giải ngân cái đơn này nữa.
         order.status = 'DISPUTED';
         await order.save();
+
+        notificationService.notifyAdminNewDispute(
+            order._id.toString(),
+            complainant.fullName || '',
+            order.orderCode
+        );
 
         return res.status(201).json({
             success: true,

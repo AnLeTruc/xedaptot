@@ -338,3 +338,63 @@ export const notifyPostLimitReached = (userId: string) =>
         message: 'Bạn đã đạt giới hạn tin đăng của gói hiện tại. Vui lòng nâng cấp để tiếp tục.',
         url: '/subscription'
     });
+
+// ── ADMIN ───────────────────────────────────────────────────
+import User from '../models/User';
+
+const notifyAdmins = async (
+    type: import('../types/notification').NotificationType,
+    title: string,
+    message: string,
+    url: string
+): Promise<void> => {
+    try {
+        const admins = await User.find({ roles: 'ADMIN', isActive: true }).select('_id').lean();
+        if (!admins.length) return;
+        await Notification.insertMany(
+            admins.map(a => ({ userId: a._id, type, title, message, url }))
+        );
+    } catch (error) {
+        console.error('Failed to notify admins:', error);
+    }
+};
+
+export const notifyAdminNewListing = (bicycleId: string, sellerName: string, bicycleTitle: string) =>
+    notifyAdmins(
+        'LISTING',
+        'Tin đăng mới cần duyệt',
+        `Người dùng ${sellerName} vừa đăng tin "${bicycleTitle}". Vui lòng kiểm duyệt.`,
+        '/admin/listings'
+    );
+
+export const notifyAdminInspectionRequested = (bicycleId: string, sellerName: string, bicycleTitle: string) =>
+    notifyAdmins(
+        'INSPECTION_REQUESTED',
+        'Yêu cầu kiểm định mới',
+        `Người dùng ${sellerName} yêu cầu kiểm định xe "${bicycleTitle}". Vui lòng phân công kiểm định viên.`,
+        '/admin/listings'
+    );
+
+export const notifyAdminNewReport = (reportId: string, reporterName: string, bicycleTitle: string) =>
+    notifyAdmins(
+        'GENERAL',
+        'Báo cáo vi phạm mới',
+        `${reporterName} vừa gửi báo cáo vi phạm về tin đăng "${bicycleTitle}". Vui lòng xem xét.`,
+        '/admin/reports'
+    );
+
+export const notifyAdminWithdrawRequest = (userName: string, amount: number) =>
+    notifyAdmins(
+        'WALLET',
+        'Yêu cầu rút tiền mới',
+        `${userName} vừa gửi yêu cầu rút ${amount.toLocaleString('vi-VN')}đ. Vui lòng xét duyệt.`,
+        '/admin/withdrawals'
+    );
+
+export const notifyAdminNewDispute = (orderId: string, complainantName: string, orderCode: string) =>
+    notifyAdmins(
+        'GENERAL',
+        'Tranh chấp đơn hàng mới',
+        `${complainantName} vừa tạo tranh chấp cho đơn hàng ${orderCode}. Vui lòng xử lý.`,
+        '/admin/disputes'
+    );
