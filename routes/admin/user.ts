@@ -6,6 +6,7 @@ import {
     deactivateUser,
     getUserDashboard
 } from '../../controllers/admin/userController';
+import { getAllUserPackages } from '../../controllers/userPackageController';
 import { verifyToken, requireAdmin } from '../../middleware/auth';
 
 const router = Router();
@@ -19,6 +20,9 @@ router.get('/users', getAllUsers);
 router.get('/users/:id', getUserById);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deactivateUser);
+
+// Package management (Admin)
+router.get('/user-packages', getAllUserPackages);
 
 
 export default router;

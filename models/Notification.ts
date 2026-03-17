@@ -1,5 +1,15 @@
 import mongoose, { Schema } from 'mongoose';
-import { INotificationDocument } from '../types/notification';
+import { INotificationDocument, NotificationType } from '../types/notification';
+
+const NOTIFICATION_TYPES: NotificationType[] = [
+    'ACCOUNT',
+    'PROFILE',
+    'LISTING',
+    'ORDER',
+    'WALLET',
+    'CHAT',
+    'SUBSCRIPTION'
+];
 
 const notificationSchema = new Schema<INotificationDocument>({
     userId: {
@@ -10,7 +20,7 @@ const notificationSchema = new Schema<INotificationDocument>({
     },
     type: {
         type: String,
-        enum: ['INSPECTION_ASSIGNED', 'INSPECTION_REQUESTED', 'NEW_BICYCLE_POSTED', 'INSPECTION_COMPLETED', 'GENERAL'],
+        enum: NOTIFICATION_TYPES,
         required: [true, 'Notification type is required']
     },
     title: {
@@ -18,14 +28,18 @@ const notificationSchema = new Schema<INotificationDocument>({
         required: [true, 'Title is required'],
         maxlength: [200, 'Title cannot exceed 200 characters']
     },
-    content: {
+    message: {
         type: String,
-        required: [true, 'Content is required'],
-        maxlength: [1000, 'Content cannot exceed 1000 characters']
+        required: [true, 'Message is required'],
+        maxlength: [1000, 'Message cannot exceed 1000 characters']
     },
     isRead: {
         type: Boolean,
         default: false
+    },
+    url: {
+        type: String,
+        maxlength: [500, 'URL cannot exceed 500 characters']
     },
     metadata: {
         bicycleId: {
@@ -47,6 +61,7 @@ const notificationSchema = new Schema<INotificationDocument>({
 
 // Index for efficient queries
 notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, createdAt: -1 });
 
 const Notification = mongoose.model<INotificationDocument>('Notification', notificationSchema);
 
