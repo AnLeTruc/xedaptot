@@ -97,3 +97,28 @@ export const removeFromWishlist = async (
         });
     }
 }
+
+
+
+export const checkWishlist = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { bicycleId } = req.params;
+        const item = await Wishlist.findOne({
+            userId: req.user!._id,
+            bicycleId
+        }).select('_id');
+        res.status(200).json({
+            success: true,
+            message: 'Check wishlist',
+            data: { isWishlisted: item !== null, wishlistId: item?._id ?? null }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
