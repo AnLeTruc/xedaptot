@@ -56,9 +56,10 @@ export const sendEmailVerification = async (
         const expires = generateTokenExpiry();
 
         //Update user
-        user.emailVerificationToken = token;
-        user.emailVerificationExpires = expires;
-        await user.save();
+        await User.findByIdAndUpdate(userId, {
+            emailVerificationToken: token,
+            emailVerificationExpires: expires
+        });
 
         //Send mail
         const emailSent = await sendVerificationEmail(
@@ -121,11 +122,13 @@ export const verifyEmail = async (
         }
 
         //Update user
-        user.isVerified = true;
-        user.emailVerificationToken = undefined;
-        user.emailVerificationExpires = undefined;
-
-        await user.save();
+        await User.findByIdAndUpdate(user._id, {
+            isVerified: true,
+            $unset: {
+                emailVerificationToken: 1,
+                emailVerificationExpires: 1
+            }
+        });
         //Noti email verified success
         notificationService.notifyEmailVerified(user._id.toString());
 
@@ -1030,14 +1033,16 @@ export const forgotPassword = async (
 
     const code = generate6DigitCode();
 
-    user.passwordResetCodeHash = hashResetCode(email, code);
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); //10 minutes
-    user.passwordResetAttempts = 0;
-    user.passwordResetVerifiedAt = undefined;
-    user.passwordResetTokenHash = undefined;
-    user.passwordResetTokenExpires = undefined;
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        passwordResetCodeHash: hashResetCode(email, code),
+        passwordResetExpires: new Date(Date.now() + 10 * 60 * 1000), //10 minutes
+        passwordResetAttempts: 0,
+        $unset: {
+            passwordResetVerifiedAt: 1,
+            passwordResetTokenHash: 1,
+            passwordResetTokenExpires: 1
+        }
+    });
     //Noti forgot pass
     notificationService.notifyForgotPassword(user._id.toString());
 
@@ -1112,10 +1117,10 @@ export const verifyResetCode = async (
     const inputHash = hashResetCode(user.email, String(code));
     const ok = timingSafeEqualHex(user.passwordResetCodeHash, inputHash);
 
-    user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
-
     if (!ok) {
-        await user.save();
+        await User.findByIdAndUpdate(user._id, {
+            $inc: { passwordResetAttempts: 1 }
+        });
         res.status(400).json({
             success: false,
             message: 'Invalid code'
@@ -1124,11 +1129,12 @@ export const verifyResetCode = async (
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetVerifiedAt = new Date();
-    user.passwordResetTokenHash = hashResetToken(resetToken);
-    user.passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        passwordResetVerifiedAt: new Date(),
+        passwordResetTokenHash: hashResetToken(resetToken),
+        passwordResetTokenExpires: new Date(Date.now() + 10 * 60 * 1000),
+        $inc: { passwordResetAttempts: 1 }
+    });
 
     res.status(200).json({
         success: true,
@@ -1190,14 +1196,16 @@ export const resetPassword = async (
     })
 
     //Clear reset fields
-    user.passwordResetCodeHash = undefined;
-    user.passwordResetExpires = undefined;
-    user.passwordResetAttempts = 0;
-    user.passwordResetVerifiedAt = undefined;
-    user.passwordResetTokenHash = undefined;
-    user.passwordResetTokenExpires = undefined;
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        $unset: {
+            passwordResetCodeHash: 1,
+            passwordResetExpires: 1,
+            passwordResetVerifiedAt: 1,
+            passwordResetTokenHash: 1,
+            passwordResetTokenExpires: 1
+        },
+        $set: { passwordResetAttempts: 0 }
+    });
     //Noti reset pass 
     notificationService.notifyPasswordReset(user._id.toString());
 
