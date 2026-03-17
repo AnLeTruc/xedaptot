@@ -63,3 +63,37 @@ export const addToWishlist = async (
         })
     }
 }
+
+
+
+export const removeFromWishlist = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { bicycleId } = req.params;
+
+        const wishlist = await Wishlist.findOneAndDelete({
+            userId: req.user!._id,
+            bicycleId
+        });
+
+        if (!wishlist) {
+            res.status(404).json({
+                success: false,
+                message: 'Bicycle not found in wishlist'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Bicycle removed from wishlist'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
