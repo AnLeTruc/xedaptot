@@ -435,8 +435,10 @@ export const createWithdrawRequest = async (
 
         await session.commitTransaction();
 
-        notificationService.notifyWithdrawRequested(
-            userId.toString()
+        notificationService.notifyWithdrawRequested(userId.toString());
+        notificationService.notifyAdminWithdrawRequest(
+            req.user!.fullName || req.user!.email,
+            amount
         );
 
         res.status(201).json({
