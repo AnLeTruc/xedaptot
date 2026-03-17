@@ -39,8 +39,10 @@ if (!admin.apps.length) {
 }
 
 const auth = admin.auth();
+const messaging = admin.messaging();
 
 module.exports = {
     admin,
     auth,
+    messaging,
 };

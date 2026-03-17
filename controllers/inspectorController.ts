@@ -4,6 +4,7 @@ import Bicycle from '../models/Bicycle';
 import InspectionReport from '../models/InspectionReport';
 import Notification from '../models/Notification';
 import User from '../models/User';
+import { sendToUser } from '../services/pushNotificationService';
 
 // GET /inspectors/me - Get inspector profile
 export const getMyProfile = async (
@@ -264,6 +265,13 @@ export const submitReport = async (
                 inspectionReportId: report._id
             }
         });
+
+        // Push notification to seller
+        sendToUser(bicycle.seller._id.toString(), {
+            title: 'Kiểm duyệt hoàn tất',
+            body: `Xe "${bicycle.title}" đã được kiểm duyệt. Kết quả: ${isPassed ? 'ĐẠT' : 'KHÔNG ĐẠT'}`,
+            data: { type: 'INSPECTION_COMPLETED', bicycleId: bicycleId, reportId: report._id.toString() }
+        }).catch(err => console.error('[FCM] submitReport push error:', err));
 
         res.status(201).json({
             success: true,
