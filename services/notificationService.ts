@@ -117,7 +117,7 @@ export const notifyListingCreated = (userId: string, listingId: string) =>
         type: 'LISTING',
         title: 'Tin đăng đang chờ duyệt',
         message: 'Tin đăng đã được tạo thành công và đang chờ duyệt.',
-        url: `/my-listings/${listingId}`
+        url: `/my-bicycles/${listingId}`
     });
 
 export const notifyListingApproved = (userId: string, listingId: string, bikeName: string) =>
@@ -126,7 +126,7 @@ export const notifyListingApproved = (userId: string, listingId: string, bikeNam
         type: 'LISTING',
         title: 'Tin đăng được duyệt',
         message: `Tin đăng "${bikeName}" đã được duyệt và hiển thị công khai.`,
-        url: `/my-listings/${listingId}`
+        url: `/my-bicycles/${listingId}`
     });
 
 export const notifyListingRejected = (userId: string, listingId: string, bikeName: string) =>
@@ -135,7 +135,7 @@ export const notifyListingRejected = (userId: string, listingId: string, bikeNam
         type: 'LISTING',
         title: 'Tin đăng không đạt kiểm định',
         message: `Xe ${bikeName} không đạt kiểm định. Vui lòng xem chi tiết để biết thêm.`,
-        url: `/my-listings/${listingId}`
+        url: `/my-bicycles/${listingId}`
     });
 
 export const notifyListingDeleted = (userId: string, bikeName: string) =>
@@ -144,7 +144,7 @@ export const notifyListingDeleted = (userId: string, bikeName: string) =>
         type: 'LISTING',
         title: 'Xoá tin đăng thành công',
         message: `Bạn đã xoá ${bikeName}.`,
-        url: '/my-listings'
+        url: '/my-bicycles'
     });
 
 export const notifyListingHidden = (userId: string, bikeName: string) =>
@@ -153,7 +153,7 @@ export const notifyListingHidden = (userId: string, bikeName: string) =>
         type: 'LISTING',
         title: 'Ẩn tin đăng thành công',
         message: `Bạn đã ẩn ${bikeName}.`,
-        url: '/my-listings'
+        url: '/my-bicycles'
     });
 
 // ── ORDER ──────────────────────────────────────────────────
@@ -184,39 +184,39 @@ export const notifyPaymentFailed = (userId: string, orderId: string) =>
         url: `/orders/${orderId}`
     });
 
-export const notifyOrderConfirmed = (userId: string, orderId: string) =>
+export const notifyOrderConfirmed = (userId: string, orderId: string, orderCode: string) =>
     createNotification({
         userId,
         type: 'ORDER',
         title: 'Đơn hàng được xác nhận',
-        message: `Đơn hàng ${orderId} đã được người bán xác nhận.`,
+        message: `Đơn hàng ${orderCode} đã được người bán xác nhận.`,
         url: `/orders/${orderId}`
     });
 
-export const notifyOrderRejected = (userId: string, orderId: string) =>
+export const notifyOrderRejected = (userId: string, orderId: string, orderCode: string) =>
     createNotification({
         userId,
         type: 'ORDER',
         title: 'Đơn hàng bị từ chối',
-        message: `Đơn hàng ${orderId} đã bị người bán từ chối.`,
+        message: `Đơn hàng ${orderCode} đã bị người bán từ chối.`,
         url: `/orders/${orderId}`
     });
 
-export const notifyOrderCancelled = (userId: string, orderId: string) =>
+export const notifyOrderCancelled = (userId: string, orderId: string, orderCode: string) =>
     createNotification({
         userId,
         type: 'ORDER',
         title: 'Huỷ đơn hàng thành công',
-        message: `Bạn đã huỷ đơn hàng ${orderId} thành công.`,
+        message: `Bạn đã huỷ đơn hàng ${orderCode} thành công.`,
         url: `/orders/${orderId}`
     });
 
-export const notifyOrderAutoExpired = (userId: string, orderId: string) =>
+export const notifyOrderAutoExpired = (userId: string, orderId: string, orderCode: string) =>
     createNotification({
         userId,
         type: 'ORDER',
         title: 'Đơn hàng bị huỷ tự động',
-        message: `Đơn hàng ${orderId} đã hết thời gian đặt cọc và bị huỷ tự động.`,
+        message: `Đơn hàng ${orderCode} đã hết thời gian đặt cọc và bị huỷ tự động.`,
         url: `/orders/${orderId}`
     });
 
@@ -271,7 +271,7 @@ export const notifyWithdrawRequested = (userId: string) =>
         type: 'WALLET',
         title: 'Yêu cầu rút tiền đã gửi',
         message: 'Yêu cầu rút tiền đã được gửi và đang chờ xét duyệt.',
-        url: '/wallet/withdrawals'
+        url: '/wallet'
     });
 
 export const notifyWithdrawApproved = (userId: string) =>
@@ -280,7 +280,7 @@ export const notifyWithdrawApproved = (userId: string) =>
         type: 'WALLET',
         title: 'Yêu cầu rút tiền được duyệt',
         message: 'Yêu cầu rút tiền của bạn đã được duyệt. Tiền sẽ được chuyển trong vòng 1–2 ngày làm việc.',
-        url: '/wallet/withdrawals'
+        url: '/wallet'
     });
 
 export const notifyWithdrawRejected = (userId: string, reason: string) =>
@@ -289,15 +289,15 @@ export const notifyWithdrawRejected = (userId: string, reason: string) =>
         type: 'WALLET',
         title: 'Yêu cầu rút tiền bị từ chối',
         message: `Yêu cầu rút tiền bị từ chối. Lý do: ${reason}.`,
-        url: '/wallet/withdrawals'
+        url: '/wallet'
     });
 
-export const notifyEscrowReleased = (userId: string, orderId: string) =>
+export const notifyEscrowReleased = (userId: string, orderId: string, orderCode: string) =>
     createNotification({
         userId,
         type: 'WALLET',
         title: 'Tiền đã được giải phóng',
-        message: `Tiền từ đơn hàng ${orderId} đã được giải phóng vào ví của bạn.`,
+        message: `Tiền từ đơn hàng ${orderCode} đã được giải phóng vào ví của bạn.`,
         url: '/wallet'
     });
 
@@ -318,7 +318,7 @@ export const notifySubscriptionActivated = (userId: string, packageName: string)
         type: 'SUBSCRIPTION',
         title: 'Đăng ký gói thành công',
         message: `Bạn đã đăng ký gói ${packageName} thành công.`,
-        url: '/subscription'
+        url: '/packages'
     });
 
 export const notifySubscriptionCancelled = (userId: string) =>
@@ -327,7 +327,7 @@ export const notifySubscriptionCancelled = (userId: string) =>
         type: 'SUBSCRIPTION',
         title: 'Huỷ gói đăng ký thành công',
         message: 'Bạn đã huỷ gói đăng ký thành công. Gói hiện tại vẫn có hiệu lực đến hết thời hạn.',
-        url: '/subscription'
+        url: '/packages'
     });
 
 export const notifyPostLimitReached = (userId: string) =>

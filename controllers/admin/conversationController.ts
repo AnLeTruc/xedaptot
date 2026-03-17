@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Conversation from "../../models/Conversation";
 import Message from "../../models/Message";
 import { isValidateObjectId } from "../../validations/customValidation";
+import * as notificationService from '../../services/notificationService';
 
 const parsePositiveInt = (value: any, defaultValue: number, maxValue: number): number | null => {
     if (value === undefined) return defaultValue;
@@ -295,6 +296,12 @@ export const lockConversation = async (
             console.error('Socket not initialized', socketError);
         }
 
+        for (const participantId of conversation.participants) {
+            notificationService.notifyChatLocked(
+                participantId.toString(),
+                conversation._id.toString()
+            );
+        }
         res.status(200).json({
             success: true,
             message: 'Conversation locked successfully',

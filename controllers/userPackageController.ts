@@ -7,6 +7,7 @@ import Transaction from '../models/Transaction';
 import { getOrCreateWallet } from './walletController';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import mongoose from 'mongoose';
+import * as notificationService from '../services/notificationService';
 
 const VNP_PKG_RETURN_URL = process.env.VNP_PKG_RETURN_URL
 
@@ -304,6 +305,12 @@ export const packageVnpayReturn = async (req: Request, res: Response): Promise<v
         transaction.data = { ...transaction.data, status: 'SUCCESS' };
         await transaction.save();
 
+        //Noti buy userpackage
+        notificationService.notifySubscriptionActivated(
+            userId,
+            packageSnapshot.name
+        );
+
         if (frontendUrl) {
             res.redirect(`${frontendUrl}/packages?purchase=success&package=${packageSnapshot.code}`);
         } else {
@@ -353,6 +360,11 @@ export const cancelUserPackage = async (
 
         userPackage.status = 'CANCELLED';
         await userPackage.save();
+
+        //Noti cancel
+        notificationService.notifySubscriptionCancelled(
+            userId!.toString()
+        );
 
         res.status(200).json({
             success: true,
