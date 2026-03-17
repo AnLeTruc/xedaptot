@@ -7,6 +7,7 @@ import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUt
 import { sendMail, sendVerificationEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
 import * as shippingService from '../services/shippingService';
+import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import crypto from 'crypto';
 
@@ -87,7 +88,6 @@ export const sendEmailVerification = async (
     }
 };
 
-
 //Verify Email
 export const verifyEmail = async (
     req: AuthRequest,
@@ -126,9 +126,11 @@ export const verifyEmail = async (
         user.emailVerificationExpires = undefined;
 
         await user.save();
+        //Noti email verified success
+        notificationService.notifyEmailVerified(user._id.toString());
 
         res.status(200).json({
-            success: true,  // << SỬA: phải là true, không phải false
+            success: true,
             message: 'Email verified successfully'
         });
     } catch (error: any) {
@@ -245,6 +247,9 @@ export const firebaseAuth = async (
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
             await existingUser.save();
+            //Noti login success
+            notificationService.notifyLoggedIn(existingUser._id.toString());
+
             res.status(200).json({
                 success: true,
                 message: 'User logged in successfully',
@@ -294,6 +299,9 @@ export const firebaseAuth = async (
             authProvider
         });
         await assignFreePackage(newUser._id);
+        //Noti create google success
+        notificationService.notifyRegistered(newUser._id.toString());
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -358,6 +366,7 @@ export const getProfile = async (
     }
 }
 
+//Update profile
 export const updateProfile = async (
     req: AuthRequest,
     res: Response
@@ -406,6 +415,9 @@ export const updateProfile = async (
                 createdAt: updatedUser.createdAt
             }
         });
+
+        //Noti change profile
+        notificationService.notifyProfileUpdated(userId.toString());
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -483,6 +495,8 @@ export const emailRegister = async (
         });
 
         await assignFreePackage(newUser._id);
+        //Noti register success
+        notificationService.notifyRegistered(newUser._id.toString());
 
         res.status(201).json({
             success: true,
@@ -736,6 +750,9 @@ export const addAddress = async (
             data: updatedUser?.addresses
         })
 
+        //Noti add address
+        notificationService.notifyAddressAdded(userId.toString());
+
     } catch (error: any) {
         console.error('Add address error:', error);
         res.status(500).json({
@@ -846,6 +863,9 @@ export const updateAddress = async (
             message: 'Address updated successfully',
             data: updatedUser?.addresses
         })
+
+        //Noti update address
+        notificationService.notifyAddressUpdated(userId.toString());
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -912,6 +932,9 @@ export const deleteAddress = async (
             message: 'Address deleted successfully',
             data: updatedUser?.addresses
         });
+
+        //Noti delete address
+        notificationService.notifyAddressDeleted(userId.toString());
 
 
     } catch (error: any) {
@@ -1015,6 +1038,8 @@ export const forgotPassword = async (
     user.passwordResetTokenExpires = undefined;
 
     await user.save();
+    //Noti forgot pass
+    notificationService.notifyForgotPassword(user._id.toString());
 
     await sendMail({
         to: user.email,
@@ -1173,6 +1198,8 @@ export const resetPassword = async (
     user.passwordResetTokenExpires = undefined;
 
     await user.save();
+    //Noti reset pass 
+    notificationService.notifyPasswordReset(user._id.toString());
 
     res.status(200).json({
         success: true,
@@ -1291,6 +1318,9 @@ export const changePassword = async (
                 expiresIn: tokenData.expiresIn,
             }
         });
+
+        //Noti change pass
+        notificationService.notifyPasswordChanged(user._id.toString());
 
         // Send notification email (fire-and-forget)
         sendPasswordChangedEmail(user.email, user.fullName || '').catch(err =>

@@ -8,8 +8,8 @@ import Transaction from '../models/Transaction';
 import { getOrCreateWallet } from './walletController';
 import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order';
 import { calculateShippingFee } from '../services/shippingService';
-import mongoose from 'mongoose';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
+import * as notificationService from '../services/notificationService';
 
 const generateCode = (prefix: string) => {
     const d = new Date().toISOString().replace(/-/g, '');
@@ -232,6 +232,13 @@ export const payOrder = async (
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+            //Noti order expired
+            notificationService.notifyOrderAutoExpired(
+                order.buyer._id.toString(),
+                order._id.toString(),
+                order.orderCode
+            );
             res.status(400).json({ success: false, message: 'Reservation has expired' });
             return;
         }
@@ -331,6 +338,18 @@ export const payOrder = async (
         if (nextStatus === 'COMPLETED') order.buyerConfirmedAt = new Date();
         await order.save();
 
+        //Noti to buyer when deposit
+        if (txnType === 'DEPOSIT') {
+            notificationService.notifyDepositSuccess(
+                req.user!._id.toString(),
+                order._id.toString()
+            );
+        } else if (txnType === 'FULL' || txnType === 'REMAINING') {
+            notificationService.notifyPaymentSuccess(
+                req.user!._id.toString(),
+                order._id.toString()
+            );
+        }
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -489,6 +508,13 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+        //Noti cancel 
+        notificationService.notifyOrderCancelled(
+            req.user!._id.toString(),
+            order._id.toString(),
+            order.orderCode
+        );
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -506,6 +532,12 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
     order.buyerConfirmedAt = new Date();
     await order.save();
     await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+
+    //Noti buyer receive order
+    notificationService.notifyOrderReceived(
+        req.user!._id.toString(),
+        order._id.toString()
+    );
     res.status(200).json({ success: true, message: 'Funds will be released to seller after 48 hours', data: order });
 };
 
@@ -519,6 +551,11 @@ export const reviewOrder = async (req: AuthRequest, res: Response) => {
 
     order.review = { rating: req.body.rating, comment: req.body.comment || '', createdAt: new Date() };
     await order.save();
+
+    //Noti order review
+    notificationService.notifyReviewSubmitted(
+        req.user!._id.toString()
+    );
     res.status(200).json({ success: true, data: order });
 };
 
@@ -535,6 +572,13 @@ export const confirmOrder = async (req: AuthRequest, res: Response) => {
     order.status = 'CONFIRMED';
     order.sellerConfirmedAt = new Date();
     await order.save();
+
+    //Noti confirm order
+    notificationService.notifyOrderConfirmed(
+        order.buyer._id.toString(),
+        order._id.toString(),
+        order.orderCode
+    );
     res.status(200).json({ success: true, data: order });
 };
 
@@ -588,6 +632,13 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+        //Noti to buyer rejected order
+        notificationService.notifyOrderRejected(
+            order.buyer._id.toString(),
+            order._id.toString(),
+            order.orderCode
+        );
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -660,6 +711,13 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+            //Noti order expired
+            notificationService.notifyOrderAutoExpired(
+                order.buyer._id.toString(),
+                order._id.toString(),
+                order.orderCode
+            );
             res.status(400).json({ success: false, message: 'Reservation has expired' });
             return;
         }
@@ -756,6 +814,12 @@ export const vnpayOrderReturn = async (req: Request, res: Response): Promise<voi
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
+
+            //Noti deposit failed
+            notificationService.notifyPaymentFailed(
+                order.buyer._id.toString(),
+                order._id.toString()
+            );
             const feUrl = process.env.FRONTEND_URL;
             if (feUrl) { res.redirect(`${feUrl}/orders/${order._id}?payment=failed`); }
             else { res.status(400).json({ success: false, message: getResponseMessage(responseCode) }); }
@@ -798,6 +862,12 @@ export const vnpayOrderIPN = async (req: Request, res: Response): Promise<void> 
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
+
+            //Noti deposit failed
+            notificationService.notifyPaymentFailed(
+                order.buyer._id.toString(),
+                order._id.toString()
+            );
             res.status(200).json({ RspCode: '00', Message: 'Confirm Success' }); return;
         }
         await _processVnpayOrderSuccess(transaction, order, vnpAmount, gatewayTxnId, responseCode);
@@ -864,6 +934,18 @@ async function _processVnpayOrderSuccess(
         gatewayResponseCode: responseCode
     } as any);
 
+    //Noti deposit success
+    if (txnType === 'DEPOSIT') {
+        notificationService.notifyDepositSuccess(
+            order.buyer._id.toString(),
+            order._id.toString()
+        );
+    } else {
+        notificationService.notifyPaymentSuccess(
+            order.buyer._id.toString(),
+            order._id.toString()
+        );
+    }
     if (order.status === 'COMPLETED') order.buyerConfirmedAt = new Date();
     await order.save();
 }
