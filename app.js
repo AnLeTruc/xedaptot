@@ -44,6 +44,7 @@ const adminSummaryRouter = require('./routes/admin/dashboard').default;
 const disputeRouter = require('./routes/dispute').default;
 const notificationRouter = require('./routes/notification').default;
 const wishlistRouter = require('./routes/wishlist').default;
+const aiRouter = require('./routes/ai').default;
 var app = express();
 
 // Trust proxy for Render
@@ -95,5 +96,6 @@ app.use('/api/admin', adminSummaryRouter);
 app.use('/api/disputes', disputeRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/wishlist', wishlistRouter);
+app.use('/api/ai', aiRouter);
 
 module.exports = app;
