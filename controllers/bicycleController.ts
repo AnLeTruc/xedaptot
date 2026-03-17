@@ -9,6 +9,7 @@ import User from '../models/User';
 import UserPackage from '../models/UserPackage';
 import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
+import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import { syncWishlistBicycle } from './wishlistController';
 
@@ -230,9 +231,6 @@ export const getBicycleById = async (
     }
 }
 
-
-
-
 // POST /api/bicycles
 export const createBicycle = async (
     req: AuthRequest,
@@ -273,6 +271,14 @@ export const createBicycle = async (
 
         if (!activePackage) {
             const hasAnyPackage = await UserPackage.exists({ userId: req.user._id });
+
+            if (hasAnyPackage) {
+                notificationService.notifyPostLimitReached(
+                    req.user._id.toString()
+                );
+            }
+
+
             res.status(403).json({
                 success: false,
                 message: hasAnyPackage
@@ -291,8 +297,6 @@ export const createBicycle = async (
             })
             return;
         }
-
-
 
         // Lấy thông tin brand (nếu có)
         let brandData = undefined;
@@ -405,6 +409,12 @@ export const createBicycle = async (
             message: 'Bicycle posted successfully. Waiting for approval.',
             data: bicycle
         })
+
+        //Noti create success
+        notificationService.notifyListingCreated(
+            req.user!._id.toString(),
+            bicycle._id.toString()
+        );
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -412,9 +422,6 @@ export const createBicycle = async (
         });
     }
 }
-
-
-
 
 // PUT /api/bicycles/:id
 export const updateBicycle = async (
@@ -605,6 +612,12 @@ export const deleteBicycle = async (
             success: true,
             message: 'Bicycle deleted successfully'
         });
+
+        //Noti delete
+        notificationService.notifyListingDeleted(
+            req.user!._id.toString(),
+            bicycle.title
+        );
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -685,6 +698,30 @@ export const getBicycleStatus = async (
         await bicycle.save();
 
         syncWishlistBicycle(id).catch(err => console.error('Sync wishlist bicycle error: ', err));
+
+        //Noti to seller when inspector approve||reject
+        const sellerId = bicycle.seller._id.toString();
+
+        if (status === 'APPROVED') {
+            notificationService.notifyListingApproved(
+                sellerId,
+                bicycle._id.toString(),
+                bicycle.title
+            );
+        } else if (status === 'REJECTED') {
+            notificationService.notifyListingRejected(
+                sellerId,
+                bicycle._id.toString(),
+                bicycle.title
+            );
+
+            //Noti seller hidden 
+        } else if (status === 'HIDDEN' && isOwner) {
+            notificationService.notifyListingHidden(
+                req.user!._id.toString(),
+                bicycle.title
+            );
+        }
 
         res.status(200).json({
             success: true,
