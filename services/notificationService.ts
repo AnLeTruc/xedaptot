@@ -220,6 +220,24 @@ export const notifyOrderAutoExpired = (userId: string, orderId: string, orderCod
         url: `/orders/${orderId}`
     });
 
+export const notifySellerConfirmationTimeoutBuyer = (userId: string, orderId: string, orderCode: string) =>
+    createNotification({
+        userId,
+        type: 'ORDER',
+        title: 'Đơn hàng bị huỷ – người bán không phản hồi',
+        message: `Đơn hàng ${orderCode} đã bị huỷ do người bán không xác nhận trong thời gian quy định. Số tiền của bạn sẽ được hoàn lại.`,
+        url: `/orders/${orderId}`
+    });
+
+export const notifySellerConfirmationTimeoutSeller = (userId: string, orderId: string, orderCode: string) =>
+    createNotification({
+        userId,
+        type: 'ORDER',
+        title: 'Đơn hàng bị huỷ tự động',
+        message: `Đơn hàng ${orderCode} đã bị huỷ tự động do bạn không xác nhận trong thời gian quy định.`,
+        url: `/orders/${orderId}`
+    });
+
 export const notifyOrderReceived = (userId: string, orderId: string) =>
     createNotification({
         userId,

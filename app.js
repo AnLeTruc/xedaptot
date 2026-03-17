@@ -19,6 +19,7 @@ startCleanupJob();
 cron.schedule('* * * * *', releaseFundsJob);
 cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
 console.log('[Cronjob] Jobs scheduled (Release Funds & Cleanup Expired)');
+cron.schedule('* * * * *', sellerConfirmationTimeoutJob);
 
 //Routes
 const authRouter = require('./routes/auth').default;
