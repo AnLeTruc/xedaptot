@@ -616,3 +616,240 @@ export const hideConversation = async (
         });
     }
 }
+
+//Delete conversation
+export const deleteConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        if (!conversationId || !isValidateObjectId(conversationId)) {
+            res.status(400).json({
+                message: 'Invalid Conversation ID format'
+            });
+            return;
+        }
+
+        // Kiểm tra conversation tồn tại và user là participant
+        const conversation = await Conversation.findOne({
+            _id: conversationId,
+            participants: currentUser
+        });
+
+        if (!conversation) {
+            res.status(404).json({
+                message: 'Không tìm thấy hội thoại hoặc không có quyền truy cập'
+            });
+            return;
+        }
+
+        // Xóa tất cả messages trong conversation
+        await Message.deleteMany({ conversationId: conversationId });
+
+        // Xóa conversation
+        await Conversation.findByIdAndDelete(conversationId);
+
+        // Emit socket event cho participants
+        try {
+            const { getIO } = require('../services/socketService');
+            const io = getIO();
+
+            conversation.participants.forEach((participantId) => {
+                io.to(participantId.toString()).emit('conversationDeleted', {
+                    conversationId: conversationId
+                });
+            });
+        } catch (socketError) {
+            console.error('Socket error:', socketError);
+        }
+
+        res.status(200).json({
+            message: 'Xóa hội thoại thành công'
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
+
+//Delete all conversation
+export const deleteAllConversations = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const currentUser = (req as any).user._id;
+
+        // Lấy tất cả conversations của user
+        const conversations = await Conversation.find({
+            participants: currentUser
+        }).select('_id');
+
+        if (conversations.length === 0) {
+            res.status(200).json({
+                message: 'Không có hội thoại nào để xóa',
+                deletedCount: 0
+            });
+            return;
+        }
+
+        const conversationIds = conversations.map(c => c._id);
+
+        // Xóa tất cả messages
+        await Message.deleteMany({
+            conversationId: { $in: conversationIds }
+        });
+
+        // Xóa tất cả conversations
+        const result = await Conversation.deleteMany({
+            _id: { $in: conversationIds }
+        });
+
+        // Emit socket event
+        try {
+            const { getIO } = require('../services/socketService');
+            const io = getIO();
+            io.to(currentUser.toString()).emit('allConversationsDeleted', {
+                deletedCount: result.deletedCount
+            });
+        } catch (socketError) {
+            console.error('Socket error:', socketError);
+        }
+
+        res.status(200).json({
+            message: 'Xóa tất cả hội thoại thành công',
+            deletedCount: result.deletedCount
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
+
+// Get hidden conversations
+export const getHiddenConversations = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const userIdRaw = (req as any).user?._id;
+
+        if (!userIdRaw) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        const userId = new mongoose.Types.ObjectId(userIdRaw.toString());
+
+        const limit = parsePositiveInt(req.query.limit, 15, 100);
+        if (limit === null) {
+            res.status(400).json({ message: 'Limit must be a positive integer' });
+            return;
+        }
+
+        const cursor = parseCursorDate(req.query.cursor);
+        if (req.query.cursor && !cursor) {
+            res.status(400).json({ message: 'Invalid cursor format' });
+            return;
+        }
+
+        // Chỉ lấy conversations bị ẩn bởi user này
+        const matchStage: any = {
+            participants: userId,
+            hiddenBy: userId  // ← ngược với getConversations ($ne → phải có)
+        };
+
+        if (cursor) {
+            matchStage.updatedAt = { $lt: cursor };
+        }
+
+        const conversations = await Conversation.aggregate([
+            { $match: matchStage },
+            { $sort: { updatedAt: -1 } },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: 'messages',
+                    localField: 'lastMessage',
+                    foreignField: '_id',
+                    as: 'lastMessageInfo'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$lastMessageInfo',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    chatPartnerId: {
+                        $first: {
+                            $filter: {
+                                input: '$participants',
+                                as: 'participantId',
+                                cond: { $ne: ['$$participantId', userId] }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'chatPartnerId',
+                    foreignField: '_id',
+                    as: 'chatPartnerObj'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$chatPartnerObj',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    updatedAt: 1,
+                    createdAt: 1,
+                    hiddenAt: 1,
+                    lastMessage: {
+                        _id: '$lastMessageInfo._id',
+                        content: '$lastMessageInfo.content',
+                        type: '$lastMessageInfo.type',
+                        createdAt: '$lastMessageInfo.createdAt',
+                        senderId: '$lastMessageInfo.senderId'
+                    },
+                    chatPartner: {
+                        _id: '$chatPartnerObj._id',
+                        fullName: '$chatPartnerObj.fullName',
+                        avatarUrl: '$chatPartnerObj.avatarUrl',
+                        email: '$chatPartnerObj.email',
+                        roles: '$chatPartnerObj.roles'
+                    }
+                }
+            }
+        ]);
+
+        const nextCursor = conversations.length === limit
+            ? conversations[conversations.length - 1].updatedAt
+            : null;
+
+        res.status(200).json({
+            message: 'Lấy danh sách hội thoại đã ẩn thành công',
+            data: conversations,
+            pagination: { nextCursor, limit }
+        });
+
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
