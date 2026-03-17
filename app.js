@@ -43,6 +43,7 @@ const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').defau
 const adminSummaryRouter = require('./routes/admin/dashboard').default;
 const disputeRouter = require('./routes/dispute').default;
 const notificationRouter = require('./routes/notification').default;
+const wishlistRouter = require('./routes/wishlist').default;
 var app = express();
 
 // Trust proxy for Render
@@ -93,5 +94,6 @@ app.use('/api/violation-reports', violationReportRouter);
 app.use('/api/admin', adminSummaryRouter);
 app.use('/api/disputes', disputeRouter);
 app.use('/api/notifications', notificationRouter);
+app.use('/api/wishlist', wishlistRouter);
 
 module.exports = app;
