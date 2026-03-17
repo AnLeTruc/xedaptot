@@ -415,6 +415,12 @@ export const createBicycle = async (
             req.user!._id.toString(),
             bicycle._id.toString()
         );
+
+        notificationService.notifyAdminNewListing(
+            bicycle._id.toString(),
+            req.user!.fullName || req.user!.email,
+            bicycle.title
+        );
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -853,17 +859,11 @@ export const requestInspection = async (
         await bicycle.save();
 
         // Notify all admins
-        const admins = await User.find({ roles: 'ADMIN', isActive: true }).select('_id');
-        if (admins.length > 0) {
-            const notifications = admins.map(admin => ({
-                userId: admin._id,
-                type: 'INSPECTION_REQUESTED' as const,
-                title: 'New Inspection Request',
-                content: `Seller ${user.fullName || user.email} has requested inspection for: ${bicycle.title}`,
-                metadata: { bicycleId: bicycle._id }
-            }));
-            await Notification.insertMany(notifications);
-        }
+        notificationService.notifyAdminInspectionRequested(
+            bicycle._id.toString(),
+            user.fullName || user.email,
+            bicycle.title
+        );
 
         res.status(200).json({
             success: true,

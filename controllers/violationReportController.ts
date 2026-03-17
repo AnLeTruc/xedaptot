@@ -3,6 +3,7 @@ import { AuthRequest } from '../types';
 import ViolationReport from '../models/ViolationReport';
 import User from '../models/User';
 import Bicycle from '../models/Bicycle';
+import * as notificationService from '../services/notificationService';
 
 
 export const createViolationReport = async (
@@ -73,6 +74,12 @@ export const createViolationReport = async (
             description,
             images: images || [],
         });
+
+        notificationService.notifyAdminNewReport(
+            violationReport._id.toString(),
+            reporter.fullName || reporter.email,
+            bicycle.title
+        );
 
         res.status(201).json({
             success: true,
