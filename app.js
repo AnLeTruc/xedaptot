@@ -11,6 +11,7 @@ const { startCleanupJob } = require('./services/cleanupService');
 const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
 const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
+const { sellerConfirmationTimeoutJob } = require('./jobs/sellerConfirmationTimeout');
 
 // Start Cronjobs
 startCleanupJob();
