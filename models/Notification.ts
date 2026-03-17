@@ -8,7 +8,12 @@ const NOTIFICATION_TYPES: NotificationType[] = [
     'ORDER',
     'WALLET',
     'CHAT',
-    'SUBSCRIPTION'
+    'SUBSCRIPTION',
+    'INSPECTION_ASSIGNED',
+    'INSPECTION_REQUESTED',
+    'NEW_BICYCLE_POSTED',
+    'INSPECTION_COMPLETED',
+    'GENERAL'
 ];
 
 const notificationSchema = new Schema<INotificationDocument>({
