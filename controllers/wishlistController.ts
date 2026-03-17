@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types";
 import Wishlist from "../models/Wishlist";
 import Bicycle from "../models/Bicycle";
+import mongoose from "mongoose";
 
 
 
@@ -120,5 +121,37 @@ export const checkWishlist = async (
             success: false,
             message: error.message
         })
+    }
+}
+
+
+
+
+
+
+// Bất cứ khi nào chiếc xe thay đổi thông tin,
+// tất cả những người đang lưu nó trong danh sách 
+// yêu thích đều sẽ thấy thông tin mới nhất.
+export const syncWishlistBicycle = async (
+    bicycleId: string | mongoose.Types.ObjectId
+): Promise<void> => {
+    try {
+        const bicycle = await Bicycle.findById(bicycleId).select('title price condition images status');
+        if (!bicycle) return;
+
+        const primaryImage = bicycle.images?.find(img => img.isPrimary)?.url || bicycle.images?.[0].url;
+
+        await Wishlist.updateMany(
+            { bicycleId },
+            {
+                $set: {
+                    'bicycle.title': bicycle.title,
+                    'bicycle.price': bicycle.price,
+                    'bicycle.condition': bicycle.condition,
+                    'bicycle.status': bicycle.status,
+                    'bicycle.primaryImage': primaryImage
+                }
+            }
+        )
     }
 }
