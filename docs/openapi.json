@@ -9861,6 +9861,103 @@
             "description": "Unauthorized"
           }
         }
+      },
+      "delete": {
+        "tags": ["Conversation"],
+        "summary": "Delete all conversations",
+        "description": "Xóa tất cả hội thoại và tin nhắn của người dùng hiện tại.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "All conversations deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "deletedCount": { "type": "integer", "example": 5 }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/conversations/hidden": {
+      "get": {
+        "tags": ["Conversation"],
+        "summary": "Get hidden conversations",
+        "description": "Lấy danh sách các cuộc hội thoại đã bị ẩn bởi người dùng hiện tại.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "default": 15, "maximum": 100 }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "Cursor for pagination (updatedAt of last item)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hidden conversations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "updatedAt": { "type": "string", "format": "date-time" },
+                          "lastMessage": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "content": { "type": "string" },
+                              "type": { "type": "string" },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "senderId": { "type": "string" }
+                            }
+                          },
+                          "chatPartner": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "fullName": { "type": "string" },
+                              "avatarUrl": { "type": "string" },
+                              "email": { "type": "string" },
+                              "roles": { "type": "array", "items": { "type": "string" } }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": { "type": "string", "format": "date-time", "nullable": true },
+                        "limit": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
       }
     },
     "/conversations/unread-count": {
@@ -10050,7 +10147,60 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Message"
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastMessage": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "content": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "senderId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "chatPartner": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "fullName": {
+                                "type": "string"
+                              },
+                              "avatarUrl": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "roles": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
                       }
                     },
                     "pagination": {
@@ -10077,6 +10227,39 @@
           "404": {
             "description": "Conversation not found"
           }
+        }
+      },
+      "delete": {
+        "tags": ["Conversation"],
+        "summary": "Delete conversation by ID",
+        "description": "Xóa hội thoại và toàn bộ tin nhắn bên trong. Chỉ participant mới có quyền xóa.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Xóa hội thoại thành công" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid Conversation ID format" },
+          "404": { "description": "Conversation not found or no access" },
+          "401": { "description": "Unauthorized" }
         }
       }
     },
