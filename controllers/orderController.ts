@@ -10,6 +10,7 @@ import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order';
 import { calculateShippingFee } from '../services/shippingService';
 import mongoose from 'mongoose';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
+import { sendToUser } from '../services/pushNotificationService';
 
 const generateCode = (prefix: string) => {
     const d = new Date().toISOString().replace(/-/g, '');
@@ -165,6 +166,14 @@ export const createOrder = async (
 
         await order.save();
         await Bicycle.findByIdAndUpdate(bicycleId, { status: 'RESERVED' });
+
+        // Push notification to seller
+        sendToUser(seller._id.toString(), {
+            title: 'Đơn hàng mới',
+            body: `Bạn có đơn hàng mới cho xe "${bicycle.title}"`,
+            data: { type: 'NEW_ORDER', orderId: order._id.toString() }
+        }).catch(err => console.error('[FCM] createOrder push error:', err));
+
         res.status(201).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -489,6 +498,14 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+        // Push notification to seller
+        sendToUser(order.seller._id.toString(), {
+            title: 'Đơn hàng đã bị huỷ',
+            body: `Đơn hàng ${order.orderCode} đã bị người mua huỷ`,
+            data: { type: 'ORDER_CANCELLED', orderId: order._id.toString() }
+        }).catch(err => console.error('[FCM] cancelOrder push error:', err));
+
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -535,6 +552,14 @@ export const confirmOrder = async (req: AuthRequest, res: Response) => {
     order.status = 'CONFIRMED';
     order.sellerConfirmedAt = new Date();
     await order.save();
+
+    // Push notification to buyer
+    sendToUser(order.buyer._id.toString(), {
+        title: 'Đơn hàng đã được xác nhận',
+        body: `Đơn hàng ${order.orderCode} đã được người bán xác nhận`,
+        data: { type: 'ORDER_CONFIRMED', orderId: order._id.toString() }
+    }).catch(err => console.error('[FCM] confirmOrder push error:', err));
+
     res.status(200).json({ success: true, data: order });
 };
 
@@ -587,6 +612,14 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+        // Push notification to buyer
+        sendToUser(order.buyer._id.toString(), {
+            title: 'Đơn hàng bị từ chối',
+            body: `Đơn hàng ${order.orderCode} đã bị người bán từ chối`,
+            data: { type: 'ORDER_REJECTED', orderId: order._id.toString() }
+        }).catch(err => console.error('[FCM] rejectOrder push error:', err));
+
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -640,6 +673,16 @@ export const deliverOrder = async (req: AuthRequest, res: Response) => {
     const isPaidTotal = order.amounts.depositPaid + order.amounts.remainingPaid >= order.amounts.total;
     order.status = isPaidTotal ? 'DELIVERED' : 'WAITING_REMAINING_PAYMENT';
     await order.save();
+
+    // Push notification to buyer
+    sendToUser(order.buyer._id.toString(), {
+        title: isPaidTotal ? 'Đơn hàng đã giao' : 'Đơn hàng cần thanh toán',
+        body: isPaidTotal
+            ? `Đơn hàng ${order.orderCode} đã được giao. Vui lòng xác nhận nhận hàng.`
+            : `Đơn hàng ${order.orderCode} cần thanh toán phần còn lại`,
+        data: { type: isPaidTotal ? 'ORDER_DELIVERED' : 'WAITING_REMAINING_PAYMENT', orderId: order._id.toString() }
+    }).catch(err => console.error('[FCM] deliverOrder push error:', err));
+
     res.status(200).json({ success: true, data: order });
 };
 
@@ -865,4 +908,11 @@ async function _processVnpayOrderSuccess(
 
     if (order.status === 'COMPLETED') order.buyerConfirmedAt = new Date();
     await order.save();
+
+    // Push notification to seller about VNPay payment
+    sendToUser(order.seller._id.toString(), {
+        title: 'Đã nhận thanh toán',
+        body: `Đơn hàng ${order.orderCode} đã được thanh toán qua VNPay`,
+        data: { type: 'PAYMENT_RECEIVED', orderId: order._id.toString() }
+    }).catch(err => console.error('[FCM] vnpaySuccess push error:', err));
 }

@@ -5,6 +5,7 @@ import { getIO } from '../services/socketService';
 import { MessageType } from '../types';
 import { maskRestrictedContent } from '../services/restrictedWordCache';
 import { isValidateObjectId } from '../validations/customValidation';
+import { sendToUser } from '../services/pushNotificationService';
 
 const escapeRegex = (value: string): string => {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -161,6 +162,17 @@ export const sendMessage = async (
                 io.to(receiverId.toString()).emit('conversation_locked', lockPayload);
                 io.to(senderId.toString()).emit('conversation_locked', lockPayload);
             }
+
+            // Push notification to receiver
+            const senderName = (req as any).user?.fullName || 'Người dùng';
+            const previewContent = type === MessageType.TEXT
+                ? (maskedContent.length > 50 ? maskedContent.substring(0, 50) + '...' : maskedContent)
+                : 'Đã gửi một tệp đính kèm';
+            sendToUser(receiverId.toString(), {
+                title: `Tin nhắn mới từ ${senderName}`,
+                body: previewContent,
+                data: { type: 'NEW_MESSAGE', conversationId: conversationId as string }
+            }).catch(err => console.error('[FCM] sendMessage push error:', err));
         }
 
         res.status(201).json({

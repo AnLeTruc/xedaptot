@@ -42,6 +42,7 @@ const adminConversationRouter = require('./routes/admin/conversation').default;
 const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').default;
 const adminSummaryRouter = require('./routes/admin/dashboard').default;
 const disputeRouter = require('./routes/dispute').default;
+const deviceTokenRouter = require('./routes/deviceToken').default;
 var app = express();
 
 // Trust proxy for Render
@@ -91,5 +92,6 @@ app.use('/api/conversations', conversationRouter);
 app.use('/api/violation-reports', violationReportRouter);
 app.use('/api/admin', adminSummaryRouter);
 app.use('/api/disputes', disputeRouter);
+app.use('/api/device-tokens', deviceTokenRouter);
 
 module.exports = app;
