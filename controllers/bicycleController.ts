@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
@@ -10,6 +11,7 @@ import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
 import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
+import { syncWishlistBicycle } from './wishlistController';
 
 const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: number[] } | null | undefined => {
     if (!coordinates) {
@@ -560,6 +562,8 @@ export const updateBicycle = async (
             { new: true, runValidators: true }
         );
 
+        syncWishlistBicycle(id).catch(err => console.error('Sync wishlist bicycle error: ', err));
+
         res.status(200).json({
             success: true,
             message: 'Bicycle updated successfully. Waiting for re-approval.',
@@ -692,6 +696,8 @@ export const getBicycleStatus = async (
 
         bicycle.status = status;
         await bicycle.save();
+
+        syncWishlistBicycle(id).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
         //Noti to seller when inspector approve||reject
         const sellerId = bicycle.seller._id.toString();
