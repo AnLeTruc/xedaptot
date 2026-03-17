@@ -8,9 +8,9 @@ import Transaction from '../models/Transaction';
 import { getOrCreateWallet } from './walletController';
 import { ORDER_TIMEOUTS, FEE_CONFIG } from '../types/order';
 import { calculateShippingFee } from '../services/shippingService';
-import mongoose from 'mongoose';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import { sendToUser } from '../services/pushNotificationService';
+import * as notificationService from '../services/notificationService';
 
 const generateCode = (prefix: string) => {
     const d = new Date().toISOString().replace(/-/g, '');
@@ -241,6 +241,13 @@ export const payOrder = async (
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+            //Noti order expired
+            notificationService.notifyOrderAutoExpired(
+                order.buyer._id.toString(),
+                order._id.toString(),
+                order.orderCode
+            );
             res.status(400).json({ success: false, message: 'Reservation has expired' });
             return;
         }
@@ -340,6 +347,18 @@ export const payOrder = async (
         if (nextStatus === 'COMPLETED') order.buyerConfirmedAt = new Date();
         await order.save();
 
+        //Noti to buyer when deposit
+        if (txnType === 'DEPOSIT') {
+            notificationService.notifyDepositSuccess(
+                req.user!._id.toString(),
+                order._id.toString()
+            );
+        } else if (txnType === 'FULL' || txnType === 'REMAINING') {
+            notificationService.notifyPaymentSuccess(
+                req.user!._id.toString(),
+                order._id.toString()
+            );
+        }
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -499,13 +518,19 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
 
-        // Push notification to seller
+        // Push notification to seller (FCM)
         sendToUser(order.seller._id.toString(), {
             title: 'Đơn hàng đã bị huỷ',
             body: `Đơn hàng ${order.orderCode} đã bị người mua huỷ`,
             data: { type: 'ORDER_CANCELLED', orderId: order._id.toString() }
         }).catch(err => console.error('[FCM] cancelOrder push error:', err));
 
+        //Noti cancel (in-app)
+        notificationService.notifyOrderCancelled(
+            req.user!._id.toString(),
+            order._id.toString(),
+            order.orderCode
+        );
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -523,6 +548,12 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
     order.buyerConfirmedAt = new Date();
     await order.save();
     await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+
+    //Noti buyer receive order
+    notificationService.notifyOrderReceived(
+        req.user!._id.toString(),
+        order._id.toString()
+    );
     res.status(200).json({ success: true, message: 'Funds will be released to seller after 48 hours', data: order });
 };
 
@@ -536,6 +567,11 @@ export const reviewOrder = async (req: AuthRequest, res: Response) => {
 
     order.review = { rating: req.body.rating, comment: req.body.comment || '', createdAt: new Date() };
     await order.save();
+
+    //Noti order review
+    notificationService.notifyReviewSubmitted(
+        req.user!._id.toString()
+    );
     res.status(200).json({ success: true, data: order });
 };
 
@@ -553,13 +589,19 @@ export const confirmOrder = async (req: AuthRequest, res: Response) => {
     order.sellerConfirmedAt = new Date();
     await order.save();
 
-    // Push notification to buyer
+    // Push notification to buyer (FCM)
     sendToUser(order.buyer._id.toString(), {
         title: 'Đơn hàng đã được xác nhận',
         body: `Đơn hàng ${order.orderCode} đã được người bán xác nhận`,
         data: { type: 'ORDER_CONFIRMED', orderId: order._id.toString() }
     }).catch(err => console.error('[FCM] confirmOrder push error:', err));
 
+    //Noti confirm order (in-app)
+    notificationService.notifyOrderConfirmed(
+        order.buyer._id.toString(),
+        order._id.toString(),
+        order.orderCode
+    );
     res.status(200).json({ success: true, data: order });
 };
 
@@ -582,11 +624,12 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         const refund = order.amounts.escrowAmount;
         if (refund > 0 && buyerWallet) {
             const balBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+            const txnCode = generateCode('TXN');
             buyerWallet.frozenBalance -= refund;
             await buyerWallet.save();
 
             await Transaction.create({
-                transactionCode: generateCode('TXN'),
+                transactionCode: txnCode,
                 paymentMethod: 'SYSTEM',
                 walletId: buyerWallet._id,
                 type: 'REFUND',
@@ -598,7 +641,7 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
             });
 
             order.transactions.push({
-                transactionCode: generateCode('TXN'), type: 'REFUND', amount: refund, status: 'SUCCESS',
+                transactionCode: txnCode, type: 'REFUND', amount: refund, status: 'SUCCESS',
                 createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
                 balanceBefore: balBefore, balanceAfter: balBefore + refund,
                 description: `Seller rejected - Refund - ${order.orderCode}`,
@@ -613,13 +656,19 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
 
-        // Push notification to buyer
+        // Push notification to buyer (FCM)
         sendToUser(order.buyer._id.toString(), {
             title: 'Đơn hàng bị từ chối',
             body: `Đơn hàng ${order.orderCode} đã bị người bán từ chối`,
             data: { type: 'ORDER_REJECTED', orderId: order._id.toString() }
         }).catch(err => console.error('[FCM] rejectOrder push error:', err));
 
+        //Noti to buyer rejected order (in-app)
+        notificationService.notifyOrderRejected(
+            order.buyer._id.toString(),
+            order._id.toString(),
+            order.orderCode
+        );
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -702,6 +751,13 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
+
+            //Noti order expired
+            notificationService.notifyOrderAutoExpired(
+                order.buyer._id.toString(),
+                order._id.toString(),
+                order.orderCode
+            );
             res.status(400).json({ success: false, message: 'Reservation has expired' });
             return;
         }
@@ -798,6 +854,12 @@ export const vnpayOrderReturn = async (req: Request, res: Response): Promise<voi
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
+
+            //Noti deposit failed
+            notificationService.notifyPaymentFailed(
+                order.buyer._id.toString(),
+                order._id.toString()
+            );
             const feUrl = process.env.FRONTEND_URL;
             if (feUrl) { res.redirect(`${feUrl}/orders/${order._id}?payment=failed`); }
             else { res.status(400).json({ success: false, message: getResponseMessage(responseCode) }); }
@@ -840,6 +902,12 @@ export const vnpayOrderIPN = async (req: Request, res: Response): Promise<void> 
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
+
+            //Noti deposit failed
+            notificationService.notifyPaymentFailed(
+                order.buyer._id.toString(),
+                order._id.toString()
+            );
             res.status(200).json({ RspCode: '00', Message: 'Confirm Success' }); return;
         }
         await _processVnpayOrderSuccess(transaction, order, vnpAmount, gatewayTxnId, responseCode);
@@ -906,6 +974,18 @@ async function _processVnpayOrderSuccess(
         gatewayResponseCode: responseCode
     } as any);
 
+    //Noti deposit success
+    if (txnType === 'DEPOSIT') {
+        notificationService.notifyDepositSuccess(
+            order.buyer._id.toString(),
+            order._id.toString()
+        );
+    } else {
+        notificationService.notifyPaymentSuccess(
+            order.buyer._id.toString(),
+            order._id.toString()
+        );
+    }
     if (order.status === 'COMPLETED') order.buyerConfirmedAt = new Date();
     await order.save();
 

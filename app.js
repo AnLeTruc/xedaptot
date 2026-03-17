@@ -11,6 +11,7 @@ const { startCleanupJob } = require('./services/cleanupService');
 const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
 const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
+const { sellerConfirmationTimeoutJob } = require('./jobs/sellerConfirmationTimeout');
 
 // Start Cronjobs
 startCleanupJob();
@@ -19,6 +20,7 @@ startCleanupJob();
 cron.schedule('* * * * *', releaseFundsJob);
 cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
 console.log('[Cronjob] Jobs scheduled (Release Funds & Cleanup Expired)');
+cron.schedule('* * * * *', sellerConfirmationTimeoutJob);
 
 //Routes
 const authRouter = require('./routes/auth').default;
@@ -43,6 +45,9 @@ const adminRestrictedWordRouter = require('./routes/admin/restrictedWord').defau
 const adminSummaryRouter = require('./routes/admin/dashboard').default;
 const disputeRouter = require('./routes/dispute').default;
 const deviceTokenRouter = require('./routes/deviceToken').default;
+const notificationRouter = require('./routes/notification').default;
+const wishlistRouter = require('./routes/wishlist').default;
+const aiRouter = require('./routes/ai').default;
 var app = express();
 
 // Trust proxy for Render
@@ -93,5 +98,8 @@ app.use('/api/violation-reports', violationReportRouter);
 app.use('/api/admin', adminSummaryRouter);
 app.use('/api/disputes', disputeRouter);
 app.use('/api/device-tokens', deviceTokenRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/wishlist', wishlistRouter);
+app.use('/api/ai', aiRouter);
 
 module.exports = app;

@@ -7,6 +7,7 @@ import { generateVerificationToken, generateTokenExpiry } from '../utils/tokenUt
 import { sendMail, sendVerificationEmail, sendPasswordChangedEmail } from '../services/emailService';
 import { generate6DigitCode, hashResetCode, hashResetToken, timingSafeEqualHex } from '../utils/passwordReset';
 import * as shippingService from '../services/shippingService';
+import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import crypto from 'crypto';
 
@@ -55,9 +56,10 @@ export const sendEmailVerification = async (
         const expires = generateTokenExpiry();
 
         //Update user
-        user.emailVerificationToken = token;
-        user.emailVerificationExpires = expires;
-        await user.save();
+        await User.findByIdAndUpdate(userId, {
+            emailVerificationToken: token,
+            emailVerificationExpires: expires
+        });
 
         //Send mail
         const emailSent = await sendVerificationEmail(
@@ -86,7 +88,6 @@ export const sendEmailVerification = async (
         });
     }
 };
-
 
 //Verify Email
 export const verifyEmail = async (
@@ -121,14 +122,18 @@ export const verifyEmail = async (
         }
 
         //Update user
-        user.isVerified = true;
-        user.emailVerificationToken = undefined;
-        user.emailVerificationExpires = undefined;
-
-        await user.save();
+        await User.findByIdAndUpdate(user._id, {
+            isVerified: true,
+            $unset: {
+                emailVerificationToken: 1,
+                emailVerificationExpires: 1
+            }
+        });
+        //Noti email verified success
+        notificationService.notifyEmailVerified(user._id.toString());
 
         res.status(200).json({
-            success: true,  // << SỬA: phải là true, không phải false
+            success: true,
             message: 'Email verified successfully'
         });
     } catch (error: any) {
@@ -202,9 +207,18 @@ export const firebaseAuth = async (
         // Have user with same mail
         if (existingUser) {
             if (existingUser.authProvider !== authProvider) {
+                const firebaseUser = await auth.getUser(uid);
+                const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+
+                if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
+                    await auth.updateUser(uid, {
+                        providerToUnlink: 'google.com'
+                    });
+                }
+
                 res.status(400).json({
                     success: false,
-                    message: `Email đã đăng ký với ${existingUser.authProvider}. Không thể đăng nhập/đăng ký bằng ${authProvider}.`
+                    message: `Email đã đăng ký với ${existingUser.authProvider}.`
                 });
                 return;
             }
@@ -236,6 +250,9 @@ export const firebaseAuth = async (
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
             await existingUser.save();
+            //Noti login success
+            notificationService.notifyLoggedIn(existingUser._id.toString());
+
             res.status(200).json({
                 success: true,
                 message: 'User logged in successfully',
@@ -285,6 +302,9 @@ export const firebaseAuth = async (
             authProvider
         });
         await assignFreePackage(newUser._id);
+        //Noti create google success
+        notificationService.notifyRegistered(newUser._id.toString());
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -349,6 +369,7 @@ export const getProfile = async (
     }
 }
 
+//Update profile
 export const updateProfile = async (
     req: AuthRequest,
     res: Response
@@ -397,6 +418,9 @@ export const updateProfile = async (
                 createdAt: updatedUser.createdAt
             }
         });
+
+        //Noti change profile
+        notificationService.notifyProfileUpdated(userId.toString());
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -474,6 +498,8 @@ export const emailRegister = async (
         });
 
         await assignFreePackage(newUser._id);
+        //Noti register success
+        notificationService.notifyRegistered(newUser._id.toString());
 
         res.status(201).json({
             success: true,
@@ -538,13 +564,33 @@ export const emailLogin = async (
         const data: any = await response.json();
 
         if (!response.ok) {
-            const errorMessage = data.error?.message === 'INVALID_LOGIN_CREDENTIALS'
-                ? 'Invalid email or password'
-                : data.error?.message || 'Login failed';
+            if (data.error?.message === 'INVALID_LOGIN_CREDENTIALS') {
+                const dbUser = await User.findOne({ email });
+                if (dbUser) {
+                    try {
+                        const firebaseUser = await auth.getUserByEmail(email);
+                        const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+
+                        if (linkedProviders.includes('google.com') && !linkedProviders.includes('password')) {
+                            res.status(401).json({
+                                success: false,
+                                message: 'Tài khoản của bạn đã bị ảnh hưởng bởi đăng nhập Google. Vui lòng đặt lại mật khẩu.'
+                            });
+                            return;
+                        }
+                    } catch (_) { }
+                }
+
+                res.status(401).json({
+                    success: false,
+                    message: 'Email hoặc mật khẩu không chính xác'
+                });
+                return;
+            }
 
             res.status(401).json({
                 success: false,
-                message: errorMessage
+                message: data.error?.message || 'Đăng nhập thất bại'
             });
             return;
         }
@@ -707,6 +753,9 @@ export const addAddress = async (
             data: updatedUser?.addresses
         })
 
+        //Noti add address
+        notificationService.notifyAddressAdded(userId.toString());
+
     } catch (error: any) {
         console.error('Add address error:', error);
         res.status(500).json({
@@ -817,6 +866,9 @@ export const updateAddress = async (
             message: 'Address updated successfully',
             data: updatedUser?.addresses
         })
+
+        //Noti update address
+        notificationService.notifyAddressUpdated(userId.toString());
     } catch (error: any) {
         res.status(500).json({
             success: false,
@@ -883,6 +935,9 @@ export const deleteAddress = async (
             message: 'Address deleted successfully',
             data: updatedUser?.addresses
         });
+
+        //Noti delete address
+        notificationService.notifyAddressDeleted(userId.toString());
 
 
     } catch (error: any) {
@@ -978,14 +1033,18 @@ export const forgotPassword = async (
 
     const code = generate6DigitCode();
 
-    user.passwordResetCodeHash = hashResetCode(email, code);
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); //10 minutes
-    user.passwordResetAttempts = 0;
-    user.passwordResetVerifiedAt = undefined;
-    user.passwordResetTokenHash = undefined;
-    user.passwordResetTokenExpires = undefined;
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        passwordResetCodeHash: hashResetCode(email, code),
+        passwordResetExpires: new Date(Date.now() + 10 * 60 * 1000), //10 minutes
+        passwordResetAttempts: 0,
+        $unset: {
+            passwordResetVerifiedAt: 1,
+            passwordResetTokenHash: 1,
+            passwordResetTokenExpires: 1
+        }
+    });
+    //Noti forgot pass
+    notificationService.notifyForgotPassword(user._id.toString());
 
     await sendMail({
         to: user.email,
@@ -1058,10 +1117,10 @@ export const verifyResetCode = async (
     const inputHash = hashResetCode(user.email, String(code));
     const ok = timingSafeEqualHex(user.passwordResetCodeHash, inputHash);
 
-    user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
-
     if (!ok) {
-        await user.save();
+        await User.findByIdAndUpdate(user._id, {
+            $inc: { passwordResetAttempts: 1 }
+        });
         res.status(400).json({
             success: false,
             message: 'Invalid code'
@@ -1070,11 +1129,12 @@ export const verifyResetCode = async (
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.passwordResetVerifiedAt = new Date();
-    user.passwordResetTokenHash = hashResetToken(resetToken);
-    user.passwordResetTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        passwordResetVerifiedAt: new Date(),
+        passwordResetTokenHash: hashResetToken(resetToken),
+        passwordResetTokenExpires: new Date(Date.now() + 10 * 60 * 1000),
+        $inc: { passwordResetAttempts: 1 }
+    });
 
     res.status(200).json({
         success: true,
@@ -1136,14 +1196,18 @@ export const resetPassword = async (
     })
 
     //Clear reset fields
-    user.passwordResetCodeHash = undefined;
-    user.passwordResetExpires = undefined;
-    user.passwordResetAttempts = 0;
-    user.passwordResetVerifiedAt = undefined;
-    user.passwordResetTokenHash = undefined;
-    user.passwordResetTokenExpires = undefined;
-
-    await user.save();
+    await User.findByIdAndUpdate(user._id, {
+        $unset: {
+            passwordResetCodeHash: 1,
+            passwordResetExpires: 1,
+            passwordResetVerifiedAt: 1,
+            passwordResetTokenHash: 1,
+            passwordResetTokenExpires: 1
+        },
+        $set: { passwordResetAttempts: 0 }
+    });
+    //Noti reset pass 
+    notificationService.notifyPasswordReset(user._id.toString());
 
     res.status(200).json({
         success: true,
@@ -1233,13 +1297,38 @@ export const changePassword = async (
         // Generate new custom token so client can re-authenticate
         const customToken = await auth.createCustomToken(user.firebaseUId);
 
+        // Đổi luôn sang idToken + refreshToken
+        const tokenExchangeResponse = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${FIREBASE_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+            }
+        );
+
+        const tokenData: any = await tokenExchangeResponse.json();
+
+        if (!tokenExchangeResponse.ok) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to generate session tokens after password change'
+            });
+            return;
+        }
+
         res.status(200).json({
             success: true,
             message: 'Password changed successfully',
             data: {
-                customToken
+                idToken: tokenData.idToken,
+                refreshToken: tokenData.refreshToken,
+                expiresIn: tokenData.expiresIn,
             }
         });
+
+        //Noti change pass
+        notificationService.notifyPasswordChanged(user._id.toString());
 
         // Send notification email (fire-and-forget)
         sendPasswordChangedEmail(user.email, user.fullName || '').catch(err =>

@@ -259,7 +259,7 @@ export const submitReport = async (
             userId: bicycle.seller._id,
             type: 'INSPECTION_COMPLETED',
             title: 'Inspection Completed',
-            content: `Your bicycle "${bicycle.title}" has been inspected. Result: ${isPassed ? 'PASSED' : 'FAILED'}`,
+            message: `Your bicycle "${bicycle.title}" has been inspected. Result: ${isPassed ? 'PASSED' : 'FAILED'}`,
             metadata: {
                 bicycleId,
                 inspectionReportId: report._id

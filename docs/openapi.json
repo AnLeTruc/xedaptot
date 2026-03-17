@@ -90,6 +90,10 @@
     {
       "name": "Dispute",
       "description": "Dispute management endpoints"
+    },
+    {
+      "name": "AI",
+      "description": "AI-powered features (Gemini Vision)"
     }
   ],
   "components": {
@@ -474,7 +478,8 @@
               "RESERVED",
               "SOLD",
               "HIDDEN",
-              "REJECTED"
+              "REJECTED",
+              "VIOLATED"
             ]
           },
           "isInspected": {
@@ -516,7 +521,8 @@
                   "enum": [
                     "PENDING",
                     "APPROVED",
-                    "REJECTED"
+                    "REJECTED",
+                    "VIOLATED"
                   ]
                 },
                 "reason": {
@@ -1363,9 +1369,10 @@
           "paymentMethod": {
             "type": "string",
             "enum": [
-              "VNPAY",
               "WALLET",
-              "BANK_TRANSFER"
+              "SYSTEM",
+              "BANK_TRANSFER",
+              "VNPAY"
             ]
           },
           "walletId": {
@@ -1374,11 +1381,14 @@
           "type": {
             "type": "string",
             "enum": [
-              "DEPOSIT",
-              "WITHDRAW",
-              "PAYMENT",
+              "ESCROW_IN",
+              "ESCROW_RELEASE",
               "REFUND",
-              "EARNING"
+              "FORFEIT",
+              "WITHDRAW",
+              "DEPOSIT",
+              "PACKAGE_PURCHASE",
+              "SHIPPING_FEE"
             ]
           },
           "amount": {
@@ -1898,6 +1908,17 @@
             "type": "string",
             "description": "Detailed description (max 2000 chars)",
             "maxLength": 2000
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "example": {
@@ -1959,48 +1980,409 @@
       "DisputeUser": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
-          "fullName": { "type": "string", "example": "Nguyen Van A" },
-          "phone": { "type": "string", "example": "0901234567" }
+          "_id": {
+            "type": "string",
+            "example": "664a1b2c3d4e5f6a7b8c9d0e"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Nguyen Van A"
+          },
+          "phone": {
+            "type": "string",
+            "example": "0901234567"
+          }
         }
       },
       "Dispute": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
+          "_id": {
+            "type": "string",
+            "example": "664a1b2c3d4e5f6a7b8c9d0e"
+          },
           "disputeType": {
             "type": "string",
-            "enum": ["ITEM_NOT_AS_DESCRIBED", "ITEM_NOT_RECEIVED", "DAMAGED_ITEM", "FAKE_ITEM", "OTHER"]
+            "enum": [
+              "ITEM_NOT_AS_DESCRIBED",
+              "ITEM_NOT_RECEIVED",
+              "DAMAGED_ITEM",
+              "FAKE_ITEM",
+              "OTHER"
+            ]
           },
           "status": {
             "type": "string",
-            "enum": ["PENDING", "UNDER_REVIEW", "RESOLVED", "REJECTED"],
+            "enum": [
+              "PENDING",
+              "UNDER_REVIEW",
+              "RESOLVED",
+              "REJECTED"
+            ],
             "example": "PENDING"
           },
           "resolution": {
             "type": "string",
-            "enum": ["REFUND_BUYER", "RELEASE_SELLER", "NONE"],
+            "enum": [
+              "REFUND_BUYER",
+              "RELEASE_SELLER",
+              "NONE"
+            ],
             "example": "NONE"
           },
-          "complainant": { "$ref": "#/components/schemas/DisputeUser" },
-          "respondent": { "$ref": "#/components/schemas/DisputeUser" },
-          "orderId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
-          "userId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
-          "reason": { "type": "string", "example": "Item arrived with scratches not shown in listing" },
+          "complainant": {
+            "$ref": "#/components/schemas/DisputeUser"
+          },
+          "respondent": {
+            "$ref": "#/components/schemas/DisputeUser"
+          },
+          "orderId": {
+            "type": "string",
+            "example": "664a1b2c3d4e5f6a7b8c9d0e"
+          },
+          "userId": {
+            "type": "string",
+            "example": "664a1b2c3d4e5f6a7b8c9d0e"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Item arrived with scratches not shown in listing"
+          },
           "evidenceImage": {
             "type": "array",
-            "items": { "type": "string" },
-            "example": ["https://example.com/evidence1.jpg"]
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "https://example.com/evidence1.jpg"
+            ]
           },
-          "resolvedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DashboardSummary": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "bicycles": {
+                "type": "object"
+              },
+              "users": {
+                "type": "object"
+              },
+              "orders": {
+                "type": "object"
+              },
+              "financial": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "DashboardChartData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "UserPackageListResponse": {
+      "type": "object",
+      "properties": {
+        "success": { "type": "boolean" },
+        "count": { "type": "integer" },
+        "total": { "type": "integer" },
+        "page": { "type": "integer" },
+        "totalPages": { "type": "integer" },
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/components/schemas/UserPackage" }
+        }
+      }
+    },
+    "WishlistBicycle": {
+      "type": "object",
+      "properties": {
+        "_id": { "type": "string" },
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "primaryImage": { "type": "string", "nullable": true },
+        "condition": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "Wishlist": {
+      "type": "object",
+      "properties": {
+        "_id": { "type": "string" },
+        "userId": { "type": "string" },
+        "bicycleId": { "type": "string" },
+        "bicycle": { "$ref": "#/components/schemas/WishlistBicycle" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "WishlistCheckResponse": {
+      "type": "object",
+      "properties": {
+        "success": { "type": "boolean" },
+        "message": { "type": "string" },
+        "data": {
+          "type": "object",
+          "properties": {
+            "isWishlisted": { "type": "boolean" },
+            "wishlistId": { "type": "string", "nullable": true }
+          }
+        }
+      }
+    },
+    "NotificationItem": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "url": { "type": "string", "nullable": true },
+        "is_read": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "NotificationListResponse": {
+      "type": "object",
+      "properties": {
+        "success": { "type": "boolean" },
+        "data": {
+          "type": "object",
+          "properties": {
+            "notifications": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/NotificationItem" }
+            },
+            "pagination": {
+              "type": "object",
+              "properties": {
+                "page": { "type": "integer" },
+                "limit": { "type": "integer" },
+                "total": { "type": "integer" },
+                "totalPages": { "type": "integer" }
+              }
+            },
+            "unreadCount": { "type": "integer" }
+          }
         }
       }
     }
   },
   "paths": {
-
+    "/ai/analyze-bike": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Analyze bicycle image using AI",
+        "description": "Send an image URL to get a suggested title and description generated by Gemini AI.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "imageUrl"
+                ],
+                "properties": {
+                  "imageUrl": {
+                    "type": "string",
+                    "format": "url",
+                    "example": "https://example.com/bike.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "AI service error"
+          }
+        }
+      }
+    },
+    "/ai/price-suggestion": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Gợi ý giá bán xe đạp",
+        "description": "Dựa vào brand, category, model và tình trạng xe, trả về thống kê giá (min/max/avg) từ các listing đã được duyệt. Cần ít nhất 3 listing để có dữ liệu.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "brandId",
+            "in": "query",
+            "description": "MongoDB ObjectId của thương hiệu",
+            "schema": {
+              "type": "string",
+              "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "MongoDB ObjectId của danh mục",
+            "schema": {
+              "type": "string",
+              "example": "64d1b5b5b5b5b5b5b5b5b5b6"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "query",
+            "description": "MongoDB ObjectId của model xe (tuỳ chọn)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "description": "Tình trạng xe (tuỳ chọn)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "LIKE_NEW",
+                "GOOD",
+                "FAIR",
+                "POOR"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "min": {
+                          "type": "number",
+                          "example": 2500000
+                        },
+                        "max": {
+                          "type": "number",
+                          "example": 8000000
+                        },
+                        "avg": {
+                          "type": "number",
+                          "example": 5200000
+                        },
+                        "count": {
+                          "type": "number",
+                          "example": 14
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Chưa đủ dữ liệu để gợi ý giá"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu brandId hoặc categoryId"
+          },
+          "401": {
+            "description": "Chưa đăng nhập"
+          },
+          "500": {
+            "description": "Lỗi server"
+          }
+        }
+      }
+    },
     "/auth/change-password": {
       "post": {
         "tags": [
@@ -4471,6 +4853,113 @@
         }
       }
     },
+    "/wishlist": {
+      "post": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Add bicycle to wishlist",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bicycleId"
+                ],
+                "properties": {
+                  "bicycleId": {
+                    "type": "string",
+                    "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bicycle added to wishlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/Wishlist" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Already in wishlist" }
+        }
+      }
+    },
+    "/wishlist/{bicycleId}": {
+      "get": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Check if bicycle is in wishlist",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bicycleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Check result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WishlistCheckResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Wishlist"
+        ],
+        "summary": "Remove bicycle from wishlist",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bicycleId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed successfully"
+          },
+          "404": { "description": "Not found in wishlist" }
+        }
+      }
+    },
     "/bicycles/{id}": {
       "get": {
         "tags": [
@@ -4618,9 +5107,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "message": { "type": "string" },
-                    "data": { "$ref": "#/components/schemas/Bicycle" }
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Bicycle"
+                    }
                   }
                 }
               }
@@ -5165,6 +5661,62 @@
         }
       }
     },
+    "/users/packages/vnpay-return": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "VNPay payment callback for packages",
+        "description": "Handle VNPay redirection after package purchase attempt. Redirects to frontend with results.",
+        "parameters": [
+          {
+            "name": "vnp_TxnRef",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vnp_ResponseCode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to frontend package page with purchase status"
+          },
+          "200": {
+            "description": "Success message if no frontend URL is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature or payment failed"
+          }
+        }
+      }
+    },
     "/users/packages/active": {
       "get": {
         "tags": [
@@ -5322,7 +5874,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "ESCROW_IN",
+                "ESCROW_RELEASE",
+                "REFUND",
+                "FORFEIT",
+                "WITHDRAW",
+                "DEPOSIT",
+                "PACKAGE_PURCHASE",
+                "SHIPPING_FEE"
+              ]
             }
           },
           {
@@ -5376,21 +5938,34 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
                     "data": {
                       "type": "object",
                       "properties": {
                         "transactions": {
                           "type": "array",
-                          "items": { "type": "object" }
+                          "items": {
+                            "type": "object"
+                          }
                         },
                         "pagination": {
                           "type": "object",
                           "properties": {
-                            "page": { "type": "integer" },
-                            "limit": { "type": "integer" },
-                            "total": { "type": "integer" },
-                            "totalPages": { "type": "integer" }
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
                           }
                         }
                       }
@@ -6030,6 +6605,52 @@
           "500": {
             "description": "Server error"
           }
+        }
+      }
+    },
+    "/admin/user-packages": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get all user packages (Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of user packages",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPackageListResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" }
         }
       }
     },
@@ -7642,11 +8263,14 @@
             "schema": {
               "type": "string",
               "enum": [
-                "DEPOSIT",
-                "WITHDRAW",
-                "PAYMENT",
+                "ESCROW_IN",
+                "ESCROW_RELEASE",
                 "REFUND",
-                "EARNING"
+                "FORFEIT",
+                "WITHDRAW",
+                "DEPOSIT",
+                "PACKAGE_PURCHASE",
+                "SHIPPING_FEE"
               ]
             },
             "description": "Filter by transaction type"
@@ -8955,6 +9579,96 @@
         }
       }
     },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Get my notifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "isRead",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notifications",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificationListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Mark all notifications as read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All marked as read"
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "summary": "Mark specific notification as read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marked successfully"
+          },
+          "404": { "description": "Notification not found" }
+        }
+      }
+    },
     "/conversations": {
       "post": {
         "tags": [
@@ -9393,12 +10107,12 @@
           "required": true,
           "content": {
             "application/json": {
-                "schema": {
+              "schema": {
                 "type": "object",
-                  "required": [
-                    "type",
-                    "content"
-                  ],
+                "required": [
+                  "type",
+                  "content"
+                ],
                 "properties": {
                   "content": {
                     "type": "string",
@@ -9407,7 +10121,11 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["TEXT", "PRODUCT", "IMAGE"],
+                    "enum": [
+                      "TEXT",
+                      "PRODUCT",
+                      "IMAGE"
+                    ],
                     "description": "Message type (SYSTEM is reserved for server use)",
                     "example": "TEXT"
                   },
@@ -9421,15 +10139,25 @@
               "examples": {
                 "textMessage": {
                   "summary": "Text message",
-                  "value": { "type": "TEXT", "content": "Hello! Is this bicycle still available?" }
+                  "value": {
+                    "type": "TEXT",
+                    "content": "Hello! Is this bicycle still available?"
+                  }
                 },
                 "productMessage": {
                   "summary": "Product link message",
-                  "value": { "type": "PRODUCT", "bicycleId": "64d1b5b5b5b5b5b5b5b5b5b5", "content": "Check this product" }
+                  "value": {
+                    "type": "PRODUCT",
+                    "bicycleId": "64d1b5b5b5b5b5b5b5b5b5b5",
+                    "content": "Check this product"
+                  }
                 },
                 "imageMessage": {
                   "summary": "Image message (use uploaded file URL)",
-                  "value": { "type": "IMAGE", "content": "https://res.cloudinary.com/.../xedaptot/products/abcd.jpg" }
+                  "value": {
+                    "type": "IMAGE",
+                    "content": "https://res.cloudinary.com/.../xedaptot/products/abcd.jpg"
+                  }
                 }
               }
             }
@@ -9462,6 +10190,85 @@
           },
           "403": {
             "description": "Conversation not found, no access, or conversation is locked"
+          }
+        }
+      }
+    },
+    "/conversations/support/start": {
+      "post": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Start or retrieve a support conversation",
+        "description": "Starts a new support conversation with an available admin or retrieves an existing one.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing support conversation retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string"
+                    },
+                    "partner": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New support conversation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversationId": {
+                      "type": "string"
+                    },
+                    "partner": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No support staff available"
           }
         }
       }
@@ -9575,11 +10382,11 @@
           "400": {
             "description": "Cannot report yourself / Bicycle does not belong to reported user"
           },
-          "404": {
-            "description": "Reported user or bicycle not found"
-          },
           "401": {
             "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Reported user or bicycle not found"
           }
         }
       },
@@ -9710,9 +10517,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "hasReported": { "type": "boolean" },
-                    "reportId": { "type": "string", "nullable": true }
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "hasReported": {
+                      "type": "boolean"
+                    },
+                    "reportId": {
+                      "type": "string",
+                      "nullable": true
+                    }
                   }
                 }
               }
@@ -9807,11 +10622,11 @@
               }
             }
           },
-          "404": {
-            "description": "Violation report not found"
-          },
           "401": {
             "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Violation report not found"
           }
         }
       },
@@ -9868,11 +10683,80 @@
               }
             }
           },
-          "404": {
-            "description": "Report not found"
-          },
           "401": {
             "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Report not found"
+          }
+        }
+      }
+    },
+    "/violation-reports/bicycles/{id}/violate": {
+      "patch": {
+        "tags": [
+          "ViolationReport"
+        ],
+        "summary": "Mark bicycle as violating (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Bicycle ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "example": "Inappropriate content"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bicycle marked as violated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Bicycle"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Already violated"
+          },
+          "404": {
+            "description": "Bicycle not found"
           }
         }
       }
@@ -10517,23 +11401,37 @@
     },
     "/admin/stats/summary": {
       "get": {
-        "tags": ["Dashboard"],
-        "summary": "Get dashboard summary stats",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get dashboard summary statistics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
-            "in": "query",
             "name": "period",
+            "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["week", "month", "quarter", "year", "all"],
+              "enum": [
+                "week",
+                "month",
+                "quarter",
+                "year",
+                "all"
+              ],
               "default": "all"
             }
           },
           {
-            "in": "query",
             "name": "year",
-            "schema": { "type": "integer", "example": 2026 }
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -10542,26 +11440,450 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/charts/bicycles": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get bicycle status chart data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardChartData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/charts/top-brands": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get top brands chart data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "ALL"
+              ],
+              "default": "APPROVED"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardChartData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/charts/top-categories": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get top categories chart data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "RESERVED",
+                "SOLD",
+                "HIDDEN",
+                "ALL"
+              ],
+              "default": "APPROVED"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardChartData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/charts/top-sellers": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get top sellers chart data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardChartData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/finance/withdrawals": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get withdrawal statistics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial stats",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean", "example": true },
+                    "success": {
+                      "type": "boolean"
+                    },
                     "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/finance/aov": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Average Order Value statistics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disputes": {
+      "post": {
+        "tags": [
+          "Dispute"
+        ],
+        "summary": "Create a dispute",
+        "description": "Buyer or Seller creates a dispute for an order that is in DELIVERED / WAITING_REMAINING_PAYMENT / COMPLETED status.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orderId",
+                  "disputeType",
+                  "reason"
+                ],
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "example": "664a1b2c3d4e5f6a7b8c9d0e"
+                  },
+                  "disputeType": {
+                    "type": "string",
+                    "enum": [
+                      "ITEM_NOT_AS_DESCRIBED",
+                      "ITEM_NOT_RECEIVED",
+                      "DAMAGED_ITEM",
+                      "FAKE_ITEM",
+                      "OTHER"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "example": "Item arrived with scratches not shown in listing"
+                  },
+                  "evidenceImages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "https://example.com/evidence1.jpg"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Dispute created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Tạo đơn khiếu nại thành công"
+                    },
+                    "dispute": {
+                      "$ref": "#/components/schemas/Dispute"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid order status or dispute already exists"
+          },
+          "403": {
+            "description": "User is not buyer or seller of this order"
+          },
+          "404": {
+            "description": "Order not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Dispute"
+        ],
+        "summary": "Get disputes (paginated)",
+        "description": "Returns disputes belonging to the current user. Admin sees all disputes.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of disputes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Dispute"
+                      }
+                    },
+                    "pagination": {
                       "type": "object",
                       "properties": {
-                        "totalUsers": {
-                          "type": "object",
-                          "properties": {
-                            "total": { "type": "integer", "example": 1520 },
-                            "new": { "type": "integer", "example": 43 }
-                          }
+                        "page": {
+                          "type": "integer",
+                          "example": 1
                         },
-                        "activeListings": { "type": "integer", "example": 210 },
-                        "totalRevenue": { "type": "number", "example": 15400000 },
-                        "successOrders": { "type": "integer", "example": 87 },
-                        "escrowAmount": { "type": "number", "example": 9200000 },
-                        "paidSubscriptions": { "type": "integer", "example": 34 },
-                        "period": { "type": "string", "example": "month" },
-                        "year": { "type": "integer", "example": 2026 }
+                        "limit": {
+                          "type": "integer",
+                          "example": 10
+                        },
+                        "total": {
+                          "type": "integer",
+                          "example": 5
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "example": 1
+                        }
                       }
                     }
                   }
@@ -10569,515 +11891,151 @@
               }
             }
           },
-          "400": { "description": "Invalid period value" },
-          "401": { "description": "Unauthorized" },
-          "403": { "description": "Forbidden - Admin only" }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error"
+          }
         }
       }
     },
-    "/admin/charts/bicycles": {
+    "/disputes/{id}": {
       "get": {
-          "tags": ["Dashboard"],
-          "summary": "Get bicycles status chart",
-          "security": [{ "bearerAuth": [] }],
-          "parameters": [
-            {
-              "in": "query",
-              "name": "year",
-              "schema": { "type": "integer", "example": 2026 }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Listing status distribution",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "success": { "type": "boolean", "example": true },
-                      "data": {
-                        "type": "object",
-                        "properties": {
-                          "data": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "status": {
-                                  "type": "string",
-                                  "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN"]
-                                },
-                                "count": { "type": "integer", "example": 45 }
-                              }
-                            }
-                          },
-                          "total": { "type": "integer", "example": 285 }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "401": { "description": "Unauthorized" },
-            "403": { "description": "Forbidden - Admin only" }
+        "tags": [
+          "Dispute"
+        ],
+        "summary": "Get dispute by ID",
+        "security": [
+          {
+            "bearerAuth": []
           }
-        }
-      },
-  
-  "/admin/charts/top-brands": {
-    "get": {
-      "tags": ["Dashboard"],
-      "summary": "Get top 5 bicycle brands by listing count",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "limit",
-          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
-        },
-        {
-          "in": "query",
-          "name": "status",
-          "schema": {
-            "type": "string",
-            "enum": ["PENDING", "APPROVED", "REJECTED", "ALL"],
-            "default": "APPROVED"
-          }
-        },
-        {
-          "in": "query",
-          "name": "year",
-          "schema": { "type": "integer", "example": 2026 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Top brands by listing count",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "brandId": { "type": "string", "example": "664abc..." },
-                            "brandName": { "type": "string", "example": "Trek" },
-                            "count": { "type": "integer", "example": 85 },
-                            "percentage": { "type": "number", "example": 35.4 }
-                          }
-                        }
-                      },
-                      "total": { "type": "integer", "example": 240 }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized" },
-        "403": { "description": "Forbidden - Admin only" }
-      }
-    }
-  },
-  "/admin/charts/top-categories": {
-    "get": {
-      "tags": ["Dashboard"],
-      "summary": "Get top 5 bicycle categories by listing count",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "limit",
-          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
-        },
-        {
-          "in": "query",
-          "name": "status",
-          "schema": {
-            "type": "string",
-            "enum": ["PENDING", "APPROVED", "REJECTED", "RESERVED", "SOLD", "HIDDEN", "ALL"],
-            "default": "APPROVED"
-          }
-        },
-        {
-          "in": "query",
-          "name": "year",
-          "schema": { "type": "integer", "example": 2026 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Top categories by listing count",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "categoryId": { "type": "string", "example": "664abc..." },
-                            "categoryName": { "type": "string", "example": "Road" },
-                            "count": { "type": "integer", "example": 95 },
-                            "percentage": { "type": "number", "example": 39.6 }
-                          }
-                        }
-                      },
-                      "total": { "type": "integer", "example": 240 }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized" },
-        "403": { "description": "Forbidden - Admin only" }
-      }
-    }
-  },
-  "/admin/charts/top-sellers": {
-    "get": {
-      "tags": ["Dashboard"],
-      "summary": "Get top 5 sellers by successful orders",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "limit",
-          "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 20 }
-        },
-        {
-          "in": "query",
-          "name": "year",
-          "schema": { "type": "integer", "example": 2026 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Top sellers by order count",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "sellerId": { "type": "string", "example": "664abc..." },
-                            "sellerName": { "type": "string", "example": "Nguyen Van A" },
-                            "avatarUrl": { "type": "string", "example": "https://..." },
-                            "successOrders": { "type": "integer", "example": 42 },
-                            "percentage": { "type": "number", "example": 35.0 }
-                          }
-                        }
-                      },
-                      "total": { "type": "integer", "example": 120 }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized" },
-        "403": { "description": "Forbidden - Admin only" }
-      }
-    }
-  },
-  "/admin/finance/withdrawals": {
-    "get": {
-      "tags": ["Dashboard"],
-      "summary": "Get pending withdrawal requests stats",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "year",
-          "schema": { "type": "integer", "example": 2026 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Withdrawal statistics",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "totalPending": { "type": "integer", "example": 12 },
-                      "totalAmount": { "type": "number", "example": 45000000 }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized" },
-        "403": { "description": "Forbidden - Admin only" }
-      }
-    }
-  },
-  "/admin/finance/aov": {
-    "get": {
-      "tags": ["Dashboard"],
-      "summary": "Get average order value (AOV)",
-      "description": "Tính AOV = Tổng tiền từ xe bán thành công / Tổng đơn",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "year",
-          "schema": { "type": "integer", "example": 2026 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "AOV statistics",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "totalRevenue": { "type": "number", "example": 231100000 },
-                      "totalOrders": { "type": "integer", "example": 87 },
-                      "aov": { "type": "number", "example": 2656321 }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "401": { "description": "Unauthorized" },
-        "403": { "description": "Forbidden - Admin only" }
-      }
-    }
-  },
-  "/disputes": {
-    "post": {
-      "tags": ["Dispute"],
-      "summary": "Create a dispute",
-      "description": "Buyer or Seller creates a dispute for an order that is in DELIVERED / WAITING_REMAINING_PAYMENT / COMPLETED status.",
-      "security": [{ "bearerAuth": [] }],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
             "schema": {
-              "type": "object",
-              "required": ["orderId", "disputeType", "reason"],
-              "properties": {
-                "orderId": { "type": "string", "example": "664a1b2c3d4e5f6a7b8c9d0e" },
-                "disputeType": {
-                  "type": "string",
-                  "enum": ["ITEM_NOT_AS_DESCRIBED", "ITEM_NOT_RECEIVED", "DAMAGED_ITEM", "FAKE_ITEM", "OTHER"]
-                },
-                "reason": { "type": "string", "maxLength": 2000, "example": "Item arrived with scratches not shown in listing" },
-                "evidenceImages": {
-                  "type": "array",
-                  "items": { "type": "string" },
-                  "example": ["https://example.com/evidence1.jpg"]
+              "type": "string"
+            },
+            "description": "Dispute ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dispute detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "dispute": {
+                      "$ref": "#/components/schemas/Dispute"
+                    }
+                  }
                 }
               }
             }
+          },
+          "404": {
+            "description": "Dispute not found"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
-      },
-      "responses": {
-        "201": {
-          "description": "Dispute created successfully",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "message": { "type": "string", "example": "Tạo đơn khiếu nại thành công" },
-                  "dispute": { "$ref": "#/components/schemas/Dispute" }
-                }
-              }
-            }
-          }
-        },
-        "400": { "description": "Invalid order status or dispute already exists" },
-        "403": { "description": "User is not buyer or seller of this order" },
-        "404": { "description": "Order not found" },
-        "500": { "description": "Server error" }
       }
     },
-    "get": {
-      "tags": ["Dispute"],
-      "summary": "Get disputes (paginated)",
-      "description": "Returns disputes belonging to the current user. Admin sees all disputes.",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "query",
-          "name": "page",
-          "schema": { "type": "integer", "default": 1 }
-        },
-        {
-          "in": "query",
-          "name": "limit",
-          "schema": { "type": "integer", "default": 10 }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "List of disputes",
+    "/disputes/{id}/resolve": {
+      "put": {
+        "tags": [
+          "Dispute"
+        ],
+        "summary": "Resolve a dispute (Admin)",
+        "description": "Admin resolves a dispute by choosing a resolution: REFUND_BUYER, RELEASE_SELLER, or NONE (withdraw).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Dispute ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "resolution"
+                ],
                 "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "data": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/Dispute" }
+                  "resolution": {
+                    "type": "string",
+                    "enum": [
+                      "REFUND_BUYER",
+                      "RELEASE_SELLER",
+                      "NONE"
+                    ]
                   },
-                  "pagination": {
-                    "type": "object",
-                    "properties": {
-                      "page": { "type": "integer", "example": 1 },
-                      "limit": { "type": "integer", "example": 10 },
-                      "total": { "type": "integer", "example": 5 },
-                      "totalPages": { "type": "integer", "example": 1 }
-                    }
+                  "reason": {
+                    "type": "string",
+                    "example": "Buyer provided valid evidence of damage"
                   }
                 }
               }
             }
           }
         },
-        "401": { "description": "Unauthorized" },
-        "500": { "description": "Server error" }
-      }
-    }
-  },
-  "/disputes/{id}": {
-    "get": {
-      "tags": ["Dispute"],
-      "summary": "Get dispute by ID",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "path",
-          "name": "id",
-          "required": true,
-          "schema": { "type": "string" },
-          "description": "Dispute ID"
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Dispute detail",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "dispute": { "$ref": "#/components/schemas/Dispute" }
+        "responses": {
+          "200": {
+            "description": "Dispute resolved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Đã giải quyết khiếu nại"
+                    },
+                    "dispute": {
+                      "$ref": "#/components/schemas/Dispute"
+                    }
+                  }
                 }
               }
             }
-          }
-        },
-        "404": { "description": "Dispute not found" },
-        "500": { "description": "Server error" }
-      }
-    }
-  },
-  "/disputes/{id}/resolve": {
-    "put": {
-      "tags": ["Dispute"],
-      "summary": "Resolve a dispute (Admin)",
-      "description": "Admin resolves a dispute by choosing a resolution: REFUND_BUYER, RELEASE_SELLER, or NONE (withdraw).",
-      "security": [{ "bearerAuth": [] }],
-      "parameters": [
-        {
-          "in": "path",
-          "name": "id",
-          "required": true,
-          "schema": { "type": "string" },
-          "description": "Dispute ID"
-        }
-      ],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "required": ["resolution"],
-              "properties": {
-                "resolution": {
-                  "type": "string",
-                  "enum": ["REFUND_BUYER", "RELEASE_SELLER", "NONE"]
-                },
-                "reason": {
-                  "type": "string",
-                  "example": "Buyer provided valid evidence of damage"
-                }
-              }
-            }
+          },
+          "400": {
+            "description": "Dispute already resolved"
+          },
+          "404": {
+            "description": "Dispute or Order not found"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
-      },
-      "responses": {
-        "200": {
-          "description": "Dispute resolved",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "success": { "type": "boolean", "example": true },
-                  "message": { "type": "string", "example": "Đã giải quyết khiếu nại" },
-                  "dispute": { "$ref": "#/components/schemas/Dispute" }
-                }
-              }
-            }
-          }
-        },
-        "400": { "description": "Dispute already resolved" },
-        "404": { "description": "Dispute or Order not found" },
-        "500": { "description": "Server error" }
       }
     }
-  }
-
   }
 }

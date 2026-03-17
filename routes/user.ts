@@ -12,7 +12,8 @@ import {
     getMyActivePackage,
     getUserPackageById,
     purchasePackage,
-    cancelUserPackage
+    cancelUserPackage,
+    packageVnpayReturn,
 } from '../controllers/userPackageController';
 import { getMyInspectionRequests } from '../controllers/bicycleController';
 import { verifyToken, requireUser } from '../middleware/auth';
@@ -20,6 +21,9 @@ import { validate } from '../middleware/validate';
 import { addAddressSchema, updateAddressSchema } from '../validations/addressValidation';
 
 const router = Router();
+
+// VNPay callback — no auth (VNPay redirects here after payment)
+router.get('/packages/vnpay-return', packageVnpayReturn);
 
 // Profile
 router.get('/profile', verifyToken, requireUser, getProfile);

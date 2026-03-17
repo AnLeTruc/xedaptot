@@ -8,6 +8,7 @@ import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
 import { match } from 'node:assert';
+import * as notificationService from '../../services/notificationService';
 
 const getWithdrawTransaction = async (
     walletId: mongoose.Types.ObjectId,
@@ -285,6 +286,10 @@ export const completeWithdrawRequest = async (
             });
         }
 
+        //Noti withdraw approved
+        notificationService.notifyWithdrawApproved(
+            withdrawRequest.userId.toString()
+        );
         res.status(200).json({
             success: true,
             message: 'Withdraw request completed successfully',
@@ -500,6 +505,10 @@ export const rejectWithdrawRequest = async (
             });
         }
 
+        notificationService.notifyWithdrawRejected(
+            withdrawRequest.userId.toString(),
+            reason || 'Không có lý do cụ thể'
+        );
         res.status(200).json({
             success: true,
             message: 'Withdraw request rejected successfully',

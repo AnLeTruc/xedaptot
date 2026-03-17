@@ -318,7 +318,7 @@ export const assignInspector = async (
             userId: inspectorId,
             type: 'INSPECTION_ASSIGNED',
             title: 'New Inspection Assignment',
-            content: `You have been assigned to inspect: ${bicycle.title}`,
+            message: `You have been assigned to inspect: ${bicycle.title}`,
             metadata: {
                 bicycleId,
                 inspectionReportId: report._id

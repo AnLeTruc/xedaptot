@@ -4,6 +4,7 @@ import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
 import WithdrawRequest from '../models/WithdrawRequest';
 import mongoose from 'mongoose';
+import * as notificationService from '../services/notificationService';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 
 //Get or create wallet for any user
@@ -121,7 +122,7 @@ export const depositToWallet = async (
         //           ^^^^^^^^ thêm bankCode (optional, user có thể chọn trước ngân hàng)
 
         const wallet = await getOrCreateWallet(userId);
-        
+
         // Tạo mã giao dịch nội bộ — dùng để MAP khi VNPay callback về
         const txnRef = generateCode('DEP');
 
@@ -146,8 +147,8 @@ export const depositToWallet = async (
         // VNPay doesn't accept IPv6 — convert ::1 and ::ffff:x.x.x.x to IPv4
         if (ipAddr === '::1') ipAddr = '127.0.0.1';
         if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
-               // Gọi VNPay service tạo URL
-        const   paymentUrl = createPaymentUrl({
+        // Gọi VNPay service tạo URL
+        const paymentUrl = createPaymentUrl({
             amount,
             orderId: txnRef,                     // Gửi mã nội bộ cho VNPay
             orderInfo: `Deposit+${txnRef}`,
@@ -194,7 +195,7 @@ export const vnpayReturn = async (
         const vnpAmount = parseInt(vnpParams['vnp_Amount']) / 100;  // Chia 100 lại
         const gatewayTxnId = vnpParams['vnp_TransactionNo'] || '';  // Mã giao dịch VNPay cấp
 
-                const transaction = await Transaction.findOne({
+        const transaction = await Transaction.findOne({
             transactionCode: txnRef,     // Map theo mã nội bộ
             type: 'DEPOSIT',
             'data.status': 'PENDING',    // Chỉ tìm PENDING (chưa xử lý)
@@ -207,13 +208,16 @@ export const vnpayReturn = async (
         }
 
 
-                if (responseCode !== '00') {
+        if (responseCode !== '00') {
             transaction.data = { ...transaction.data, status: 'FAILED' };
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
             // Không cộng tiền! Chỉ update transaction → FAILED
 
+            notificationService.notifyWalletTopUpFailed(
+                transaction.data.userId
+            );
             res.status(400).json({
                 success: false,
                 message: getResponseMessage(responseCode),
@@ -221,7 +225,7 @@ export const vnpayReturn = async (
             });
             return;
         }
-                const wallet = await Wallet.findById(transaction.walletId);
+        const wallet = await Wallet.findById(transaction.walletId);
         if (!wallet) {
             res.status(404).json({ success: false, message: 'Wallet not found' });
             return;
@@ -241,7 +245,11 @@ export const vnpayReturn = async (
         transaction.gatewayResponseCode = responseCode;
         transaction.data = { ...transaction.data, status: 'SUCCESS' };
         await transaction.save();
-        
+
+        notificationService.notifyWalletTopUpSuccess(
+            transaction.data.userId
+        );
+
         const frontendUrl = process.env.FRONTEND_URL;
         if (frontendUrl) {
             // Nếu có frontend → redirect user về trang wallet
@@ -302,6 +310,10 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
             transaction.gatewayResponseCode = responseCode;
             transaction.gatewayTransactionId = gatewayTxnId;
             await transaction.save();
+
+            notificationService.notifyWalletTopUpFailed(
+                transaction.data.userId
+            );
             res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
             return;
         }
@@ -324,6 +336,10 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
         transaction.gatewayResponseCode = responseCode;
         transaction.data = { ...transaction.data, status: 'SUCCESS' };
         await transaction.save();
+
+        notificationService.notifyWalletTopUpSuccess(
+            transaction.data.userId
+        );
 
         res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     } catch (error: any) {
@@ -418,6 +434,12 @@ export const createWithdrawRequest = async (
         }], { session });
 
         await session.commitTransaction();
+
+        notificationService.notifyWithdrawRequested(userId.toString());
+        notificationService.notifyAdminWithdrawRequest(
+            req.user!.fullName || req.user!.email,
+            amount
+        );
 
         res.status(201).json({
             success: true,

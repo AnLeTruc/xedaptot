@@ -3,7 +3,7 @@ import { IBicycleDocument } from '../types/bicycle';
 import { addressSubSchema } from './schemas/addressSchema';
 
 const approvalHistorySchema = new Schema({
-    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], required: true },
+    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED', 'VIOLATED'], required: true },
     reason: { type: String },
     actorId: { type: Schema.Types.ObjectId, ref: 'User' },
     actorName: { type: String },
@@ -49,7 +49,7 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         },
         status: {
             type: String,
-            enum: ['PENDING', 'APPROVED', 'RESERVED', 'SOLD', 'HIDDEN', 'REJECTED'],
+            enum: ['PENDING', 'APPROVED', 'RESERVED', 'SOLD', 'HIDDEN', 'REJECTED', 'VIOLATED'],
             default: 'PENDING'
         },
         isInspected: {

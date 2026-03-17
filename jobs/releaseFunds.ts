@@ -2,6 +2,7 @@ import Order from '../models/Order';
 import Wallet from '../models/Wallet';
 import Transaction from '../models/Transaction';
 import { ORDER_TIMEOUTS } from '../types/order';
+import { notifyEscrowReleased } from '../services/notificationService';
 
 // Helper function để generate transaction code
 const generateCode = (prefix: string) => {
@@ -15,7 +16,7 @@ const generateCode = (prefix: string) => {
 export const releaseFundsJob = async () => {
     try {
         const threshold = new Date(Date.now() - ORDER_TIMEOUTS.FUNDS_RELEASE);
-        
+
         // Tìm các đơn COMPLETED, đã confirm >= 48h, còn tiền trong escrow
         const orders = await Order.find({
             status: 'COMPLETED',
@@ -38,9 +39,10 @@ export const releaseFundsJob = async () => {
                 }
 
                 const release = order.amounts.pricing.finalPrice;
+                const shippingFee = order.amounts.shippingFee ?? 0;
 
-                // Trừ frozenBalance buyer
-                buyerWallet.frozenBalance -= release;
+                // Trừ frozenBalance buyer (finalPrice + shippingFee)
+                buyerWallet.frozenBalance -= (release + shippingFee);
                 await buyerWallet.save();
 
                 // Cộng tiền cho seller
@@ -60,6 +62,21 @@ export const releaseFundsJob = async () => {
                     description: `Release escrow - ${order.orderCode}`,
                     orderId: order._id,
                 });
+
+                // shipping fee là doanh thu platform
+                if (shippingFee > 0) {
+                    await Transaction.create({
+                        transactionCode: generateCode('TXN'),
+                        amount: shippingFee,
+                        paymentMethod: 'SYSTEM',
+                        walletId: buyerWallet._id,
+                        type: 'SHIPPING_FEE',
+                        balanceBefore: 0,
+                        balanceAfter: 0,
+                        description: `Phi giao hang cua don hang - ${order.orderCode}`,
+                        orderId: order._id,
+                    });
+                }
 
                 // Cập nhật Order
                 order.amounts.releasedAmount = release;
@@ -84,6 +101,9 @@ export const releaseFundsJob = async () => {
                 } as any);
 
                 await order.save();
+
+                //Noti 
+                notifyEscrowReleased(order.seller._id.toString(), order._id.toString(), order.orderCode);
 
                 console.log(`[RELEASE] Order ${order.orderCode}: ${release}đ → Seller ${order.seller._id}`);
             } catch (error: any) {
