@@ -20,7 +20,7 @@ export interface IWishlist {
 }
 
 
-export interface IWishlistDocument {
+export interface IWishlistDocument extends IWishlist, Document {
     createdAt: Date;
     updatedAt: Date;
 }

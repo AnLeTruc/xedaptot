@@ -40,14 +40,14 @@ const wishlistSchema = new Schema(
             required: [true, 'User Id is required'],
             index: true
         },
-        bicyclesId: {
-            type: [Schema.Types.ObjectId],
+        bicycleId: {
+            type: Schema.Types.ObjectId,
             ref: 'Bicycle',
             required: [true, 'Bicycle Id is required'],
             index: true
         },
-        bicycles: {
-            type: [wishlistBicycleSchema],
+        bicycle: {
+            type: wishlistBicycleSchema,
             required: [true, 'Bicycle is required']
         }
     }, {
