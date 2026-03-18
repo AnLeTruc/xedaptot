@@ -3,6 +3,7 @@ import { AuthRequest } from "../types";
 import Wishlist from "../models/Wishlist";
 import Bicycle from "../models/Bicycle";
 import mongoose from "mongoose";
+import { Auth } from "firebase-admin/lib/auth/auth";
 
 
 
@@ -98,6 +99,48 @@ export const removeFromWishlist = async (
         });
     }
 }
+
+
+export const getMyWishlist = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { page = '1', limit = '10' } = req.query;
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(50, Math.max(1, Number(limit)));
+        const skip = (pageNum - 1) * limitNum;
+
+
+        const [wishlist, totalItems] = await Promise.all([
+            Wishlist.find({
+                userId: req.user!._id
+            })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            Wishlist.countDocuments({
+                userId: req.user!._id
+            })
+        ]);
+        res.status(200).json({
+            success: true,
+            data: wishlist,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                totalItems,
+                totalPages: Math.ceil(totalItems / limitNum)
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to fetch wishlist'
+        });
+    }
+};
+
 
 
 

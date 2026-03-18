@@ -58,7 +58,7 @@ const wishlistSchema = new Schema(
 
 
 
-wishlistSchema.index({ userId: 1, bicyclesId: 1 }, { unique: true });
+wishlistSchema.index({ userId: 1, bicycleId: 1 }, { unique: true });
 
 export default mongoose.model<IWishlistDocument>('Wishlist', wishlistSchema);
 
