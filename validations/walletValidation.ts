@@ -10,7 +10,7 @@ export const depositSchema = z.object({
 
 export const withdrawSchema = z.object({
     amount: z.number()
-        .min(1000, 'Minimum withdraw amount is 1,000đ')
+        .min(10000, 'Minimum withdraw amount is 10,000đ')
         .max(500000000, 'Maximum withdraw amount is 500,000,000đ'),
     bankInfo: z.object({
         bankName: z.string().min(1, 'Bank name is required').max(100),
