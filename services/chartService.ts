@@ -152,14 +152,14 @@ export const getTopSellersChart = async (
 ): Promise<TopSellersResult> => {
 
   const matchStage: Record<string, unknown> = {
-    status: 'DELIVERED' //Success order
+    status: { $in: ['COMPLETED', 'FUNDS_RELEASED'] }
   };
 
-    if (year) {
-        matchStage.updatedAt = {
-        $gte: new Date(`${year}-01-01`),
-        $lte: new Date(`${year}-12-31T23:59:59`)
-        };
+  if (year) {
+    matchStage.completedAt = {
+      $gte: new Date(`${year}-01-01`),
+      $lte: new Date(`${year}-12-31T23:59:59`)
+    };
   }
 
   const result = await Order.aggregate([
@@ -168,7 +168,7 @@ export const getTopSellersChart = async (
       $group: {
         _id: '$seller._id',
         sellerName: { $first: '$seller.fullName' },
-        avatarUrl: { $first: '$seller.avatarUrl' },
+        sellerEmail: { $first: '$seller.email' },
         successOrders: { $sum: 1 }
       }
     },
@@ -182,7 +182,7 @@ export const getTopSellersChart = async (
   const data: SellerChartItem[] = result.map((item) => ({
     sellerId: item._id?.toString() ?? 'unknown',
     sellerName: item.sellerName ?? 'Unknown',
-    avatarUrl: item.avatarUrl ?? '',
+    sellerEmail: item.sellerEmail ?? '',
     successOrders: item.successOrders,
     percentage: total > 0
       ? Math.round((item.successOrders / total) * 100 * 10) / 10

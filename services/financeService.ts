@@ -41,7 +41,7 @@ export const getAOVStats = async (
 ): Promise<AOVResult> => {
 
   const matchStage: Record<string, unknown> = {
-    status: 'DELIVERED'
+    status: { $in: ['COMPLETED', 'FUNDS_RELEASED'] }
   };
 
   if (year) {

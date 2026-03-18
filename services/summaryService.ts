@@ -1,7 +1,7 @@
 import User from '../models/User';
 import Listing from '../models/Bicycle';
 import Order from '../models/Order';
-import Subscription from '../models/Package';
+import UserPackage from '../models/UserPackage';
 import Transaction from '../models/Transaction';
 import { getDateRange } from '../utils/dateRange';
 
@@ -46,22 +46,24 @@ export const getSummaryData = async (
   }
   const activeListings = await Listing.countDocuments(listingFilter);
 
-  //totalRevenue — doanh thu từ gói đăng tin đã thanh toán qua VNPay
-  const revenueFilter: Record<string, unknown> = {
-    type: 'PACKAGE_PURCHASE',
-    'data.status': 'SUCCESS',
-  };
-  if (dateRange) {
-    revenueFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
-  }
+  //totalRevenue — doanh thu platform: gói đăng tin (PACKAGE_PURCHASE) + phí vận chuyển (SHIPPING_FEE)
+  const revenueOrFilter = [
+    { type: 'PACKAGE_PURCHASE', 'data.status': 'SUCCESS' },
+    { type: 'SHIPPING_FEE' },
+  ];
   const revenueResult = await Transaction.aggregate([
-    { $match: revenueFilter },
+    {
+      $match: {
+        ...(dateRange ? { createdAt: { $gte: dateRange.start, $lte: dateRange.end } } : {}),
+        $or: revenueOrFilter,
+      }
+    },
     { $group: { _id: null, total: { $sum: '$amount' } } }
   ]);
   const totalRevenue = revenueResult[0]?.total ?? 0;
 
   //successOrders
-  const orderFilter: Record<string, unknown> = { status: 'success' };
+  const orderFilter: Record<string, unknown> = { status: { $in: ['COMPLETED', 'FUNDS_RELEASED'] } };
   if (dateRange) {
     orderFilter.completedAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
@@ -79,11 +81,11 @@ export const getSummaryData = async (
   const escrowAmount = escrowResult[0]?.total ?? 0;
 
   // paidSubscriptions
-  const subFilter: Record<string, unknown> = { type: 'upgrade' };
+  const subFilter: Record<string, unknown> = { status: 'ACTIVE' };
   if (dateRange) {
     subFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
-  const paidSubscriptions = await Subscription.countDocuments(subFilter);
+  const paidSubscriptions = await UserPackage.countDocuments(subFilter);
 
   return {
     totalUsers: {

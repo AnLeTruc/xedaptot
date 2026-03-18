@@ -7,7 +7,7 @@ import Wallet from '../../models/Wallet';
 import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
-import { match } from 'node:assert';
+
 import * as notificationService from '../../services/notificationService';
 
 const getWithdrawTransaction = async (
@@ -138,6 +138,7 @@ export const approveWithdrawRequest = async (
         }
 
         withdrawRequest.status = 'APPROVED';
+        withdrawRequest.processedBy = req.user!._id;
         withdrawRequest.rejectedReason = undefined;
         withdrawRequest.transferReference = undefined;
         await withdrawRequest.save({ session });
