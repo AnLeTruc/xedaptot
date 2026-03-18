@@ -55,7 +55,9 @@ router.get('/:id/inspection-report',
             const report = await InspectionReport.findOne({
                 bicycleId: id,
                 status: { $in: ['COMPLETED', 'REJECTED'] }
-            }).populate('inspectorId', 'fullName');
+            })
+            .sort({ createdAt: -1 })
+            .populate('inspectorId', 'fullName');
 
             if (!report) {
                 return res.status(404).json({
