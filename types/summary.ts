@@ -61,7 +61,7 @@ export interface TopCategoriesResult {
 export interface SellerChartItem {
   sellerId: string;
   sellerName: string;
-  avatarUrl: string;
+  sellerEmail: string;
   successOrders: number;
   percentage: number;
 }
