@@ -48,6 +48,7 @@ const deviceTokenRouter = require('./routes/deviceToken').default;
 const notificationRouter = require('./routes/notification').default;
 const wishlistRouter = require('./routes/wishlist').default;
 const aiRouter = require('./routes/ai').default;
+const chatbotRouter = require('./routes/chatbot').default;
 var app = express();
 
 // Trust proxy for Render
@@ -101,5 +102,6 @@ app.use('/api/device-tokens', deviceTokenRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/chatbot', chatbotRouter);
 
 module.exports = app;
