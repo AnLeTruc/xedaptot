@@ -617,6 +617,49 @@ export const hideConversation = async (
     }
 }
 
+export const unhideConversation = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUser = (req as any).user._id;
+
+        if (!conversationId || !isValidateObjectId(conversationId)) {
+            res.status(400).json({
+                message: 'Invalid Conversation ID format'
+            });
+            return;
+        }
+
+        const conversation = await Conversation.findOneAndUpdate(
+            {
+                _id: conversationId,
+                participants: currentUser
+            },
+            {
+                $pull: { hiddenBy: currentUser }
+            },
+            { new: true }
+        );
+
+        if (!conversation) {
+            res.status(404).json({ message: 'Không tìm thấy hội thoại hoặc không có quyền truy cập' });
+            return;
+        }
+
+        res.status(200).json({
+            message: 'Đã hiện lại cuộc hội thoại thành công'
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+}
+
+
 //Delete conversation
 export const deleteConversation = async (
     req: Request,

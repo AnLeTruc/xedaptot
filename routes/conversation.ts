@@ -7,6 +7,7 @@ import {
     markAsUnread,
     getUnreadCount,
     hideConversation,
+    unhideConversation,
     startSupportConversation,
     deleteConversation,
     deleteAllConversations,
@@ -31,6 +32,7 @@ router.get('/unread-count', verifyToken, requireUser, getUnreadCount);
 router.put('/:id/read', verifyToken, requireUser, markAsRead);
 router.put('/:id/unread', verifyToken, requireUser, markAsUnread);
 router.patch('/:id/hide', verifyToken, requireUser, hideConversation);
+router.patch('/:id/unhide', verifyToken, requireUser, unhideConversation);
 router.get('/:id', verifyToken, requireUser, getMessageHistory);
 router.delete('/', verifyToken, requireUser, deleteAllConversations);
 router.delete('/:id', verifyToken, requireUser, deleteConversation);

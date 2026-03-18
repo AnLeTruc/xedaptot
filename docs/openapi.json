@@ -10166,6 +10166,58 @@
         }
       }
     },
+    "/conversations/{id}/unhide": {
+      "patch": {
+        "tags": [
+          "Conversation"
+        ],
+        "summary": "Unhide a conversation",
+        "description": "Removes the current user from the hiddenBy list, making the conversation visible again in the user's conversation list.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation unhidden successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Đã hiện lại cuộc hội thoại thành công"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Conversation ID format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Conversation not found or no access"
+          }
+        }
+      }
+    },
     "/conversations/{id}": {
       "get": {
         "tags": [
