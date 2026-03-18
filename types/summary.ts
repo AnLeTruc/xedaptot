@@ -62,6 +62,7 @@ export interface SellerChartItem {
   sellerId: string;
   sellerName: string;
   sellerEmail: string;
+  sellerAvatar: string;
   successOrders: number;
   percentage: number;
 }

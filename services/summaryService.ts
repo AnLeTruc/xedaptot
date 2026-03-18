@@ -8,7 +8,7 @@ import { getDateRange } from '../utils/dateRange';
 export interface SummaryResult {
   totalUsers: {
     total: number;
-    new: number; // user mới trong kỳ
+    new: number;
   };
   activeListings: number;
   totalRevenue: number;
@@ -26,7 +26,6 @@ export const getSummaryData = async (
 
   const dateRange = getDateRange(period, year);
 
-  //totalUsers
   const userFilter: Record<string, unknown> = {
     roles: { $nin: ['admin', 'inspector'] }
   };
@@ -39,37 +38,46 @@ export const getSummaryData = async (
     dateRange ? User.countDocuments(userFilter) : 0
   ]);
 
-  //activeListings
   const listingFilter: Record<string, unknown> = { status: 'APPROVED' };
   if (dateRange) {
-    listingFilter.approvedAt = { $gte: dateRange.start, $lte: dateRange.end };
+    listingFilter.updatedAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
   const activeListings = await Listing.countDocuments(listingFilter);
 
-  //totalRevenue — doanh thu platform: gói đăng tin (PACKAGE_PURCHASE) + phí vận chuyển (SHIPPING_FEE)
-  const revenueOrFilter = [
-    { type: 'PACKAGE_PURCHASE', 'data.status': 'SUCCESS' },
-    { type: 'SHIPPING_FEE' },
-  ];
-  const revenueResult = await Transaction.aggregate([
-    {
-      $match: {
-        ...(dateRange ? { createdAt: { $gte: dateRange.start, $lte: dateRange.end } } : {}),
-        $or: revenueOrFilter,
-      }
-    },
-    { $group: { _id: null, total: { $sum: '$amount' } } }
-  ]);
-  const totalRevenue = revenueResult[0]?.total ?? 0;
+  const packageRevenueFilter: Record<string, unknown> = {
+    type: 'PACKAGE_PURCHASE',
+    'data.status': 'SUCCESS',
+  };
+  if (dateRange) {
+    packageRevenueFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
+  }
 
-  //successOrders
+  const shippingRevenueFilter: Record<string, unknown> = {
+    status: { $in: ['COMPLETED', 'FUNDS_RELEASED'] },
+    'amounts.shippingFee': { $gt: 0 },
+  };
+  if (dateRange) {
+    shippingRevenueFilter.updatedAt = { $gte: dateRange.start, $lte: dateRange.end };
+  }
+
+  const [packageRevenueResult, shippingRevenueResult] = await Promise.all([
+    Transaction.aggregate([
+      { $match: packageRevenueFilter },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]),
+    Order.aggregate([
+      { $match: shippingRevenueFilter },
+      { $group: { _id: null, total: { $sum: '$amounts.shippingFee' } } }
+    ])
+  ]);
+  const totalRevenue = (packageRevenueResult[0]?.total ?? 0) + (shippingRevenueResult[0]?.total ?? 0);
+
   const orderFilter: Record<string, unknown> = { status: { $in: ['COMPLETED', 'FUNDS_RELEASED'] } };
   if (dateRange) {
-    orderFilter.completedAt = { $gte: dateRange.start, $lte: dateRange.end };
+    orderFilter.updatedAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
   const successOrders = await Order.countDocuments(orderFilter);
 
-  //escrowAmount
   const escrowFilter: Record<string, unknown> = { 'amounts.escrowAmount': { $gt: 0 } };
   if (dateRange) {
     escrowFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
@@ -80,8 +88,10 @@ export const getSummaryData = async (
   ]);
   const escrowAmount = escrowResult[0]?.total ?? 0;
 
-  // paidSubscriptions
-  const subFilter: Record<string, unknown> = { status: 'ACTIVE' };
+  const subFilter: Record<string, unknown> = {
+    status: 'ACTIVE',
+    'package.code': { $ne: 'FREE' }
+  };
   if (dateRange) {
     subFilter.createdAt = { $gte: dateRange.start, $lte: dateRange.end };
   }
@@ -100,4 +110,4 @@ export const getSummaryData = async (
     period,
     ...(year && { year })
   };
-};
+};

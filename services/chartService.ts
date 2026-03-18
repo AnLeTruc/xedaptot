@@ -156,7 +156,7 @@ export const getTopSellersChart = async (
   };
 
   if (year) {
-    matchStage.completedAt = {
+    matchStage.updatedAt = {
       $gte: new Date(`${year}-01-01`),
       $lte: new Date(`${year}-12-31T23:59:59`)
     };
@@ -168,13 +168,26 @@ export const getTopSellersChart = async (
       $group: {
         _id: '$seller._id',
         sellerName: { $first: '$seller.fullName' },
-        sellerEmail: { $first: '$seller.email' },
         successOrders: { $sum: 1 }
       }
     },
-
     { $sort: { successOrders: -1 } },
-    { $limit: Number(limit) }
+    { $limit: Number(limit) },
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'userInfo'
+      }
+    },
+    {
+      $addFields: {
+        sellerEmail: { $ifNull: [{ $arrayElemAt: ['$userInfo.email', 0] }, ''] },
+        sellerAvatar: { $ifNull: [{ $arrayElemAt: ['$userInfo.avatarUrl', 0] }, ''] }
+      }
+    },
+    { $project: { userInfo: 0 } }
   ]);
 
   const total = result.reduce((sum, item) => sum + item.successOrders, 0);
@@ -183,6 +196,7 @@ export const getTopSellersChart = async (
     sellerId: item._id?.toString() ?? 'unknown',
     sellerName: item.sellerName ?? 'Unknown',
     sellerEmail: item.sellerEmail ?? '',
+    sellerAvatar: item.sellerAvatar ?? '',
     successOrders: item.successOrders,
     percentage: total > 0
       ? Math.round((item.successOrders / total) * 100 * 10) / 10

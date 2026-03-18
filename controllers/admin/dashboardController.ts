@@ -124,7 +124,7 @@ export const getTopSellersChartController = async (
   try {
     const { limit = 5, year } = req.query as unknown as TopSellersQueryInput;
 
-    const data = await getTopSellersChart(Number(limit), year);
+    const data = await getTopSellersChart(Number(limit), year ? Number(year) : undefined);
 
     res.status(200).json({ success: true, data });
 
