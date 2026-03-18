@@ -37,7 +37,6 @@ export const addToWishlist = async (
             userId: req.user!._id,
             bicycleId: bicycle._id,
             bicycle: {
-                _id: bicycle._id,
                 title: bicycle.title,
                 price: bicycle.price,
                 primaryImage,

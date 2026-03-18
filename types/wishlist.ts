@@ -2,7 +2,6 @@ import { Document, Types } from "mongoose";
 
 
 export interface IWishlistBicycle {
-    _id: Types.ObjectId;
     title: string;
     price: number;
     primaryImage?: string;

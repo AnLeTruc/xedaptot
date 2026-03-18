@@ -5,14 +5,9 @@ import { truncate } from 'node:fs';
 
 const wishlistBicycleSchema = new Schema(
     {
-        _id: {
-            type: Schema.Types.ObjectId,
-            ref: 'Bicycle',
-            required: true
-        },
         title: {
             type: String,
-            rquired: true
+            required: true
         },
         price: {
             type: Number,
