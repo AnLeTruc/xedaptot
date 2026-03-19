@@ -12,6 +12,7 @@ import * as shippingService from '../services/shippingService';
 import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import { syncWishlistBicycle } from './wishlistController';
+import Order from '../models/Order';
 
 const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: number[] } | null | undefined => {
     if (!coordinates) {
@@ -197,7 +198,7 @@ export const getAllBicycles = async (
 
 // GET /api/bicycles/:id
 export const getBicycleById = async (
-    req: Request,
+    req: AuthRequest,
     res: Response
 ): Promise<void> => {
     try {
@@ -213,12 +214,50 @@ export const getBicycleById = async (
             return;
         }
 
+        const user = req.user;
+        const status = bicycle.status;
+
+        const isOwner = !!user && user._id.toString() === bicycle.seller._id.toString();
+        const isAdmin = !!(user?.roles?.includes('ADMIN'));
+        const isInspector = !!(user?.roles?.includes('INSPECTOR'));
+
+        let isAuthorized = false;
+
+        if (status === 'APPROVED') {
+            isAuthorized = true;
+        } else if (status === 'PENDING') {
+            isAuthorized = isOwner || isAdmin || isInspector;
+        } else if (status === 'RESERVED' || status === 'SOLD') {
+            if (isOwner || (status === 'SOLD' && isAdmin)) {
+                isAuthorized = true;
+            } else if (user) {
+
+                const order = await Order.findOne({
+                    'bicycle._id': bicycle._id,
+                    'buyer._id': user._id,
+                    status: { $in: ['RESERVED_FULL', 'RESERVED_DEPOSIT', 'DEPOSIT_CONFIRMED', 'CONFIRMED', 'WAITING_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'WAITING_REMAINING_PAYMENT', 'COMPLETED', 'FUNDS_RELEASED'] }
+                });
+                if (order) isAuthorized = true;
+            }
+        } else if (['HIDDEN', 'REJECTED', 'VIOLATED'].includes(status)) {
+            isAuthorized = isOwner || isAdmin || isInspector;
+        }
+
+        if (!isAuthorized) {
+            res.status(403).json({
+                success: false,
+                message: 'You are not authorized to view this bicycle listing'
+            });
+            return;
+        }
+
         // Tăng view count
         const updatedBicycle = await Bicycle.findByIdAndUpdate(
             id,
             { $inc: { viewCount: 1 } },
             { new: true }
         );
+
         res.status(200).json({
             success: true,
             data: updatedBicycle

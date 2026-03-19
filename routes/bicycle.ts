@@ -41,6 +41,7 @@ router.get('/my',
 );
 
 router.get('/:id',
+    optionalAuth,
     validate(bicycleIdParamSchema, 'params'),
     getBicycleById
 );
