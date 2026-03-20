@@ -45,7 +45,7 @@ export const getSummaryStats = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Lỗi hệ thống'
     });
   }
 };

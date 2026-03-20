@@ -28,16 +28,16 @@ export const createOrder = async (
 
         const bicycle = await Bicycle.findById(bicycleId);
         if (!bicycle || bicycle.status != 'APPROVED') {
-            return res.status(400).json({ success: false, message: 'Bicycle is not available' });
+            return res.status(400).json({ success: false, message: 'Xe đạp không khả dụng' });
         }
 
         if (bicycle.seller._id.toString() === buyer._id.toString()) {
-            return res.status(400).json({ success: false, message: 'Cannot purchase your own bicycle' });
+            return res.status(400).json({ success: false, message: 'Không thể mua xe đạp của chính bạn' });
         }
 
         const seller = await User.findById(bicycle.seller._id);
         if (!seller) {
-            return res.status(400).json({ success: false, message: 'Seller not found' });
+            return res.status(400).json({ success: false, message: 'Không tìm thấy người bán' });
         }
         // ktra có ng đặt chưa (ko đặt trùng)
         const existing = await Order.findOne({
@@ -47,7 +47,7 @@ export const createOrder = async (
             }
         });
         if (existing) {
-            return res.status(400).json({ success: false, message: 'Bicycle is already reserved or pending payment' });
+            return res.status(400).json({ success: false, message: 'Xe đạp đã được đặt hoặc đang chờ thanh toán' });
         }
 
         // Shipping address
@@ -58,7 +58,7 @@ export const createOrder = async (
         if (!shippingAddr || !shippingAddr.districtId || !shippingAddr.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid shipping address or missing district/ward code'
+                message: 'Địa chỉ giao hàng không hợp lệ hoặc thiếu mã quận/phường'
             });
         }
 
@@ -66,7 +66,7 @@ export const createOrder = async (
         if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Bicycle pickup location missing GHN districtId/wardCode'
+                message: 'Địa chỉ lấy hàng xe đạp thiếu mã quận/phường GHN'
             });
         }
 
@@ -231,7 +231,7 @@ export const payOrder = async (
     try {
         const order = await Order.findById(req.params.id);
         if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
-            res.status(404).json({ success: false, message: 'Order not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
             return;
         }
 
@@ -248,7 +248,7 @@ export const payOrder = async (
                 order._id.toString(),
                 order.orderCode
             );
-            res.status(400).json({ success: false, message: 'Reservation has expired' });
+            res.status(400).json({ success: false, message: 'Đặt chỗ đã hết hạn' });
             return;
         }
 
@@ -289,7 +289,7 @@ export const payOrder = async (
         if (availableBalance < buyerPays) {
             res.status(400).json({
                 success: false,
-                message: 'Insufficient balance',
+                message: 'Số dư không đủ',
                 data: { availableBalance, required: buyerPays }
             });
             return;
@@ -401,7 +401,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 
         const order = await Promise.race([orderPromise, timeoutPromise]) as any;
 
-        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (!order) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
 
         const uid = req.user!._id.toString();
         const isAdmin = req.user!.roles.includes('ADMIN');
@@ -409,7 +409,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         const isBuyer = order.buyer._id.toString() === uid;
 
         if (!isBuyer && !isSeller && !isAdmin) {
-            return res.status(403).json({ success: false, message: 'You do not have permission to view this order' });
+            return res.status(403).json({ success: false, message: 'Bạn không có quyền xem đơn hàng này' });
         }
 
         // Hide pickupAddress from Buyer (only Admin and Seller can see)
@@ -421,7 +421,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
         if (error.message === 'Request timeout') {
-            return res.status(408).json({ success: false, message: 'Request timed out, please try again' });
+            return res.status(408).json({ success: false, message: 'Yêu cầu đã hết thời gian, vui lòng thử lại' });
         }
         res.status(500).json({ success: false, message: error.message });
     }
@@ -433,7 +433,7 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
-            return res.status(403).json({ success: false, message: 'Permission denied' });
+            return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
         }
 
         const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
@@ -541,7 +541,7 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
 
 export const receiveOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
-    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Permission denied' });
+    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
     if (order.status !== 'DELIVERED') return res.status(400).json({ success: false, message: `Cannot receive order in ${order.status} status` });
 
     order.status = 'COMPLETED';
@@ -554,16 +554,16 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
         req.user!._id.toString(),
         order._id.toString()
     );
-    res.status(200).json({ success: true, message: 'Funds will be released to seller after 48 hours', data: order });
+    res.status(200).json({ success: true, message: 'Tiền sẽ được giải phóng cho người bán sau 48 giờ', data: order });
 };
 
 
 
 export const reviewOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
-    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Permission denied' });
-    if (order.status !== 'COMPLETED' && order.status !== 'FUNDS_RELEASED') return res.status(400).json({ success: false, message: 'Can only review completed orders' });
-    if (order.review) return res.status(400).json({ success: false, message: 'Order has already been reviewed' });
+    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
+    if (order.status !== 'COMPLETED' && order.status !== 'FUNDS_RELEASED') return res.status(400).json({ success: false, message: 'Chỉ có thể đánh giá đơn hàng đã hoàn thành' });
+    if (order.review) return res.status(400).json({ success: false, message: 'Đơn hàng đã được đánh giá' });
 
     order.review = { rating: req.body.rating, comment: req.body.comment || '', createdAt: new Date() };
     await order.save();
@@ -583,7 +583,7 @@ export const reviewOrder = async (req: AuthRequest, res: Response) => {
 
 export const confirmOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
-    if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Permission denied' });
+    if (!order || order.seller._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
     if (order.status !== 'WAITING_SELLER_CONFIRMATION') return res.status(400).json({ success: false, message: 'Invalid' });
     order.status = 'CONFIRMED';
     order.sellerConfirmedAt = new Date();
@@ -613,10 +613,10 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order || order.seller._id.toString() !== req.user!._id.toString()) {
-            return res.status(403).json({ success: false, message: 'Permission denied' });
+            return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
         }
         if (order.status !== 'WAITING_SELLER_CONFIRMATION') {
-            return res.status(400).json({ success: false, message: 'Invalid status' });
+            return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
         }
 
         // Hoàn tiền cho buyer
@@ -698,7 +698,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
 export const pickupOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order || order.status !== 'CONFIRMED')
-        return res.status(400).json({ success: false, message: 'Order must be CONFIRMED to pickup' });
+        return res.status(400).json({ success: false, message: 'Đơn hàng phải ở trạng thái ĐÃ XÁC NHẬN để lấy hàng' });
     order.status = 'WAITING_FOR_PICKUP';
     await order.save();
     res.status(200).json({ success: true, data: order });
@@ -707,7 +707,7 @@ export const pickupOrder = async (req: AuthRequest, res: Response) => {
 export const shipOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order || order.status !== 'WAITING_FOR_PICKUP')
-        return res.status(400).json({ success: false, message: 'Order must be WAITING_FOR_PICKUP to ship' });
+        return res.status(400).json({ success: false, message: 'Đơn hàng phải ở trạng thái CHỜ LẤY HÀNG để giao' });
     order.status = 'IN_TRANSIT';
     await order.save();
     res.status(200).json({ success: true, data: order });
@@ -716,7 +716,7 @@ export const shipOrder = async (req: AuthRequest, res: Response) => {
 export const deliverOrder = async (req: AuthRequest, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order || order.status !== 'IN_TRANSIT')
-        return res.status(400).json({ success: false, message: 'Order must be IN_TRANSIT to deliver' });
+        return res.status(400).json({ success: false, message: 'Đơn hàng phải ở trạng thái ĐANG GIAO để xác nhận giao hàng' });
 
     // Check nếu đã trả đủ thì chuyển thẳng sang DELIVERED
     const isPaidTotal = order.amounts.depositPaid + order.amounts.remainingPaid >= order.amounts.total;
@@ -742,7 +742,7 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
     try {
         const order = await Order.findById(req.params.id);
         if (!order || order.buyer._id.toString() !== req.user!._id.toString()) {
-            res.status(404).json({ success: false, message: 'Order not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
             return;
         }
 
@@ -758,7 +758,7 @@ export const payOrderVnpay = async (req: AuthRequest, res: Response): Promise<vo
                 order._id.toString(),
                 order.orderCode
             );
-            res.status(400).json({ success: false, message: 'Reservation has expired' });
+            res.status(400).json({ success: false, message: 'Đặt chỗ đã hết hạn' });
             return;
         }
 
@@ -832,7 +832,7 @@ export const vnpayOrderReturn = async (req: Request, res: Response): Promise<voi
     try {
         const vnpParams = req.query as Record<string, string>;
         if (!verifyReturnUrl(vnpParams)) {
-            res.status(400).json({ success: false, message: 'Invalid signature' });
+            res.status(400).json({ success: false, message: 'Chữ ký không hợp lệ' });
             return;
         }
         const txnRef = vnpParams['vnp_TxnRef'];
@@ -843,11 +843,11 @@ export const vnpayOrderReturn = async (req: Request, res: Response): Promise<voi
             transactionCode: txnRef, type: 'ESCROW_IN', 'data.status': 'PENDING'
         });
         if (!transaction) {
-            res.status(404).json({ success: false, message: 'Transaction not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy giao dịch' });
             return;
         }
         const order = await Order.findById(transaction.orderId);
-        if (!order) { res.status(404).json({ success: false, message: 'Order not found' }); return; }
+        if (!order) { res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' }); return; }
         // THẤT BẠI
         if (responseCode !== '00') {
             transaction.data = { ...transaction.data, status: 'FAILED' };
@@ -888,7 +888,7 @@ export const vnpayOrderIPN = async (req: Request, res: Response): Promise<void> 
         const vnpAmount = parseInt(vnpParams['vnp_Amount']) / 100;
         const gatewayTxnId = vnpParams['vnp_TransactionNo'] || '';
         const transaction = await Transaction.findOne({ transactionCode: txnRef, type: 'ESCROW_IN' });
-        if (!transaction) { res.status(200).json({ RspCode: '01', Message: 'Order not found' }); return; }
+        if (!transaction) { res.status(200).json({ RspCode: '01', Message: 'Không tìm thấy đơn hàng' }); return; }
         if (transaction.data?.status !== 'PENDING') {
             res.status(200).json({ RspCode: '02', Message: 'Already processed' }); return;
         }
@@ -896,7 +896,7 @@ export const vnpayOrderIPN = async (req: Request, res: Response): Promise<void> 
             res.status(200).json({ RspCode: '04', Message: 'Invalid amount' }); return;
         }
         const order = await Order.findById(transaction.orderId);
-        if (!order) { res.status(200).json({ RspCode: '01', Message: 'Order not found' }); return; }
+        if (!order) { res.status(200).json({ RspCode: '01', Message: 'Không tìm thấy đơn hàng' }); return; }
         if (responseCode !== '00') {
             transaction.data = { ...transaction.data, status: 'FAILED' };
             transaction.gatewayResponseCode = responseCode;
@@ -925,7 +925,7 @@ async function _processVnpayOrderSuccess(
     gatewayTxnId: string, responseCode: string
 ) {
     const buyerWallet = await Wallet.findById(transaction.walletId);
-    if (!buyerWallet) throw new Error('Wallet not found');
+    if (!buyerWallet) throw new Error('Không tìm thấy ví');
 
     const balanceBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
 

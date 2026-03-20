@@ -71,7 +71,7 @@ export const getBrandById = async (
         if (!brand) {
             res.status(404).json({
                 success: false,
-                message: 'Brand not found'
+                message: 'Không tìm thấy thương hiệu'
             });
             return;
         }
@@ -103,21 +103,21 @@ export const createBrand = async (
 
         res.status(201).json({
             success: true,
-            message: 'Brand created successfully',
+            message: 'Tạo thương hiệu thành công',
             data: brand
         });
     } catch (error: any) {
         if (error.code === 11000) {
             res.status(400).json({
                 success: false,
-                message: 'Brand already exits'
+                message: 'Thương hiệu đã tồn tại'
             });
             return;
         }
 
         res.status(500).json({
             success: false,
-            message: 'Failed to create brand'
+            message: 'Tạo thương hiệu thất bại'
         });
     }
 };
@@ -146,28 +146,28 @@ export const updateBrand = async (
         if (!brand) {
             res.status(404).json({
                 success: false,
-                message: 'Brand not found'
+                message: 'Không tìm thấy thương hiệu'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Brand updated successfully',
+            message: 'Cập nhật thương hiệu thành công',
             data: brand
         });
     } catch (error: any) {
         if (error.code === 11000) {
             res.status(400).json({
                 success: false,
-                message: 'Brand name already exists'
+                message: 'Tên thương hiệu đã tồn tại'
             });
             return;
         }
 
         res.status(500).json({
             success: false,
-            message: 'Failed to update brand'
+            message: 'Cập nhật thương hiệu thất bại'
         });
     }
 };
@@ -185,20 +185,20 @@ export const deleteBrand = async (
         if (!deletedBrand) {
             res.status(404).json({
                 success: false,
-                message: 'Brand not found'
+                message: 'Không tìm thấy thương hiệu'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Brand deleted successfully',
+            message: 'Xoá thương hiệu thành công',
             data: deletedBrand
         });
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: 'Failed to delete brand'
+            message: 'Xoá thương hiệu thất bại'
         });
     }
 };

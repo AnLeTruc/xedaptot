@@ -6,7 +6,7 @@ export const generalLimiter = rateLimit({
     max: 1000,
     message: {
         success: false,
-        message: 'Too many request, please try again later'
+        message: 'Quá nhiều yêu cầu, vui lòng thử lại sau'
     },
     standardHeaders: true,
     legacyHeaders: false
@@ -18,7 +18,7 @@ export const authLimiter = rateLimit({
     max: 10,
     message: {
         success: false,
-        message: 'Too many login attempts, please try again after 15 minutes'
+        message: 'Quá nhiều lần đăng nhập, vui lòng thử lại sau 15 phút'
     },
     standardHeaders: true,
     legacyHeaders: false
@@ -30,7 +30,7 @@ export const changePasswordLimiter = rateLimit({
     max: 5,
     message: {
         success: false,
-        message: 'Too many password change attempts, please try again after 15 minutes'
+        message: 'Quá nhiều lần đổi mật khẩu, vui lòng thử lại sau 15 phút'
     },
     standardHeaders: true,
     legacyHeaders: false

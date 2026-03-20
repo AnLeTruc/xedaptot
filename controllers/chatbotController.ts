@@ -49,7 +49,7 @@ export const connectAdmin = async (req: AuthRequest, res: Response): Promise<voi
     try {
         const userId = req.user?._id;
         if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
+            res.status(401).json({ success: false, message: 'Chưa xác thực' });
             return;
         }
 

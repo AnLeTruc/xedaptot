@@ -17,24 +17,24 @@ export const getNotificationsSchema = z.object({
         .optional()
         .default('1')
         .transform(val => parseInt(val, 10))
-        .pipe(z.number().int().min(1, 'Page must be at least 1')),
+        .pipe(z.number().int().min(1, 'Trang phải từ 1 trở lên')),
 
     limit: z
         .string()
         .optional()
         .default('20')
         .transform(val => parseInt(val, 10))
-        .pipe(z.number().int().min(1).max(100, 'Limit cannot exceed 100')),
+        .pipe(z.number().int().min(1).max(100, 'Limit không được vượt quá 100')),
 
     type: z
         .enum(NOTIFICATION_TYPES, {
-            message: `Type must be one of: ${NOTIFICATION_TYPES.join(', ')}`
+            message: `Loại phải là một trong: ${NOTIFICATION_TYPES.join(', ')}`
         })
         .optional(),
 
     isRead: z
         .enum(['true', 'false'], {
-            message: 'isRead must be "true" or "false"'
+            message: 'isRead phải là "true" hoặc "false"'
         })
         .optional()
         .transform(val => (val === undefined ? undefined : val === 'true'))
@@ -43,9 +43,9 @@ export const getNotificationsSchema = z.object({
 //Read noti
 export const notificationIdSchema = z.object({
     id: z
-        .string({ message: 'Notification ID is required' })
-        .min(1, 'Notification ID cannot be empty')
-        .regex(/^[a-f\d]{24}$/i, 'Invalid notification ID format')
+        .string({ message: 'Mã thông báo là bắt buộc' })
+        .min(1, 'Mã thông báo không được để trống')
+        .regex(/^[a-f\d]{24}$/i, 'Định dạng mã thông báo không hợp lệ')
 });
 
 // Infer types

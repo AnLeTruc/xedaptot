@@ -41,7 +41,7 @@ export const getPackageById = async (
         if (!packageItem) {
             res.status(404).json({
                 success: false,
-                message: 'Package not found'
+                message: 'Không tìm thấy gói'
             });
             return;
         }
@@ -71,7 +71,7 @@ export const createPackage = async (
         if (existingPackage) {
             res.status(400).json({
                 success: false,
-                message: 'Package code already exists'
+                message: 'Mã gói đã tồn tại'
             });
             return;
         }
@@ -85,7 +85,7 @@ export const createPackage = async (
         });
         res.status(201).json({
             success: true,
-            message: 'Package created successfully',
+            message: 'Tạo gói thành công',
             data: newPackage
         });
     } catch (error: any) {
@@ -112,7 +112,7 @@ export const updatePackage = async (
         if (!packageItem) {
             res.status(404).json({
                 success: false,
-                message: 'Package not found'
+                message: 'Không tìm thấy gói'
             });
             return;
         }
@@ -121,7 +121,7 @@ export const updatePackage = async (
             if (existingPackage) {
                 res.status(400).json({
                     success: false,
-                    message: 'Package code already exists'
+                    message: 'Mã gói đã tồn tại'
                 });
                 return;
             }
@@ -135,7 +135,7 @@ export const updatePackage = async (
         await packageItem.save();
         res.json({
             success: true,
-            message: 'Package updated successfully',
+            message: 'Cập nhật gói thành công',
             data: packageItem
         });
     } catch (error: any) {
@@ -160,14 +160,14 @@ export const deletePackage = async (
         if (!packageItem) {
             res.status(404).json({
                 success: false,
-                message: 'Package not found'
+                message: 'Không tìm thấy gói'
             });
             return;
         }
         await packageItem.deleteOne();
         res.json({
             success: true,
-            message: 'Package deleted successfully'
+            message: 'Xoá gói thành công'
         });
     } catch (error: any) {
         res.status(500).json({
@@ -193,7 +193,7 @@ export const togglePackageActive = async (
         if (!packageItem) {
             res.status(404).json({
                 success: false,
-                message: 'Package not found'
+                message: 'Không tìm thấy gói'
             });
             return;
         }

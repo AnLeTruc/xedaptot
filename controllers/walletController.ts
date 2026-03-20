@@ -57,7 +57,7 @@ export const getMyWallet = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: 'Failed to load wallet. Please try again later.'
+            message: 'Tải ví thất bại. Vui lòng thử lại sau.'
         });
     }
 };
@@ -103,7 +103,7 @@ export const getTransactions = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: 'Failed to load wallet transactions. Please try again later.'
+            message: 'Tải lịch sử giao dịch ví thất bại. Vui lòng thử lại sau.'
         });
     }
 };
@@ -159,14 +159,14 @@ export const depositToWallet = async (
         // Trả URL cho frontend — KHÔNG cộng tiền ở đây!
         res.status(200).json({
             success: true,
-            message: 'Redirect user to paymentUrl to complete deposit',
+            message: 'Chuyển hướng người dùng đến paymentUrl để hoàn tất nạp tiền',
             data: { paymentUrl, txnRef }
         });
 
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: 'Failed to initialize wallet deposit. Please try again later.'
+            message: 'Khởi tạo nạp tiền ví thất bại. Vui lòng thử lại sau.'
         });
     }
 };
@@ -186,7 +186,7 @@ export const vnpayReturn = async (
             // Chữ ký sai → có thể bị giả mạo → REJECT
             res.status(400).json({
                 success: false,
-                message: 'Invalid signature from VNPay'
+                message: 'Chữ ký VNPay không hợp lệ'
             });
             return;
         }
@@ -203,7 +203,7 @@ export const vnpayReturn = async (
 
         if (!transaction) {
             // Không tìm thấy HOẶC đã xử lý rồi (duplicate callback)
-            res.status(404).json({ success: false, message: 'Transaction not found or already processed' });
+            res.status(404).json({ success: false, message: 'Giao dịch không tìm thấy hoặc đã được xử lý' });
             return;
         }
 
@@ -227,7 +227,7 @@ export const vnpayReturn = async (
         }
         const wallet = await Wallet.findById(transaction.walletId);
         if (!wallet) {
-            res.status(404).json({ success: false, message: 'Wallet not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy ví' });
             return;
         }
 
@@ -288,7 +288,7 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
         const transaction = await Transaction.findOne({ transactionCode: txnRef, type: 'DEPOSIT' });
 
         if (!transaction) {
-            res.status(200).json({ RspCode: '01', Message: 'Order not found' });
+            res.status(200).json({ RspCode: '01', Message: 'Không tìm thấy đơn hàng' });
             return;
         }
 
@@ -321,7 +321,7 @@ export const vnpayIPN = async (req: Request, res: Response): Promise<void> => {
         // Thanh toán OK → cộng tiền (giống vnpayReturn)
         const wallet = await Wallet.findById(transaction.walletId);
         if (!wallet) {
-            res.status(200).json({ RspCode: '01', Message: 'Wallet not found' });
+            res.status(200).json({ RspCode: '01', Message: 'Không tìm thấy ví' });
             return;
         }
 
@@ -366,7 +366,7 @@ export const createWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Wallet not found. Please contact support.'
+                message: 'Không tìm thấy ví. Vui lòng liên hệ hỗ trợ.'
             });
             return;
         }
@@ -377,7 +377,7 @@ export const createWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Insufficient available balance',
+                message: 'Số dư không đủ',
                 data: { availableBalance, requested: amount }
             });
             return;
@@ -443,7 +443,7 @@ export const createWithdrawRequest = async (
 
         res.status(201).json({
             success: true,
-            message: 'Withdraw request created, pending admin approval',
+            message: 'Yêu cầu rút tiền đã tạo, đang chờ admin duyệt',
             data: withdrawRequest
         });
     } catch (error: any) {
