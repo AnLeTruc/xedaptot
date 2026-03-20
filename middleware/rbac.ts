@@ -10,7 +10,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
         if (!req.user) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             });
             return;
         }
@@ -22,7 +22,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
         if (!hasPermission) {
             res.status(403).json({
                 success: false,
-                message: 'Forbidden',
+                message: 'Không có quyền truy cập',
                 currentRoles: userRoles
             });
             return;

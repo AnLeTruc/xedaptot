@@ -209,7 +209,7 @@ export const getBicycleById = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -332,7 +332,7 @@ export const createBicycle = async (
         if (!categoryDoc) {
             res.status(400).json({
                 success: false,
-                message: 'Category not found'
+                message: 'Không tìm thấy danh mục'
             })
             return;
         }
@@ -344,7 +344,7 @@ export const createBicycle = async (
             if (!brandDoc) {
                 res.status(400).json({
                     success: false,
-                    message: 'Brand not found'
+                    message: 'Không tìm thấy thương hiệu'
                 })
                 return;
             }
@@ -358,7 +358,7 @@ export const createBicycle = async (
         if (modelId) {
             const modelDoc = await BicycleModel.findById(modelId);
             if (!modelDoc) {
-                res.status(400).json({ success: false, message: 'Bicycle model not found' });
+                res.status(400).json({ success: false, message: 'Không tìm thấy mẫu xe' });
                 return;
             }
             if (brandId && modelDoc.brand._id.toString() !== brandId) {
@@ -494,7 +494,7 @@ export const updateBicycle = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -566,7 +566,7 @@ export const updateBicycle = async (
             if (!categoryDoc) {
                 res.status(400).json({
                     success: false,
-                    message: 'Category not found'
+                    message: 'Không tìm thấy danh mục'
                 });
                 return;
             }
@@ -582,7 +582,7 @@ export const updateBicycle = async (
             if (!brandDoc) {
                 res.status(400).json({
                     success: false,
-                    message: 'Brand not found'
+                    message: 'Không tìm thấy thương hiệu'
                 });
                 return;
             }
@@ -636,7 +636,7 @@ export const deleteBicycle = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             })
             return;
         }
@@ -655,7 +655,7 @@ export const deleteBicycle = async (
 
         res.status(200).json({
             success: true,
-            message: 'Bicycle deleted successfully'
+            message: 'Xoá xe đạp thành công'
         });
 
         //Noti delete
@@ -685,7 +685,7 @@ export const getBicycleStatus = async (
 
         const bicycle = await Bicycle.findById(id);
         if (!bicycle) {
-            res.status(404).json({ success: false, message: 'Bicycle not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy xe đạp' });
             return;
         }
 
@@ -735,7 +735,7 @@ export const getBicycleStatus = async (
                 return;
             }
         } else {
-            res.status(400).json({ success: false, message: 'Invalid status' });
+            res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
             return;
         }
 
@@ -770,7 +770,7 @@ export const getBicycleStatus = async (
 
         res.status(200).json({
             success: true,
-            message: 'Bicycle status updated successfully',
+            message: 'Cập nhật trạng thái xe đạp thành công',
             data: bicycle
         });
     } catch (error: any) {
@@ -789,7 +789,7 @@ export const resubmitBicycle = async (
         const bicycle = await Bicycle.findById(id);
 
         if (!bicycle) {
-            res.status(404).json({ success: false, message: 'Bicycle not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy xe đạp' });
             return;
         }
 
@@ -852,7 +852,7 @@ export const requestInspection = async (
         if (!user) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }
@@ -861,7 +861,7 @@ export const requestInspection = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -933,7 +933,7 @@ export const getMyInspectionRequests = async (
         if (!user) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }

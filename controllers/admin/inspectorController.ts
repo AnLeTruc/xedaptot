@@ -26,7 +26,7 @@ export const createInspector = async (
         if (!email || !fullName) {
             res.status(400).json({
                 success: false,
-                message: 'Email and fullName are required'
+                message: 'Email và họ tên là bắt buộc'
             });
             return;
         }
@@ -36,7 +36,7 @@ export const createInspector = async (
         if (existingUser) {
             res.status(400).json({
                 success: false,
-                message: 'Email already registered'
+                message: 'Email đã được đăng ký'
             });
             return;
         }
@@ -58,7 +58,7 @@ export const createInspector = async (
             if (firebaseError.code === 'auth/email-already-exists') {
                 res.status(400).json({
                     success: false,
-                    message: 'Email already registered in Firebase'
+                    message: 'Email đã được đăng ký trên Firebase'
                 });
                 return;
             }
@@ -148,7 +148,7 @@ export const getInspectorById = async (
         if (!inspector) {
             res.status(404).json({
                 success: false,
-                message: 'Inspector not found'
+                message: 'Không tìm thấy kiểm định viên'
             });
             return;
         }
@@ -196,14 +196,14 @@ export const updateInspector = async (
         if (!inspector) {
             res.status(404).json({
                 success: false,
-                message: 'Inspector not found'
+                message: 'Không tìm thấy kiểm định viên'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Inspector updated successfully',
+            message: 'Cập nhật kiểm định viên thành công',
             data: inspector
         });
     } catch (error: any) {
@@ -231,14 +231,14 @@ export const deleteInspector = async (
         if (!inspector) {
             res.status(404).json({
                 success: false,
-                message: 'Inspector not found'
+                message: 'Không tìm thấy kiểm định viên'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Inspector deactivated successfully'
+            message: 'Vô hiệu hoá kiểm định viên thành công'
         });
     } catch (error: any) {
         res.status(500).json({
@@ -261,7 +261,7 @@ export const assignInspector = async (
         if (!inspectorId) {
             res.status(400).json({
                 success: false,
-                message: 'Inspector ID is required'
+                message: 'Mã kiểm định viên là bắt buộc'
             });
             return;
         }
@@ -276,7 +276,7 @@ export const assignInspector = async (
         if (!inspector) {
             res.status(404).json({
                 success: false,
-                message: 'Inspector not found or inactive'
+                message: 'Không tìm thấy kiểm định viên hoặc đã vô hiệu hoá'
             });
             return;
         }
@@ -286,7 +286,7 @@ export const assignInspector = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -353,7 +353,7 @@ export const unassignInspector = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }

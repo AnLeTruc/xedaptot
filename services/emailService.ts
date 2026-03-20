@@ -49,7 +49,7 @@ export const sendMail = async (
         await sgMail.send({
             from: {
                 email: emailFrom,
-                name: 'Xedaptot Team'
+                name: 'Đội ngũ Xedaptot'
             },
             to: options.to,
             subject: options.subject,
@@ -79,25 +79,25 @@ export const sendVerificationEmail = async (
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
-            <h2 style="color: #2563eb; margin: 0 0 8px;">Verify your Xedaptot email</h2>
-            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
-            <p style="margin: 0 0 16px;">Thanks for signing up for Xedaptot. Please verify your email to activate your account.</p>
+            <h2 style="color: #2563eb; margin: 0 0 8px;">Xác thực email Xedaptot</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Cảm ơn bạn đã đăng ký Xedaptot. Vui lòng xác thực email để kích hoạt tài khoản.</p>
             <div style="text-align: center; margin: 24px 0;">
                 <a href="${verifyUrl}"
                    style="background-color: #2563eb; color: #ffffff; padding: 12px 28px;
                           text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                    Verify email
+                    Xác thực email
                 </a>
             </div>
             <p style="color: #374151; font-size: 14px; margin: 0 0 8px;">
-                If the button does not work, open this link in your browser:
+                Nếu nút không hoạt động, vui lòng mở đường dẫn sau trong trình duyệt:
             </p>
             <p style="font-size: 14px; margin: 0 0 12px;">
                 <a href="${verifyUrl}" style="color: #2563eb;">${verifyUrl}</a>
             </p>
-            <p style="color: #6b7280; font-size: 12px; margin: 0 0 12px;">This link expires in 24 hours.</p>
+            <p style="color: #6b7280; font-size: 12px; margin: 0 0 12px;">Đường dẫn này sẽ hết hạn sau 24 giờ.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
-            <p style="color: #6b7280; font-size: 12px; margin: 0;">If you did not request this, please ignore this email or contact ${supportEmail}.</p>
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email hoặc liên hệ ${supportEmail}.</p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
     </div>
@@ -105,7 +105,7 @@ export const sendVerificationEmail = async (
 
     return sendMail({
         to: email,
-        subject: '[Xedaptot] Verify your email',
+        subject: '[Xedaptot] Xác thực email của bạn',
         html
     });
 };
@@ -123,31 +123,31 @@ export const sendInspectorWelcomeEmail = async (
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
-            <h2 style="color: #10b981; margin: 0 0 8px;"> Welcome to the Inspector Team!</h2>
-            <p style="margin: 0 0 12px;">Hello <strong>${fullName || 'Inspector'}</strong>,</p>
-            <p style="margin: 0 0 16px;">Your Inspector account has been successfully created on the Xedaptot platform.</p>
+            <h2 style="color: #10b981; margin: 0 0 8px;">Chào mừng bạn gia nhập đội ngũ Kiểm định viên!</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'Kiểm định viên'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Tài khoản Kiểm định viên của bạn đã được tạo thành công trên nền tảng Xedaptot.</p>
             
             <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p style="margin: 0 0 8px;"><strong>Login Credentials:</strong></p>
+                <p style="margin: 0 0 8px;"><strong>Thông tin đăng nhập:</strong></p>
                 <p style="margin: 0 0 4px;">📧 Email: <strong>${email}</strong></p>
-                <p style="margin: 0;">Temporary Password: <strong>${tempPassword}</strong></p>
+                <p style="margin: 0;">Mật khẩu tạm thời: <strong>${tempPassword}</strong></p>
             </div>
             
             <p style="color: #dc2626; font-size: 14px; margin: 0 0 16px;">
-                Please change your password immediately after your first login!
+                Vui lòng đổi mật khẩu ngay sau lần đăng nhập đầu tiên!
             </p>
             
             <div style="text-align: center; margin: 24px 0;">
                 <a href="${loginUrl}"
                    style="background-color: #10b981; color: #ffffff; padding: 12px 28px;
                           text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                    Login Now
+                    Đăng nhập ngay
                 </a>
             </div>
             
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
             <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                If you did not request this account, please contact ${supportEmail}.
+                Nếu bạn không yêu cầu tạo tài khoản này, vui lòng liên hệ ${supportEmail}.
             </p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
@@ -156,7 +156,7 @@ export const sendInspectorWelcomeEmail = async (
 
     return sendMail({
         to: email,
-        subject: '[Xedaptot] Your Inspector Account is Ready!',
+        subject: '[Xedaptot] Tài khoản Kiểm định viên đã sẵn sàng!',
         html
     });
 };
@@ -171,19 +171,19 @@ export const sendPasswordChangedEmail = async (
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
-            <h2 style="color: #2563eb; margin: 0 0 8px;">Password Changed</h2>
-            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
+            <h2 style="color: #2563eb; margin: 0 0 8px;">Mật khẩu đã được thay đổi</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
             <p style="margin: 0 0 16px;">
-                Your Xedaptot account password was successfully changed on
+                Mật khẩu tài khoản Xedaptot của bạn đã được thay đổi thành công vào lúc
                 <strong>${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</strong>.
             </p>
             <p style="margin: 0 0 16px;">
-                If you did not make this change, please reset your password immediately or contact
+                Nếu bạn không thực hiện thay đổi này, vui lòng đặt lại mật khẩu ngay hoặc liên hệ
                 <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.
             </p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;">
             <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                This is an automated notification. Please do not reply to this email.
+                Đây là thông báo tự động. Vui lòng không trả lời email này.
             </p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
@@ -192,7 +192,7 @@ export const sendPasswordChangedEmail = async (
 
     return sendMail({
         to: email,
-        subject: '[Xedaptot] Your password has been changed',
+        subject: '[Xedaptot] Mật khẩu của bạn đã được thay đổi',
         html
     });
 };
@@ -207,20 +207,20 @@ export const sendWithdrawApprovedEmail = async (
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
-            <h2 style="color: #16a34a; margin: 0 0 8px;">Withdraw Request Approved</h2>
-            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
-            <p style="margin: 0 0 16px;">Your withdraw request has been approved and processed by the Xedaptot admin team.</p>
+            <h2 style="color: #16a34a; margin: 0 0 8px;">Yêu cầu rút tiền đã được duyệt</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Yêu cầu rút tiền của bạn đã được duyệt và xử lý bởi đội ngũ quản trị Xedaptot.</p>
             <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p style="margin: 0 0 8px;"><strong>Request ID:</strong> ${payload.requestId}</p>
-                <p style="margin: 0 0 8px;"><strong>Amount:</strong> ${formatVndCurrency(payload.amount)}</p>
-                <p style="margin: 0 0 8px;"><strong>Bank:</strong> ${payload.bankInfo.bankName}</p>
-                <p style="margin: 0 0 8px;"><strong>Account Number:</strong> ${payload.bankInfo.accountNumber}</p>
-                <p style="margin: 0 0 8px;"><strong>Account Name:</strong> ${payload.bankInfo.accountName}</p>
-                <p style="margin: 0 0 8px;"><strong>Requested At:</strong> ${formatDateTime(payload.requestedAt)}</p>
-                <p style="margin: 0 0 8px;"><strong>Processed At:</strong> ${formatDateTime(payload.processedAt)}</p>
-                <p style="margin: 0;"><strong>Transfer Reference:</strong> ${payload.transferReference || 'N/A'}</p>
+                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tiền:</strong> ${formatVndCurrency(payload.amount)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngân hàng:</strong> ${payload.bankInfo.bankName}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Tên tài khoản:</strong> ${payload.bankInfo.accountName}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày yêu cầu:</strong> ${formatDateTime(payload.requestedAt)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày xử lý:</strong> ${formatDateTime(payload.processedAt)}</p>
+                <p style="margin: 0;"><strong>Mã tham chiếu:</strong> ${payload.transferReference || 'N/A'}</p>
             </div>
-            <p style="margin: 0 0 16px;">If you have any questions, please contact <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 16px;">Nếu bạn có thắc mắc, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
     </div>
@@ -228,7 +228,7 @@ export const sendWithdrawApprovedEmail = async (
 
     return sendMail({
         to: email,
-        subject: '[Xedaptot] Your withdraw request has been approved',
+        subject: '[Xedaptot] Yêu cầu rút tiền đã được duyệt',
         html
     });
 };
@@ -243,20 +243,20 @@ export const sendWithdrawRejectedEmail = async (
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
         <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
-            <h2 style="color: #dc2626; margin: 0 0 8px;">Withdraw Request Rejected</h2>
-            <p style="margin: 0 0 12px;">Hi <strong>${fullName || 'there'}</strong>,</p>
-            <p style="margin: 0 0 16px;">Your withdraw request was rejected by the Xedaptot admin team.</p>
+            <h2 style="color: #dc2626; margin: 0 0 8px;">Yêu cầu rút tiền bị từ chối</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Yêu cầu rút tiền của bạn đã bị từ chối bởi đội ngũ quản trị Xedaptot.</p>
             <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p style="margin: 0 0 8px;"><strong>Request ID:</strong> ${payload.requestId}</p>
-                <p style="margin: 0 0 8px;"><strong>Amount:</strong> ${formatVndCurrency(payload.amount)}</p>
-                <p style="margin: 0 0 8px;"><strong>Bank:</strong> ${payload.bankInfo.bankName}</p>
-                <p style="margin: 0 0 8px;"><strong>Account Number:</strong> ${payload.bankInfo.accountNumber}</p>
-                <p style="margin: 0 0 8px;"><strong>Account Name:</strong> ${payload.bankInfo.accountName}</p>
-                <p style="margin: 0 0 8px;"><strong>Requested At:</strong> ${formatDateTime(payload.requestedAt)}</p>
-                <p style="margin: 0 0 8px;"><strong>Processed At:</strong> ${formatDateTime(payload.processedAt)}</p>
-                <p style="margin: 0;"><strong>Reason:</strong> ${payload.reason || 'No reason provided'}</p>
+                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tiền:</strong> ${formatVndCurrency(payload.amount)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngân hàng:</strong> ${payload.bankInfo.bankName}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Tên tài khoản:</strong> ${payload.bankInfo.accountName}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày yêu cầu:</strong> ${formatDateTime(payload.requestedAt)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày xử lý:</strong> ${formatDateTime(payload.processedAt)}</p>
+                <p style="margin: 0;"><strong>Lý do:</strong> ${payload.reason || 'Không có lý do'}</p>
             </div>
-            <p style="margin: 0 0 16px;">The frozen amount has been released back to your wallet. If you need support, contact <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 16px;">Số tiền đã đóng băng đã được hoàn lại vào ví của bạn. Nếu cần hỗ trợ, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
     </div>
@@ -264,7 +264,7 @@ export const sendWithdrawRejectedEmail = async (
 
     return sendMail({
         to: email,
-        subject: '[Xedaptot] Your withdraw request was rejected',
+        subject: '[Xedaptot] Yêu cầu rút tiền bị từ chối',
         html
     });
 };

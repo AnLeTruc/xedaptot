@@ -17,7 +17,7 @@ export const verifyToken = async (
         if (!authHeader || !authHeader.startsWith('Bearer')) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             });
             return;
         }
@@ -44,7 +44,7 @@ export const verifyToken = async (
         console.error('Auth error: ', error);
         res.status(401).json({
             success: false,
-            message: 'Token is not valid',
+            message: 'Token không hợp lệ',
         });
     }
 };
@@ -89,7 +89,7 @@ export const requireUser = async (
     if (!req.user) {
         res.status(401).json({
             success: false,
-            message: 'User does not register with system',
+            message: 'Người dùng chưa đăng ký tài khoản',
         });
         return;
     }
@@ -112,7 +112,7 @@ export const requireVerifiedUser = async (
     if (!req.user.isVerified) {
         res.status(403).json({
             success: false,
-            message: 'Please verify your account before using wallet features.',
+            message: 'Vui lòng xác thực tài khoản trước khi sử dụng tính năng ví.',
         });
         return;
     }
@@ -137,7 +137,7 @@ export const requireAdmin = async (
     if (!req.user.roles.includes('ADMIN')) {
         res.status(403).json({
             success: false,
-            message: 'Access denied. Admin role required.',
+            message: 'Truy cập bị từ chối. Yêu cầu quyền Admin.',
         });
         return;
     }
@@ -161,7 +161,7 @@ export const requireInspector = async (
     if (!req.user.roles.includes('INSPECTOR')) {
         res.status(403).json({
             success: false,
-            message: 'Access denied. Inspector role required.',
+            message: 'Truy cập bị từ chối. Yêu cầu quyền Kiểm định viên.',
         });
         return;
     }

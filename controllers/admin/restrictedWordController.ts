@@ -26,7 +26,7 @@ export const createRestrictedWord = async (
         if (existing) {
             res.status(409).json({
                 success: false,
-                message: 'Restricted word already exists'
+                message: 'Từ hạn chế đã tồn tại'
             });
             return;
         }
@@ -120,7 +120,7 @@ export const updateRestrictedWord = async (
         if (!restrictedWord) {
             res.status(404).json({
                 success: false,
-                message: 'Restricted word not found'
+                message: 'Không tìm thấy từ hạn chế'
             });
             return;
         }
@@ -129,7 +129,7 @@ export const updateRestrictedWord = async (
 
         res.status(200).json({
             success: true,
-            message: 'Restricted word updated successfully',
+            message: 'Cập nhật từ hạn chế thành công',
             data: restrictedWord
         });
     } catch (error: any) {
@@ -160,7 +160,7 @@ export const deleteRestrictedWord = async (
         if (!restrictedWord) {
             res.status(404).json({
                 success: false,
-                message: 'Restricted word not found'
+                message: 'Không tìm thấy từ hạn chế'
             });
             return;
         }
@@ -169,7 +169,7 @@ export const deleteRestrictedWord = async (
 
         res.status(200).json({
             success: true,
-            message: 'Restricted word deleted successfully'
+            message: 'Xoá từ hạn chế thành công'
         });
     } catch (error: any) {
         res.status(500).json({
