@@ -17,7 +17,7 @@ export const createViolationReport = async (
         if (userId.toString() === reportedUserId) {
             return res.status(400).json({
                 success: false,
-                message: 'You cannot report yourself',
+                message: 'Bạn không thể báo cáo chính mình',
             });
         }
 
@@ -30,21 +30,21 @@ export const createViolationReport = async (
         if (!reportedUser) {
             return res.status(404).json({
                 success: false,
-                message: 'Reported user not found',
+                message: 'Không tìm thấy người dùng bị báo cáo',
             });
         }
 
         if (!bicycle) {
             return res.status(404).json({
                 success: false,
-                message: 'Bicycle not found',
+                message: 'Không tìm thấy xe đạp',
             });
         }
 
         if (bicycle.seller._id.toString() !== reportedUserId) {
             return res.status(400).json({
                 success: false,
-                message: 'Bicycle does not belong to the reported user',
+                message: 'Xe đạp không thuộc về người bị báo cáo',
             });
         }
 
@@ -83,7 +83,7 @@ export const createViolationReport = async (
 
         res.status(201).json({
             success: true,
-            message: 'Violation report created successfully',
+            message: 'Tạo báo cáo vi phạm thành công',
             data: violationReport,
         });
     } catch (error: any) {
@@ -133,7 +133,7 @@ export const getViolationReportById = async (
         if (!report) {
             return res.status(404).json({
                 success: false,
-                message: 'Violation report not found',
+                message: 'Không tìm thấy báo cáo vi phạm',
             });
         }
         res.json({ success: true, data: report });
@@ -195,7 +195,7 @@ export const updateViolationReport = async (req: AuthRequest, res: Response) => 
         if (!report) {
             return res.status(404).json({
                 success: false,
-                message: 'Violation report not found',
+                message: 'Không tìm thấy báo cáo vi phạm',
             });
         }
         report.status = status;
@@ -203,7 +203,7 @@ export const updateViolationReport = async (req: AuthRequest, res: Response) => 
         await report.save();
         res.json({
             success: true,
-            message: 'Violation report updated successfully',
+            message: 'Cập nhật báo cáo vi phạm thành công',
             data: report,
         });
     } catch (error: any) {
@@ -228,7 +228,7 @@ export const violateBicycle = async (
 
         const bicycle = await Bicycle.findById(id);
         if (!bicycle) {
-            res.status(404).json({ success: false, message: 'Bicycle not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy xe đạp' });
             return;
         }
 

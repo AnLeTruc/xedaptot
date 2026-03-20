@@ -61,7 +61,7 @@ export const calculateFeeForBicycle = async (req: AuthRequest, res: Response) =>
         // Lấy bicycle
         const bicycle = await Bicycle.findById(bicycleId);
         if (!bicycle) {
-            return res.status(404).json({ success: false, message: 'Bicycle not found' });
+            return res.status(404).json({ success: false, message: 'Không tìm thấy xe đạp' });
         }
 
         // Lấy buyer address
@@ -72,7 +72,7 @@ export const calculateFeeForBicycle = async (req: AuthRequest, res: Response) =>
         if (!shippingAddr?.districtId || !shippingAddr?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid shipping address or missing district/ward code'
+                message: 'Địa chỉ giao hàng không hợp lệ hoặc thiếu mã quận/phường'
             });
         }
 
@@ -80,7 +80,7 @@ export const calculateFeeForBicycle = async (req: AuthRequest, res: Response) =>
         if (!bicycle.location?.districtId || !bicycle.location?.wardCode) {
             return res.status(400).json({
                 success: false,
-                message: 'Bicycle pickup location missing GHN districtId/wardCode'
+                message: 'Địa chỉ lấy hàng xe đạp thiếu mã quận/phường GHN'
             });
         }
 

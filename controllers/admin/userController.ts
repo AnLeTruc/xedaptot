@@ -87,7 +87,7 @@ export const getUserById = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
@@ -151,7 +151,7 @@ export const updateUser = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
@@ -195,7 +195,7 @@ export const deactivateUser = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }

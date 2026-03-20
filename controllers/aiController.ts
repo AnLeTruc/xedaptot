@@ -51,14 +51,14 @@ export const analyzeBike = async (req: AuthRequest, res: Response): Promise<void
     const { imageUrl } = req.body;
 
     if (!imageUrl || typeof imageUrl !== 'string') {
-        res.status(400).json({ success: false, message: 'imageUrl is required' });
+        res.status(400).json({ success: false, message: 'imageUrl là bắt buộc' });
         return;
     }
 
     try {
         await runGeminiAnalysis(imageUrl, res);
     } catch (error: any) {
-        res.status(500).json({ success: false, message: error.message || 'AI service error' });
+        res.status(500).json({ success: false, message: error.message || 'Lỗi dịch vụ AI' });
     }
 };
 
@@ -68,7 +68,7 @@ export const priceSuggestion = async (req: AuthRequest, res: Response): Promise<
         const { brandId, categoryId, modelId, condition } = req.query;
 
         if (!brandId || !categoryId) {
-            res.status(400).json({ success: false, message: 'brandId and categoryId are required' });
+            res.status(400).json({ success: false, message: 'brandId và categoryId là bắt buộc' });
             return;
         }
 
@@ -107,7 +107,7 @@ export const priceSuggestion = async (req: AuthRequest, res: Response): Promise<
             }
         });
     } catch (error: any) {
-        res.status(500).json({ success: false, message: error.message || 'Server error' });
+        res.status(500).json({ success: false, message: error.message || 'Lỗi hệ thống' });
     }
 };
 

@@ -123,7 +123,7 @@ export const approveWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Withdraw request not found'
+                message: 'Không tìm thấy yêu cầu rút tiền'
             });
             return;
         }
@@ -164,7 +164,7 @@ export const approveWithdrawRequest = async (
 
         res.status(200).json({
             success: true,
-            message: 'Withdraw request approved successfully',
+            message: 'Duyệt yêu cầu rút tiền thành công',
             data: withdrawRequest
         });
     } catch (error: any) {
@@ -204,7 +204,7 @@ export const completeWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Withdraw request not found'
+                message: 'Không tìm thấy yêu cầu rút tiền'
             });
             return;
         }
@@ -223,7 +223,7 @@ export const completeWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Wallet not found'
+                message: 'Không tìm thấy ví'
             });
             return;
         }
@@ -422,7 +422,7 @@ export const rejectWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Withdraw request not found'
+                message: 'Không tìm thấy yêu cầu rút tiền'
             });
             return;
         }
@@ -443,7 +443,7 @@ export const rejectWithdrawRequest = async (
             await session.abortTransaction();
             res.status(404).json({
                 success: false,
-                message: 'Wallet not found'
+                message: 'Không tìm thấy ví'
             });
             return;
         }
@@ -512,7 +512,7 @@ export const rejectWithdrawRequest = async (
         );
         res.status(200).json({
             success: true,
-            message: 'Withdraw request rejected successfully',
+            message: 'Từ chối yêu cầu rút tiền thành công',
             data: withdrawRequest
         });
     } catch (error: any) {

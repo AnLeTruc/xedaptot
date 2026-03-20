@@ -73,7 +73,7 @@ export const getCategoryById = async (
         if (!category) {
             res.status(404).json({
                 success: false,
-                message: 'Category not found'
+                message: 'Không tìm thấy danh mục'
             });
             return;
         }
@@ -103,7 +103,7 @@ export const createCategory = async (
         if (existingCategory) {
             res.status(400).json({
                 success: false,
-                message: 'Category name already exists'
+                message: 'Tên danh mục đã tồn tại'
             });
             return;
         }
@@ -117,7 +117,7 @@ export const createCategory = async (
 
         res.status(201).json({
             success: true,
-            message: 'Category created successfully',
+            message: 'Tạo danh mục thành công',
             data: category
         });
     } catch (error: any) {
@@ -142,7 +142,7 @@ export const updateCategory = async (
         if (!category) {
             res.status(404).json({
                 success: false,
-                message: 'Category not found'
+                message: 'Không tìm thấy danh mục'
             });
             return;
         }
@@ -153,7 +153,7 @@ export const updateCategory = async (
             if (existingCategory) {
                 res.status(400).json({
                     success: false,
-                    message: 'Category name already exists'
+                    message: 'Tên danh mục đã tồn tại'
                 });
                 return;
             }
@@ -168,7 +168,7 @@ export const updateCategory = async (
 
         res.status(200).json({
             success: true,
-            message: 'Category updated successfully',
+            message: 'Cập nhật danh mục thành công',
             data: updatedCategory
         });
     } catch (error: any) {
@@ -191,7 +191,7 @@ export const deleteCategory = async (
         if (!category) {
             res.status(404).json({
                 success: false,
-                message: 'Category not found'
+                message: 'Không tìm thấy danh mục'
             });
             return;
         }
@@ -200,7 +200,7 @@ export const deleteCategory = async (
 
         res.status(200).json({
             success: true,
-            message: 'Category deleted successfully'
+            message: 'Xoá danh mục thành công'
         });
     } catch (error: any) {
         res.status(500).json({
