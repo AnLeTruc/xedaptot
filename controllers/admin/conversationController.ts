@@ -29,7 +29,7 @@ export const getAllConversationsAdmin = async (
         const page = parsePositiveInt(req.query.page, 1, 1000);
         if (limit === null || page === null) {
             res.status(400).json({
-                message: 'Limit và page phải là số nguyên dương'
+                message: 'Số lượng và số trang phải là số nguyên dương'
             });
             return;
         }
@@ -45,7 +45,7 @@ export const getAllConversationsAdmin = async (
         if (searchUserId) {
             if (!isValidateObjectId(searchUserId)) {
                 res.status(400).json({
-                    message: 'Định dạng userId không hợp lệ'
+                    message: 'Định dạng không hợp lệ'
                 });
                 return;
             }
@@ -144,7 +144,7 @@ export const getConversationMessagesAdmin = async (
         const limit = parsePositiveInt(req.query.limit, 20, 100);
         if (limit === null) {
             res.status(400).json({
-                message: 'Limit phải là số nguyên dương'
+                message: 'Số lượng phải là số nguyên dương'
             });
             return;
         }
