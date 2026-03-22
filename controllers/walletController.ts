@@ -6,6 +6,7 @@ import WithdrawRequest from '../models/WithdrawRequest';
 import mongoose from 'mongoose';
 import * as notificationService from '../services/notificationService';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
+import { VietQRService } from '../services/vietqrService';
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
@@ -497,6 +498,25 @@ export const getWithdrawRequests = async (
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+};
+
+
+// GET /wallets/banks
+export const getBanks = async (req: Request, res: Response) => {
+    try {
+        const banks = await VietQRService.getBanksList();
+
+        res.status(200).json({
+            success: true,
+            message: 'Lấy danh sách ngân hàng thành công',
+            data: banks
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi hệ thống khi tải dữ liệu ngân hàng'
         });
     }
 };
