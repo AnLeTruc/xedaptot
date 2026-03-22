@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import Bicycle from '../models/Bicycle';
 import Category from '../models/Category';
 import Brand from '../models/Brand';
@@ -7,7 +6,6 @@ import { AuthRequest } from '../types';
 import BicycleModel from '../models/BicycleModel';
 import User from '../models/User';
 import UserPackage from '../models/UserPackage';
-import Notification from '../models/Notification';
 import * as shippingService from '../services/shippingService';
 import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';

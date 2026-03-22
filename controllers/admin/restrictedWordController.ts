@@ -16,7 +16,7 @@ export const createRestrictedWord = async (
         if (!word || typeof word !== 'string' || word.trim() === '') {
             res.status(400).json({
                 success: false,
-                message: 'word is required'
+                message: 'Từ khóa là bắt buộc'
             });
             return;
         }
@@ -91,7 +91,7 @@ export const updateRestrictedWord = async (
         if (!isValidateObjectId(id)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid ID format'
+                message: 'Định dạng ID không hợp lệ'
             });
             return;
         }
@@ -101,7 +101,7 @@ export const updateRestrictedWord = async (
             if (typeof word !== 'string' || word.trim() === '') {
                 res.status(400).json({
                     success: false,
-                    message: 'word must be a non-empty string'
+                    message: 'Từ khóa không được để trống'
                 });
                 return;
             }
@@ -151,7 +151,7 @@ export const deleteRestrictedWord = async (
         if (!isValidateObjectId(id)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid ID format'
+                message: 'Định dạng ID không hợp lệ'
             });
             return;
         }

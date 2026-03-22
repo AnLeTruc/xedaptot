@@ -333,8 +333,6 @@ export const getAllTransactionsAdmin = async (
         if (orderId) {
             filter.orderId = orderId;
         }
-        // Vì Transaction không lưu trực tiếp user info,
-        // mà lưu walletId → phải tìm ngược: User → Wallet → Transaction
         if (search) {
             const matchedUsers = await User.find({
                 $or: [

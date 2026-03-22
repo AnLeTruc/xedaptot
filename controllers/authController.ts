@@ -1330,7 +1330,7 @@ export const changePassword = async (
         //Noti change pass
         notificationService.notifyPasswordChanged(user._id.toString());
 
-        // Send notification email (fire-and-forget)
+        // Send notification email
         sendPasswordChangedEmail(user.email, user.fullName || '').catch(err =>
             console.error('Failed to send password changed email:', err)
         );

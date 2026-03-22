@@ -84,15 +84,14 @@ export const createInspector = async (
         res.status(201).json({
             success: true,
             message: emailSent
-                ? 'Inspector created successfully. Email sent with credentials.'
-                : 'Inspector created but email failed to send.',
+                ? 'Tạo kiểm định viên thành công. Email đã được gửi với thông tin đăng nhập.'
+                : 'Tạo kiểm định viên thành công nhưng email không gửi được.',
             data: {
                 _id: inspector._id,
                 email: inspector.email,
                 fullName: inspector.fullName,
                 firebaseUid: firebaseUser.uid,
                 emailSent,
-                // Only show password in response for demo, remove in production
                 tempPassword: defaultPassword
             }
         });
@@ -317,8 +316,8 @@ export const assignInspector = async (
         await Notification.create({
             userId: inspectorId,
             type: 'INSPECTION_ASSIGNED',
-            title: 'New Inspection Assignment',
-            message: `You have been assigned to inspect: ${bicycle.title}`,
+            title: 'Phân công kiểm định mới',
+            message: `Bạn đã được phân công kiểm định xe: ${bicycle.title}`,
             metadata: {
                 bicycleId,
                 inspectionReportId: report._id
@@ -387,7 +386,7 @@ export const unassignInspector = async (
 
         res.status(200).json({
             success: true,
-            message: 'Inspector unassigned successfully'
+            message: 'Bỏ phân công kiểm định viên thành công'
         });
     } catch (error: any) {
         res.status(500).json({
