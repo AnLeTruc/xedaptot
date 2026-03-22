@@ -1211,7 +1211,7 @@ export const resetPassword = async (
 
     res.status(200).json({
         success: true,
-        message: 'Password reset successfully'
+        message: 'Đặt lại mật khẩu thành công'
     });
 
     return;

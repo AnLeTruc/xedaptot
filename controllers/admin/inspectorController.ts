@@ -295,7 +295,7 @@ export const assignInspector = async (
         if (bicycle.inspectionStatus === 'IN_PROGRESS' || bicycle.inspectionStatus === 'COMPLETED') {
             res.status(400).json({
                 success: false,
-                message: 'Bicycle already has an active or completed inspection'
+                message: 'Xe đạp này đã có yêu cầu kiểm định đang thực hiện hoặc đã hoàn thành'
             });
             return;
         }
@@ -327,7 +327,7 @@ export const assignInspector = async (
 
         res.status(200).json({
             success: true,
-            message: 'Inspector assigned successfully',
+            message: 'Phân công kiểm định viên thành công',
             data: {
                 bicycle,
                 inspectionReport: report
@@ -361,7 +361,7 @@ export const unassignInspector = async (
         if (bicycle.inspectionStatus === 'IN_PROGRESS') {
             res.status(400).json({
                 success: false,
-                message: 'Cannot unassign while inspection is in progress'
+                message: 'Không thể bỏ phân công khi quá trình kiểm định đang thực hiện'
             });
             return;
         }
@@ -369,7 +369,7 @@ export const unassignInspector = async (
         if (bicycle.inspectionStatus === 'COMPLETED') {
             res.status(400).json({
                 success: false,
-                message: 'Cannot unassign completed inspection'
+                message: 'Không thể bỏ phân công kiểm định đã hoàn thành'
             });
             return;
         }

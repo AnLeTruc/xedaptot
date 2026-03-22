@@ -11,7 +11,7 @@ const MODEL_FALLBACK_CHAIN = [
 
 function getAiClient(): GoogleGenAI {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+    if (!apiKey) throw new Error('GEMINI_API_KEY chưa được thiết lập');
     return new GoogleGenAI({ apiKey });
 }
 
@@ -153,7 +153,7 @@ async function runGeminiAnalysis(imageUrl: string, res: Response): Promise<void>
 
 async function fetchImageAsBase64(url: string): Promise<string> {
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+    if (!response.ok) throw new Error(`Tải ảnh thất bại: ${response.status}`);
     const buffer = await response.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
 }

@@ -44,7 +44,7 @@ export const createConversation = async (
 
         const receiverExists = await User.findById(receiverId);
         if (!receiverExists) {
-            res.status(404).json({ message: "Receiver User not found" });
+            res.status(404).json({ message: "Không tìm thấy người nhận" });
             return;
         }
 

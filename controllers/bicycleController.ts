@@ -128,7 +128,7 @@ export const getAllBicycles = async (
             if (status && status !== 'APPROVED') {
                 res.status(403).json({
                     success: false,
-                    message: 'Access denied. You can only view APPROVED bicycles.'
+                    message: 'Truy cập bị từ chối. Bạn chỉ có thể xem các xe đạp đã được duyệt.'
                 });
                 return;
             }
@@ -246,7 +246,7 @@ export const getBicycleById = async (
         if (!isAuthorized) {
             res.status(403).json({
                 success: false,
-                message: 'You are not authorized to view this bicycle listing'
+                message: 'Bạn không có quyền xem thông tin đăng bán xe đạp này'
             });
             return;
         }
@@ -296,7 +296,7 @@ export const createBicycle = async (
         if (!req.user) {
             res.status(401).json({
                 success: false,
-                message: 'Please login to post a bicycle'
+                message: 'Vui lòng đăng nhập để đăng bán xe đạp'
             })
             return;
         }
@@ -362,7 +362,7 @@ export const createBicycle = async (
                 return;
             }
             if (brandId && modelDoc.brand._id.toString() !== brandId) {
-                res.status(400).json({ success: false, message: 'Model does not belong to the selected brand' });
+                res.status(400).json({ success: false, message: 'Mẫu xe không thuộc thương hiệu đã chọn' });
                 return;
             }
             modelData = { _id: modelDoc._id, name: modelDoc.name };
@@ -385,7 +385,7 @@ export const createBicycle = async (
         if (location.coordinates && !geoPoint) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid map coordinates. Please provide [longitude, latitude].'
+                message: 'Toạ độ bản đồ không hợp lệ. Vui lòng cung cấp [kinh độ, vĩ độ].'
             });
             return;
         }
@@ -445,7 +445,7 @@ export const createBicycle = async (
 
         res.status(201).json({
             success: true,
-            message: 'Bicycle posted successfully. Waiting for approval.',
+            message: 'Đăng xe đạp thành công. Đang chờ duyệt.',
             data: bicycle
         })
 
@@ -503,7 +503,7 @@ export const updateBicycle = async (
         if (!req.user || bicycle.seller._id.toString() !== req.user._id.toString()) {
             res.status(403).json({
                 success: false,
-                message: 'You are not authorized to update this bicycle'
+                message: 'Bạn không có quyền cập nhật xe đạp này'
             });
             return;
         }
@@ -536,7 +536,7 @@ export const updateBicycle = async (
             if (location.coordinates && !geoPoint) {
                 res.status(400).json({
                     success: false,
-                    message: 'Invalid map coordinates. Please provide [longitude, latitude].'
+                    message: 'Toạ độ bản đồ không hợp lệ. Vui lòng cung cấp [kinh độ, vĩ độ].'
                 });
                 return;
             }
@@ -611,7 +611,7 @@ export const updateBicycle = async (
 
         res.status(200).json({
             success: true,
-            message: 'Bicycle updated successfully. Waiting for re-approval.',
+            message: 'Cập nhật xe đạp thành công. Đang chờ duyệt lại.',
             data: updatedBicycle
         });
     } catch (error: any) {
@@ -645,7 +645,7 @@ export const deleteBicycle = async (
         if (!req.user || bicycle.seller._id.toString() !== req.user?._id.toString()) {
             res.status(403).json({
                 success: false,
-                message: 'You are not authorized to delete this bicycle'
+                message: 'Bạn không có quyền xoá xe đạp này'
             })
             return;
         }
@@ -701,7 +701,7 @@ export const getBicycleStatus = async (
             if (!isPrivileged) {
                 res.status(403).json({
                     success: false,
-                    message: 'Only admin or inspector can approve or reject bicycles'
+                    message: 'Chỉ quản trị viên hoặc kiểm định viên mới có thể duyệt hoặc từ chối xe đạp'
                 });
                 return;
             }
@@ -730,7 +730,7 @@ export const getBicycleStatus = async (
             if (!isOwner) {
                 res.status(403).json({
                     success: false,
-                    message: 'Only owner can update this status'
+                    message: 'Chỉ chủ sở hữu mới có thể cập nhật trạng thái này'
                 });
                 return;
             }
@@ -870,7 +870,7 @@ export const requestInspection = async (
         if (bicycle.seller._id.toString() !== user._id.toString()) {
             res.status(403).json({
                 success: false,
-                message: 'You can only request inspection for your own bicycles'
+                message: 'Bạn chỉ có thể yêu cầu kiểm định cho xe đạp của chính mình'
             });
             return;
         }
@@ -879,7 +879,7 @@ export const requestInspection = async (
         if (bicycle.status !== 'PENDING') {
             res.status(400).json({
                 success: false,
-                message: 'Inspection can only be requested for bicycles with PENDING status'
+                message: 'Chỉ có thể yêu cầu kiểm định cho xe đạp ở trạng thái CHỜ DUYỆT'
             });
             return;
         }
@@ -906,7 +906,7 @@ export const requestInspection = async (
 
         res.status(200).json({
             success: true,
-            message: 'Inspection requested successfully. An admin will assign an inspector shortly.',
+            message: 'Yêu cầu kiểm định thành công. Quản trị viên sẽ sớm phân công kiểm định viên.',
             data: {
                 bicycleId: bicycle._id,
                 title: bicycle.title,

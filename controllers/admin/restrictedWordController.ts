@@ -40,7 +40,7 @@ export const createRestrictedWord = async (
 
         res.status(201).json({
             success: true,
-            message: 'Restricted word created successfully',
+            message: 'Tạo từ hạn chế thành công',
             data: restrictedWord
         });
     } catch (error: any) {

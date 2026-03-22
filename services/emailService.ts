@@ -37,11 +37,11 @@ export const sendMail = async (
         const emailFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
         if (!sendgridApiKey) {
-            throw new Error('SendGrid not configured. Set SENDGRID_API_KEY.');
+            throw new Error('SendGrid chưa được cấu hình. Cần thiết lập SENDGRID_API_KEY.');
         }
 
         if (!emailFrom) {
-            throw new Error('Missing EMAIL_FROM. Set EMAIL_FROM to a verified sender.');
+            throw new Error('Thiếu EMAIL_FROM. Cần thiết lập EMAIL_FROM thành email đã xác thực.');
         }
 
         sgMail.setApiKey(sendgridApiKey);

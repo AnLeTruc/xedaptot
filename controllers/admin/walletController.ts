@@ -113,7 +113,7 @@ export const approveWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Invalid withdraw request id'
+                message: 'Mã yêu cầu rút tiền không hợp lệ'
             });
             return;
         }
@@ -132,7 +132,7 @@ export const approveWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Only pending withdraw requests can be approved'
+                message: 'Chỉ có thể duyệt yêu cầu rút tiền đang chờ'
             });
             return;
         }
@@ -194,7 +194,7 @@ export const completeWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Invalid withdraw request id'
+                message: 'Mã yêu cầu rút tiền không hợp lệ'
             });
             return;
         }
@@ -213,7 +213,7 @@ export const completeWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Only approved withdraw requests can be completed'
+                message: 'Chỉ có thể hoàn thành yêu cầu rút tiền đã được duyệt'
             });
             return;
         }
@@ -232,7 +232,7 @@ export const completeWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Frozen balance is insufficient for this withdraw request'
+                message: 'Số dư đóng băng không đủ cho yêu cầu rút tiền này'
             });
             return;
         }
@@ -293,7 +293,7 @@ export const completeWithdrawRequest = async (
         );
         res.status(200).json({
             success: true,
-            message: 'Withdraw request completed successfully',
+            message: 'Hoàn thành yêu cầu rút tiền thành công',
             data: withdrawRequest
         });
     } catch (error: any) {
@@ -412,7 +412,7 @@ export const rejectWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Invalid withdraw request id'
+                message: 'Mã yêu cầu rút tiền không hợp lệ'
             });
             return;
         }
@@ -431,7 +431,7 @@ export const rejectWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Only pending or approved withdraw requests can be rejected'
+                message: 'Chỉ có thể từ chối yêu cầu rút tiền đang chờ hoặc đã duyệt'
             });
             return;
         }
@@ -452,7 +452,7 @@ export const rejectWithdrawRequest = async (
             await session.abortTransaction();
             res.status(400).json({
                 success: false,
-                message: 'Frozen balance is insufficient for this withdraw request'
+                message: 'Số dư đóng băng không đủ cho yêu cầu rút tiền này'
             });
             return;
         }

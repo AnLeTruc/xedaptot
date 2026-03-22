@@ -396,7 +396,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 
         const orderPromise = Order.findById(req.params.id);
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout')), TIMEOUT_MS)
+            setTimeout(() => reject(new Error('Hết thời gian yêu cầu')), TIMEOUT_MS)
         );
 
         const order = await Promise.race([orderPromise, timeoutPromise]) as any;
@@ -420,7 +420,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
 
         res.status(200).json({ success: true, data: order });
     } catch (error: any) {
-        if (error.message === 'Request timeout') {
+        if (error.message === 'Hết thời gian yêu cầu') {
             return res.status(408).json({ success: false, message: 'Yêu cầu đã hết thời gian, vui lòng thử lại' });
         }
         res.status(500).json({ success: false, message: error.message });
