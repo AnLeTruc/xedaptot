@@ -8320,6 +8320,105 @@
         }
       }
     },
+    "/wallets/banks": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get VietQR Banks Supported List",
+        "description": "Returns a list of banks supported by VietQR",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of supported banks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Lấy danh sách ngân hàng thành công"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number",
+                            "example": 17
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Ngân hàng TMCP Ngoại Thương Việt Nam"
+                          },
+                          "code": {
+                            "type": "string",
+                            "example": "VCB"
+                          },
+                          "bin": {
+                            "type": "string",
+                            "example": "970436"
+                          },
+                          "shortName": {
+                            "type": "string",
+                            "example": "Vietcombank"
+                          },
+                          "logo": {
+                            "type": "string",
+                            "example": "https://api.vietqr.io/img/VCB.png"
+                          },
+                          "transferSupported": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "lookupSupported": {
+                            "type": "number",
+                            "example": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Lỗi hệ thống khi tải dữ liệu ngân hàng"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/wallets/transactions": {
       "get": {
         "tags": [

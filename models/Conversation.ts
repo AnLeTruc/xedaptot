@@ -13,7 +13,7 @@ const conversationSchema = new Schema<IConversationDocument>({
             validator: function (v: mongoose.Types.ObjectId[]) {
                 return v.length === 2;
             },
-            message: 'A conversation must have exactly two participants.'
+            message: 'Một cuộc hội thoại phải có chính xác hai người tham gia.'
         }
     },
     //Last mess for quick querry

@@ -22,7 +22,7 @@ export const sendMessageSchema = z.object({
         }
         return true;
     }, {
-        message: "MessageType SYSTEM is reserved for server usage.",
+        message: "Loại tin nhắn SYSTEM chỉ dành cho hệ thống.",
         path: ["type"]
     })
     .refine(data => {
@@ -32,7 +32,7 @@ export const sendMessageSchema = z.object({
         }
         return true;
     }, {
-        message: "Content is required for Text message.",
+        message: "Nội dung là bắt buộc đối với tin nhắn văn bản.",
         path: ["content"]
     })
     .refine(data => {
@@ -42,7 +42,7 @@ export const sendMessageSchema = z.object({
         }
         return true;
     }, {
-        message: "bicycleId is required for PRODUCT messages.",
+        message: "bicycleId là bắt buộc đối với tin nhắn SẢN PHẨM.",
         path: ["bicycleId"]
     })
     .refine(data => {
@@ -52,7 +52,7 @@ export const sendMessageSchema = z.object({
         }
         return isValidUrl(data.content);
     }, {
-        message: "Content must be a valid URL for IMAGE messages.",
+        message: "Nội dung phải là URL hợp lệ đối với tin nhắn HÌNH ẢNH.",
         path: ["content"]
     });
 

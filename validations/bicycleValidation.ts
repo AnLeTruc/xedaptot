@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 //Schema for object image/video
 const mediaItemSchema = z.object({
-    url: z.string().url('URL must be valid'),
+    url: z.string().url('URL phải hợp lệ'),
     isPrimary: z.boolean().optional().default(false),
     mediaType: z.enum(['image', 'video']),
     displayOrder: z.number().optional()
@@ -23,7 +23,7 @@ const specificationsSchema = z.object({
 
 const geoPointSchema = z.object({
     type: z.literal('Point').optional().default('Point'),
-    coordinates: z.array(z.number()).length(2, 'Map coordinates must include [longitude, latitude]')
+    coordinates: z.array(z.number()).length(2, 'Toạ độ bản đồ phải bao gồm [kinh độ, vĩ độ]')
 }).superRefine((value, context) => {
     const [longitude, latitude] = value.coordinates;
 
@@ -31,7 +31,7 @@ const geoPointSchema = z.object({
         context.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['coordinates'],
-            message: 'Map coordinates must include valid [longitude, latitude] numbers'
+            message: 'Toạ độ bản đồ phải là số [kinh độ, vĩ độ] hợp lệ'
         });
     }
 });
@@ -53,26 +53,26 @@ const locationSchema = z.object({
 
 export const createBicycleSchema = z.object({
     title: z.string()
-        .min(1, 'Title is required')
-        .max(200, ' Title cannot exceed 200 characters'),
+        .min(1, 'Tiêu đề là bắt buộc')
+        .max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
     price: z.number()
-        .positive('Price must be positive'),
+        .positive('Giá phải là số dương'),
     condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR'], {
-        message: 'Condition must be: NEW, LIKE_NEW, GOOD, FAIR OR POOR'
+        message: 'Tình trạng phải là: MỚI, NHƯ MỚI, TỐT, KHÁ hoặc KÉM'
     }),
     categoryId: z.string()
-        .min(1, 'Category is required'),
+        .min(1, 'Danh mục là bắt buộc'),
 
     description: z.string()
-        .max(5000, 'Description cannot exceed 5000 characters'),
+        .max(5000, 'Mô tả không được vượt quá 5000 ký tự'),
     originalPrice: z.number()
-        .positive('Original price must be positive')
+        .positive('Giá gốc phải là số dương')
         .optional(),
     brandId: z.string().optional(),
     modelId: z.string().optional(),
     images: z.array(mediaItemSchema)
-        .min(1, 'At least 1 image is required')
-        .max(12, 'Maximum 12 media items allowed')
+        .min(1, 'Ít nhất 1 hình ảnh là bắt buộc')
+        .max(12, 'Tối đa 12 ảnh/video')
         .optional(),
     usageMonths: z.number().min(0).optional(),
     specifications: specificationsSchema,
@@ -84,8 +84,8 @@ export const createBicycleSchema = z.object({
 
 export const updateBicycleSchema = z.object({
     title: z.string()
-        .min(1, 'Title cannot be empty')
-        .max(200, 'Title cannot exceed 200 characters')
+        .min(1, 'Tiêu đề không được để trống')
+        .max(200, 'Tiêu đề không được vượt quá 200 ký tự')
         .optional(),
 
     description: z.string()
@@ -93,7 +93,7 @@ export const updateBicycleSchema = z.object({
         .optional(),
 
     price: z.number()
-        .positive('Price must be positive')
+        .positive('Giá phải là số dương')
         .optional(),
 
     originalPrice: z.number()
@@ -119,7 +119,7 @@ export const updateBicycleSchema = z.object({
 
 export const updateBicycleStatusSchema = z.object({
     status: z.enum(['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED'], {
-        message: 'Status must be: PENDING, APPROVED, SOLD, HIDDEN, or REJECTED'
+        message: 'Trạng thái phải là: PENDING, APPROVED, SOLD, HIDDEN, hoặc REJECTED'
     }),
     reason: z.string().max(500).optional()
 });
@@ -146,7 +146,7 @@ export const getBicyclesQuerySchema = z.object({
 
 
 export const bicycleIdParamSchema = z.object({
-    id: z.string().min(1, 'Bicycle ID is required')
+    id: z.string().min(1, 'Mã xe đạp là bắt buộc')
 });
 
 

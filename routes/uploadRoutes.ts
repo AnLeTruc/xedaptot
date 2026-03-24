@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/', upload.single('image'), async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.file) {
-            res.status(400).json({ message: 'No file uploaded' });
+            res.status(400).json({ message: 'Không có tệp nào được tải lên' });
             return;
         }
         await TempMedia.create({
@@ -17,12 +17,12 @@ router.post('/', upload.single('image'), async (req: Request, res: Response): Pr
         });
 
         res.status(200).json({
-            message: 'Upload successful',
+            message: 'Tải lên thành công',
             url: req.file.path
         });
     } catch (error: any) {
         res.status(500).json({
-            message: 'Server error during upload',
+            message: 'Lỗi máy chủ khi tải lên',
             error: error.message
         });
     }

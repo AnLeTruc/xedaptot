@@ -29,7 +29,7 @@ export const getAllConversationsAdmin = async (
         const page = parsePositiveInt(req.query.page, 1, 1000);
         if (limit === null || page === null) {
             res.status(400).json({
-                message: 'Limit and page must be positive integers'
+                message: 'Số lượng và số trang phải là số nguyên dương'
             });
             return;
         }
@@ -45,7 +45,7 @@ export const getAllConversationsAdmin = async (
         if (searchUserId) {
             if (!isValidateObjectId(searchUserId)) {
                 res.status(400).json({
-                    message: 'Invalid userId format'
+                    message: 'Định dạng không hợp lệ'
                 });
                 return;
             }
@@ -144,7 +144,7 @@ export const getConversationMessagesAdmin = async (
         const limit = parsePositiveInt(req.query.limit, 20, 100);
         if (limit === null) {
             res.status(400).json({
-                message: 'Limit must be a positive integer'
+                message: 'Số lượng phải là số nguyên dương'
             });
             return;
         }
@@ -152,21 +152,21 @@ export const getConversationMessagesAdmin = async (
         const cursor = parseCursorDate(req.query.cursor);
         if (req.query.cursor && !cursor) {
             res.status(400).json({
-                message: 'Invalid cursor format'
+                message: 'Định dạng cursor không hợp lệ'
             });
             return;
         }
 
         if (!conversationId) {
             res.status(400).json({
-                message: 'Conversation ID is required'
+                message: 'Mã cuộc hội thoại là bắt buộc'
             });
             return;
         }
 
         if (!isValidateObjectId(conversationId)) {
             res.status(400).json({
-                message: 'Invalid conversationId format'
+                message: 'Định dạng conversationId không hợp lệ'
             });
             return;
         }
@@ -235,7 +235,7 @@ export const lockConversation = async (
         if (!isValidateObjectId(id)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid conversation id'
+                message: 'Mã cuộc hội thoại không hợp lệ'
             });
             return;
         }
@@ -243,7 +243,7 @@ export const lockConversation = async (
         if (!['TEMP_LOCKED', 'PERM_LOCKED'].includes(status)) {
             res.status(400).json({
                 success: false,
-                message: 'status must be TEMP_LOCKED or PERM_LOCKED'
+                message: 'status phải là TEMP_LOCKED hoặc PERM_LOCKED'
             });
             return;
         }
@@ -254,7 +254,7 @@ export const lockConversation = async (
             if (!durationMinutes || durationMinutes <= 0) {
                 res.status(400).json({
                     success: false,
-                    message: 'duration (minutes) is required for TEMP_LOCKED'
+                    message: 'duration (phút) là bắt buộc cho TEMP_LOCKED'
                 });
                 return;
             }
@@ -276,7 +276,7 @@ export const lockConversation = async (
         if (!conversation) {
             res.status(404).json({
                 success: false,
-                message: 'Conversation not found'
+                message: 'Không tìm thấy cuộc hội thoại'
             });
             return;
         }
@@ -304,7 +304,7 @@ export const lockConversation = async (
         }
         res.status(200).json({
             success: true,
-            message: 'Conversation locked successfully',
+            message: 'Khoá cuộc hội thoại thành công',
             data: conversation
         });
     } catch (error: any) {
@@ -326,7 +326,7 @@ export const unlockConversation = async (
         if (!isValidateObjectId(id)) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid conversation id'
+                message: 'Mã cuộc hội thoại không hợp lệ'
             });
             return;
         }
@@ -347,7 +347,7 @@ export const unlockConversation = async (
         if (!conversation) {
             res.status(404).json({
                 success: false,
-                message: 'Conversation not found'
+                message: 'Không tìm thấy cuộc hội thoại'
             });
             return;
         }
@@ -366,7 +366,7 @@ export const unlockConversation = async (
 
         res.status(200).json({
             success: true,
-            message: 'Conversation unlocked successfully',
+            message: 'Mở khoá cuộc hội thoại thành công',
             data: conversation
         });
     } catch (error: any) {

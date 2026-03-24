@@ -24,7 +24,7 @@ export const sendEmailVerification = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
 
             return;
@@ -35,7 +35,7 @@ export const sendEmailVerification = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
 
             return;
@@ -45,7 +45,7 @@ export const sendEmailVerification = async (
         if (user.isVerified) {
             res.status(400).json({
                 success: false,
-                message: 'Email already verified'
+                message: 'Email đã được xác thực'
             });
 
             return;
@@ -71,7 +71,7 @@ export const sendEmailVerification = async (
         if (!emailSent) {
             res.status(500).json({
                 success: false,
-                message: 'Failed to send verification email'
+                message: 'Gửi email xác thực thất bại'
             });
 
             return;
@@ -79,12 +79,12 @@ export const sendEmailVerification = async (
 
         res.status(200).json({
             success: true,
-            message: 'Verification email sent successfully'
+            message: 'Email xác thực đã được gửi thành công'
         });
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: 'Failed to send verification email'
+            message: 'Gửi email xác thực thất bại'
         });
     }
 };
@@ -100,7 +100,7 @@ export const verifyEmail = async (
         if (!token || typeof token !== 'string') {
             res.status(400).json({
                 success: false,
-                message: 'Invalid verification token'
+                message: 'Token xác thực không hợp lệ'
             });
             return;
         }
@@ -115,7 +115,7 @@ export const verifyEmail = async (
         if (!user) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid verification token'
+                message: 'Token xác thực không hợp lệ hoặc đã hết hạn'
             });
 
             return;
@@ -134,13 +134,13 @@ export const verifyEmail = async (
 
         res.status(200).json({
             success: true,
-            message: 'Email verified successfully'
+            message: 'Xác thực email thành công'
         });
     } catch (error: any) {
         console.error('Verify email error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to verify email'
+            message: error.message || 'Xác thực email thất bại'
         });
     }
 };
@@ -190,7 +190,7 @@ export const firebaseAuth = async (
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             });
             return;
         }
@@ -243,7 +243,7 @@ export const firebaseAuth = async (
             if (!tokenResponse.ok) {
                 res.status(500).json({
                     success: false,
-                    message: 'Failed to generate session tokens'
+                    message: 'Không thể tạo phiên đăng nhập'
                 });
                 return;
             }
@@ -255,7 +255,7 @@ export const firebaseAuth = async (
 
             res.status(200).json({
                 success: true,
-                message: 'User logged in successfully',
+                message: 'Đăng nhập thành công',
                 data: {
                     id: existingUser._id,
                     email: existingUser.email,
@@ -286,7 +286,7 @@ export const firebaseAuth = async (
         if (!tokenResponse.ok) {
             res.status(500).json({
                 success: false,
-                message: 'Failed to generate session tokens'
+                message: 'Không thể tạo phiên đăng nhập'
             });
             return;
         }
@@ -307,7 +307,7 @@ export const firebaseAuth = async (
 
         res.status(201).json({
             success: true,
-            message: 'User registered successfully',
+            message: 'Đăng ký thành công',
             data: {
                 id: newUser._id,
                 email: newUser.email,
@@ -325,7 +325,7 @@ export const firebaseAuth = async (
         console.error('Firebase auth error:', error);
         res.status(401).json({
             success: false,
-            message: 'Authorization failed'
+            message: 'Xác thực thất bại'
         });
     }
 };
@@ -340,7 +340,7 @@ export const getProfile = async (
         if (!user) {
             res.status(401).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             })
             return;
         }
@@ -380,7 +380,7 @@ export const updateProfile = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }
@@ -396,14 +396,14 @@ export const updateProfile = async (
         if (!updatedUser) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Profile updated successfully',
+            message: 'Cập nhật hồ sơ thành công',
             data: {
                 email: updatedUser.email,
                 fullName: updatedUser.fullName,
@@ -424,7 +424,7 @@ export const updateProfile = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || 'Cập nhật hồ sơ thất bại'
         });
     }
 };
@@ -444,7 +444,7 @@ export const emailRegister = async (
         if (!email || !password) {
             res.status(400).json({
                 success: false,
-                message: 'Email and password are required'
+                message: 'Email và mật khẩu là bắt buộc'
             });
             return;
         }
@@ -452,7 +452,7 @@ export const emailRegister = async (
         if (password.length < 6) {
             res.status(400).json({
                 success: false,
-                message: 'Password must be at least 6 characters'
+                message: 'Mật khẩu phải có ít nhất 6 ký tự'
             });
             return;
         }
@@ -461,7 +461,7 @@ export const emailRegister = async (
         if (existingUser) {
             res.status(400).json({
                 success: false,
-                message: `Email already registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+                message: `Email đã được đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
             });
             return;
         }
@@ -481,7 +481,7 @@ export const emailRegister = async (
         if (!response.ok) {
             res.status(400).json({
                 success: false,
-                message: data.error?.message || 'Failed to create account'
+                message: data.error?.message || 'Tạo tài khoản thất bại'
             });
             return;
         }
@@ -503,7 +503,7 @@ export const emailRegister = async (
 
         res.status(201).json({
             success: true,
-            message: 'User registered successfully',
+            message: 'Đăng ký thành công',
             data: {
                 id: newUser._id,
                 email: newUser.email,
@@ -521,7 +521,7 @@ export const emailRegister = async (
         console.error('Email register error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Registration failed'
+            message: error.message || 'Đăng ký thất bại'
         });
     }
 };
@@ -537,7 +537,7 @@ export const emailLogin = async (
         if (!email || !password) {
             res.status(400).json({
                 success: false,
-                message: 'Email and password are required'
+                message: 'Email và mật khẩu là bắt buộc'
             });
             return;
         }
@@ -546,7 +546,7 @@ export const emailLogin = async (
         if (existingUser && existingUser.authProvider !== 'email') {
             res.status(400).json({
                 success: false,
-                message: `This email is registered with ${existingUser.authProvider}. Please use ${existingUser.authProvider} to login.`
+                message: `Email này đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
             });
             return;
         }
@@ -599,7 +599,7 @@ export const emailLogin = async (
 
         res.status(200).json({
             success: true,
-            message: 'Login successful',
+            message: 'Đăng nhập thành công',
             data: {
                 id: user?._id,
                 email: data.email,
@@ -617,7 +617,7 @@ export const emailLogin = async (
         console.error('Email login error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Login failed'
+            message: error.message || 'Đăng nhập thất bại'
         });
     }
 };
@@ -633,7 +633,7 @@ export const refreshToken = async (
         if (!refreshToken) {
             res.status(400).json({
                 success: false,
-                message: 'Refresh token is required'
+                message: 'Refresh token là bắt buộc'
             });
             return;
         }
@@ -657,7 +657,7 @@ export const refreshToken = async (
         if (!response.ok) {
             res.status(401).json({
                 success: false,
-                message: data.error?.message || 'Failed to refresh token'
+                message: data.error?.message || 'Làm mới token thất bại'
             });
             return;
         }
@@ -665,7 +665,7 @@ export const refreshToken = async (
         //Return new token
         res.status(200).json({
             success: true,
-            message: 'Token refreshed successfully',
+            message: 'Làm mới token thành công',
             data: {
                 idToken: data.id_token,
                 refreshToken: data.refresh_token,
@@ -677,7 +677,7 @@ export const refreshToken = async (
         console.error('Refresh token error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to refresh token'
+            message: error.message || 'Làm mới token thất bại'
         });
     }
 };
@@ -692,7 +692,7 @@ export const addAddress = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             });
             return;
         }
@@ -707,7 +707,7 @@ export const addAddress = async (
         if (!resolvedLocation) {
             res.status(400).json({
                 success: false,
-                message: 'Invalid GHN location data'
+                message: 'Dữ liệu địa chỉ GHN không hợp lệ'
             });
             return;
         }
@@ -749,7 +749,7 @@ export const addAddress = async (
         );
         res.status(201).json({
             success: true,
-            message: 'Address added successfully',
+            message: 'Thêm địa chỉ thành công',
             data: updatedUser?.addresses
         })
 
@@ -760,7 +760,7 @@ export const addAddress = async (
         console.error('Add address error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to add address'
+            message: error.message || 'Thêm địa chỉ thất bại'
         });
     }
 };
@@ -776,7 +776,7 @@ export const updateAddress = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             })
             return;
         }
@@ -794,7 +794,7 @@ export const updateAddress = async (
             const user = await User.findOne({ _id: userId, 'addresses._id': id });
             const existingAddr = user?.addresses?.find((a: any) => a._id.toString() === id);
             if (!existingAddr) {
-                res.status(404).json({ success: false, message: 'Address not found' });
+                res.status(404).json({ success: false, message: 'Không tìm thấy địa chỉ' });
                 return;
             }
 
@@ -808,7 +808,7 @@ export const updateAddress = async (
                 finalWardCode
             );
             if (!resolvedLocation) {
-                res.status(400).json({ success: false, message: 'Invalid GHN location data' });
+                res.status(400).json({ success: false, message: 'Dữ liệu địa chỉ GHN không hợp lệ' });
                 return;
             }
 
@@ -842,7 +842,7 @@ export const updateAddress = async (
         if (Object.keys(updates).length === 0) {
             res.status(400).json({
                 success: false,
-                message: 'No fields to update'
+                message: 'Không có trường nào để cập nhật'
             });
             return;
         }
@@ -856,14 +856,14 @@ export const updateAddress = async (
         if (!updatedUser) {
             res.status(404).json({
                 success: false,
-                message: 'Address not found'
+                message: 'Không tìm thấy địa chỉ'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Address updated successfully',
+            message: 'Cập nhật địa chỉ thành công',
             data: updatedUser?.addresses
         })
 
@@ -872,7 +872,7 @@ export const updateAddress = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to update address'
+            message: error.message || 'Cập nhật địa chỉ thất bại'
         })
     }
 }
@@ -889,7 +889,7 @@ export const deleteAddress = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }
@@ -898,7 +898,7 @@ export const deleteAddress = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
@@ -910,7 +910,7 @@ export const deleteAddress = async (
         if (!addressToDelete) {
             res.status(404).json({
                 success: false,
-                message: 'Address not found'
+                message: 'Không tìm thấy địa chỉ'
             });
             return;
         }
@@ -932,7 +932,7 @@ export const deleteAddress = async (
 
         res.status(200).json({
             success: true,
-            message: 'Address deleted successfully',
+            message: 'Xoá địa chỉ thành công',
             data: updatedUser?.addresses
         });
 
@@ -943,7 +943,7 @@ export const deleteAddress = async (
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to delete address'
+            message: error.message || 'Xoá địa chỉ thất bại'
         })
     }
 }
@@ -959,7 +959,7 @@ export const setDefaultAddress = async (
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }
@@ -978,20 +978,20 @@ export const setDefaultAddress = async (
         if (!updatedUser) {
             res.status(404).json({
                 success: false,
-                message: 'Address not found'
+                message: 'Không tìm thấy địa chỉ'
             });
             return;
         }
         res.status(200).json({
             success: true,
-            message: 'Default address set successfully',
+            message: 'Đặt địa chỉ mặc định thành công',
             data: updatedUser.addresses
         });
 
     } catch (error: any) {
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to set default address'
+            message: error.message || 'Đặt địa chỉ mặc định thất bại'
         })
     }
 }
@@ -1006,7 +1006,7 @@ export const forgotPassword = async (
     if (!email) {
         res.status(400).json({
             success: false,
-            message: 'Email is required'
+            message: 'Email là bắt buộc'
         })
         return;
     };
@@ -1014,7 +1014,7 @@ export const forgotPassword = async (
     const genericOk = () =>
         res.status(200).json({
             success: true,
-            message: 'If that email address is in our system, we have sent a password reset code to it.'
+            message: 'Nếu email này có trong hệ thống, mã đặt lại mật khẩu đã được gửi.'
         });
 
     const user = await User.findOne({
@@ -1071,7 +1071,7 @@ export const verifyResetCode = async (
     if (!email || !code) {
         res.status(400).json({
             success: false,
-            message: 'Email and code are required'
+            message: 'Email và mã xác nhận là bắt buộc'
         })
         return;
     };
@@ -1084,7 +1084,7 @@ export const verifyResetCode = async (
     if (!user || user.authProvider !== 'email') {
         res.status(400).json({
             success: false,
-            message: 'Invalid code'
+            message: 'Mã không hợp lệ'
         });
         return;
     };
@@ -1092,7 +1092,7 @@ export const verifyResetCode = async (
     if (!user.passwordResetCodeHash || !user.passwordResetExpires) {
         res.status(400).json({
             success: false,
-            message: 'No reset code found. Please request a new code.'
+            message: 'Không tìm thấy mã đặt lại. Vui lòng yêu cầu mã mới.'
         })
         return;
     };
@@ -1100,7 +1100,7 @@ export const verifyResetCode = async (
     if (user.passwordResetExpires.getTime() <= Date.now()) {
         res.status(400).json({
             success: false,
-            message: 'Reset code has expired. Please request a new code.'
+            message: 'Mã đặt lại đã hết hạn. Vui lòng yêu cầu mã mới.'
         })
         return;
     };
@@ -1109,7 +1109,7 @@ export const verifyResetCode = async (
     if ((user.passwordResetAttempts ?? 0) >= maxAttempts) {
         res.status(429).json({
             success: false,
-            message: 'Maximum reset attempts exceeded. Please request a new code.'
+            message: 'Đã vượt quá số lần thử cho phép. Vui lòng yêu cầu mã mới.'
         })
         return;
     };
@@ -1123,7 +1123,7 @@ export const verifyResetCode = async (
         });
         res.status(400).json({
             success: false,
-            message: 'Invalid code'
+            message: 'Mã không hợp lệ'
         })
         return;
     }
@@ -1138,7 +1138,7 @@ export const verifyResetCode = async (
 
     res.status(200).json({
         success: true,
-        message: 'Reset code verified successfully',
+        message: 'Xác thực mã thành công',
         data: { resetToken }
     })
 
@@ -1155,13 +1155,13 @@ export const resetPassword = async (
     if (!email || !resetToken || !newPassword) {
         res.status(400).json({
             success: false,
-            message: 'Email, reset token and new password are required'
+            message: 'Email, mã đặt lại và mật khẩu mới là bắt buộc'
         })
         return;
     };
 
     if (String(newPassword).length < 6) {
-        res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        res.status(400).json({ success: false, message: 'Mật khẩu phải có ít nhất 6 ký tự' });
         return;
     };
 
@@ -1169,23 +1169,23 @@ export const resetPassword = async (
         .select('+passwordResetTokenHash +passwordResetTokenExpires');
 
     if (!user || user.authProvider !== 'email') {
-        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
 
     if (!user.passwordResetTokenHash || !user.passwordResetTokenExpires) {
-        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
 
     if (user.passwordResetTokenExpires.getTime() <= Date.now()) {
-        res.status(400).json({ success: false, message: 'Reset token expired' });
+        res.status(400).json({ success: false, message: 'Token đặt lại đã hết hạn' });
         return;
     }
 
     const inputHash = hashResetToken(String(resetToken));
     if (!timingSafeEqualHex(user.passwordResetTokenHash, inputHash)) {
-        res.status(400).json({ success: false, message: 'Invalid reset token' });
+        res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
 
@@ -1211,7 +1211,7 @@ export const resetPassword = async (
 
     res.status(200).json({
         success: true,
-        message: 'Password reset successfully'
+        message: 'Đặt lại mật khẩu thành công'
     });
 
     return;
@@ -1228,7 +1228,7 @@ export const changePassword = async (
         if (!user) {
             res.status(401).json({
                 success: false,
-                message: 'User not authenticated'
+                message: 'Người dùng chưa xác thực'
             });
             return;
         }
@@ -1237,7 +1237,7 @@ export const changePassword = async (
         if (user.authProvider !== 'email') {
             res.status(400).json({
                 success: false,
-                message: 'Change password is only available for email-registered accounts'
+                message: 'Đổi mật khẩu chỉ khả dụng cho tài khoản đăng ký bằng email'
             });
             return;
         }
@@ -1251,7 +1251,7 @@ export const changePassword = async (
                 const hoursRemaining = Math.ceil(24 - hoursSinceLastChange);
                 res.status(429).json({
                     success: false,
-                    message: `You can only change your password once every 24 hours. Please try again in ${hoursRemaining} hour(s).`
+                    message: `Bạn chỉ có thể đổi mật khẩu 1 lần mỗi 24 giờ. Vui lòng thử lại sau ${hoursRemaining} giờ.`
                 });
                 return;
             }
@@ -1276,7 +1276,7 @@ export const changePassword = async (
         if (!verifyResponse.ok) {
             res.status(401).json({
                 success: false,
-                message: 'Current password is incorrect'
+                message: 'Mật khẩu hiện tại không chính xác'
             });
             return;
         }
@@ -1312,14 +1312,14 @@ export const changePassword = async (
         if (!tokenExchangeResponse.ok) {
             res.status(500).json({
                 success: false,
-                message: 'Failed to generate session tokens after password change'
+                message: 'Không thể tạo phiên đăng nhập sau khi đổi mật khẩu'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Password changed successfully',
+            message: 'Đổi mật khẩu thành công',
             data: {
                 idToken: tokenData.idToken,
                 refreshToken: tokenData.refreshToken,
@@ -1330,7 +1330,7 @@ export const changePassword = async (
         //Noti change pass
         notificationService.notifyPasswordChanged(user._id.toString());
 
-        // Send notification email (fire-and-forget)
+        // Send notification email
         sendPasswordChangedEmail(user.email, user.fullName || '').catch(err =>
             console.error('Failed to send password changed email:', err)
         );
@@ -1340,7 +1340,7 @@ export const changePassword = async (
         console.error('Change password error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to change password'
+            message: error.message || 'Đổi mật khẩu thất bại'
         });
     }
 };
