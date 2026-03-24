@@ -57,6 +57,8 @@ export interface ITransactionDocument extends ITransaction, Document {
 }
 
 export interface IBankInfo {
+    bankBin: string;
+    bankShortName?: string;
     bankName: string;
     accountNumber: string;
     accountName: string;
