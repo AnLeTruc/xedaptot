@@ -504,7 +504,7 @@ export const getWithdrawRequests = async (
 
 
 // GET /wallets/banks
-export const getBanks = async (req: Request, res: Response) => {
+export const getBanks = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const banks = await VietQRService.getBanksList();
 
