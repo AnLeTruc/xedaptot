@@ -506,6 +506,16 @@ export const updateBicycle = async (
             return;
         }
 
+        // Chặn sửa khi đã được duyệt/đang giao dịch/đã bán
+        if (['APPROVED', 'RESERVED', 'SOLD'].includes(bicycle.status)) {
+            res.status(403).json({
+                success: false,
+                message: 'Không thể chỉnh sửa tin đăng đã được duyệt, đang đặt cọc hoặc đã bán. Vui lòng liên hệ Admin nếu cần thay đổi thông tin.'
+            });
+            return;
+        }
+
+
         // Build  
         const updateData: any = {};
 
