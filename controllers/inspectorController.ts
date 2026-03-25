@@ -258,8 +258,8 @@ export const submitReport = async (
         await Notification.create({
             userId: bicycle.seller._id,
             type: 'INSPECTION_COMPLETED',
-            title: 'Inspection Completed',
-            message: `Your bicycle "${bicycle.title}" has been inspected. Result: ${isPassed ? 'PASSED' : 'FAILED'}`,
+            title: 'Kiểm định hoàn tất',
+            message: `Xe đạp "${bicycle.title}" của bạn đã được kiểm định. Kết quả: ${isPassed ? 'ĐẠT' : 'KHÔNG ĐẠT'}`,
             metadata: {
                 bicycleId,
                 inspectionReportId: report._id
