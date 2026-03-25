@@ -13,6 +13,7 @@ export type OrderStatus =
     | 'WAITING_FOR_PICKUP'
     | 'IN_TRANSIT'
     | 'DELIVERED'
+    | 'DELIVERY_FAILED'
     | 'WAITING_REMAINING_PAYMENT'
     | 'COMPLETED'
     | 'FUNDS_RELEASED'
@@ -70,6 +71,19 @@ export interface IOrderReview {
     createdAt: Date;
 }
 
+export interface IDeliveryProof {
+    images: string[];
+    isSuccess: boolean;
+    deliveredAt?: Date;
+    failedAt?: Date;
+    failReason?: string;
+}
+
+export interface IReceiveProof {
+    images: string[];
+    receivedAt: Date;
+}
+
 export interface IOrderTransaction {
     transactionCode: string;
     amount: number;
@@ -98,6 +112,8 @@ export interface IOrder {
     amounts: IOrderAmount;
     transactions: IOrderTransaction[];
     review?: IOrderReview;
+    deliveryProof?: IDeliveryProof;
+    receiveProof?: IReceiveProof;
     createdAt?: Date;
     completedAt?: Date;
     sellerConfirmedAt?: Date;

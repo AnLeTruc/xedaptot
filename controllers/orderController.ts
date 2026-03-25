@@ -540,22 +540,32 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
 
 
 export const receiveOrder = async (req: AuthRequest, res: Response) => {
-    const order = await Order.findById(req.params.id);
-    if (!order || order.buyer._id.toString() !== req.user!._id.toString()) return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
-    if (order.status !== 'DELIVERED') return res.status(400).json({ success: false, message: `Cannot receive order in ${order.status} status` });
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order || order.buyer._id.toString() !== req.user!._id.toString())
+            return res.status(403).json({ success: false, message: 'Không có quyền thực hiện' });
+        if (order.status !== 'DELIVERED')
+            return res.status(400).json({ success: false, message: 'Chỉ có thể xác nhận nhận hàng khi đơn ở trạng thái ĐÃ GIAO' });
 
-    order.status = 'COMPLETED';
-    order.buyerConfirmedAt = new Date();
-    await order.save();
-    await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+        const { images } = req.body;
 
-    //Noti buyer receive order
-    notificationService.notifyOrderReceived(
-        req.user!._id.toString(),
-        order._id.toString()
-    );
-    res.status(200).json({ success: true, message: 'Tiền sẽ được giải phóng cho người bán sau 48 giờ', data: order });
+        order.receiveProof = { images, receivedAt: new Date() };
+        order.status = 'COMPLETED';
+        order.buyerConfirmedAt = new Date();
+        await order.save();
+        await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+
+        //Noti buyer receive order
+        notificationService.notifyOrderReceived(
+            req.user!._id.toString(),
+            order._id.toString()
+        );
+        res.status(200).json({ success: true, message: 'Tiền sẽ được giải phóng cho người bán sau 48 giờ', data: order });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
+
 
 
 
@@ -778,26 +788,59 @@ export const shipOrder = async (req: AuthRequest, res: Response) => {
 };
 
 export const deliverOrder = async (req: AuthRequest, res: Response) => {
-    const order = await Order.findById(req.params.id);
-    if (!order || order.status !== 'IN_TRANSIT')
-        return res.status(400).json({ success: false, message: 'Đơn hàng phải ở trạng thái ĐANG GIAO để xác nhận giao hàng' });
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order || order.status !== 'IN_TRANSIT')
+            return res.status(400).json({ success: false, message: 'Đơn hàng phải ở trạng thái ĐANG GIAO để xác nhận giao hàng' });
 
-    // Check nếu đã trả đủ thì chuyển thẳng sang DELIVERED
-    const isPaidTotal = order.amounts.depositPaid + order.amounts.remainingPaid >= order.amounts.total;
-    order.status = isPaidTotal ? 'DELIVERED' : 'WAITING_REMAINING_PAYMENT';
-    await order.save();
+        const { isSuccess, images, failReason } = req.body;
+        const now = new Date();
 
-    // Push notification to buyer
-    sendToUser(order.buyer._id.toString(), {
-        title: isPaidTotal ? 'Đơn hàng đã giao' : 'Đơn hàng cần thanh toán',
-        body: isPaidTotal
-            ? `Đơn hàng ${order.orderCode} đã được giao. Vui lòng xác nhận nhận hàng.`
-            : `Đơn hàng ${order.orderCode} cần thanh toán phần còn lại`,
-        data: { type: isPaidTotal ? 'ORDER_DELIVERED' : 'WAITING_REMAINING_PAYMENT', orderId: order._id.toString() }
-    }).catch(err => console.error('[FCM] deliverOrder push error:', err));
+        if (isSuccess) {
+            // Giao hàng thành công
+            order.deliveryProof = { isSuccess: true, images, deliveredAt: now };
 
-    res.status(200).json({ success: true, data: order });
+            // Check nếu đã trả đủ thì chuyển thẳng sang DELIVERED
+            const isPaidTotal = order.amounts.depositPaid + order.amounts.remainingPaid >= order.amounts.total;
+            order.status = isPaidTotal ? 'DELIVERED' : 'WAITING_REMAINING_PAYMENT';
+            await order.save();
+
+            // Push notification to buyer
+            sendToUser(order.buyer._id.toString(), {
+                title: isPaidTotal ? 'Đơn hàng đã giao' : 'Đơn hàng cần thanh toán',
+                body: isPaidTotal
+                    ? `Đơn hàng ${order.orderCode} đã được giao. Vui lòng xác nhận nhận hàng.`
+                    : `Đơn hàng ${order.orderCode} cần thanh toán phần còn lại`,
+                data: { type: isPaidTotal ? 'ORDER_DELIVERED' : 'WAITING_REMAINING_PAYMENT', orderId: order._id.toString() }
+            }).catch(err => console.error('[FCM] deliverOrder push error:', err));
+        } else {
+            // Giao hàng thất bại
+            order.deliveryProof = { isSuccess: false, images, failedAt: now, failReason };
+            order.status = 'DELIVERY_FAILED';
+            await order.save();
+
+            // Push notification to buyer
+            sendToUser(order.buyer._id.toString(), {
+                title: 'Giao hàng không thành công',
+                body: `Đơn hàng ${order.orderCode} giao không thành công. Lý do: ${failReason}`,
+                data: { type: 'DELIVERY_FAILED', orderId: order._id.toString() }
+            }).catch(err => console.error('[FCM] deliverOrder-failed push error:', err));
+
+            // In-app notification
+            notificationService.notifyDeliveryFailed(
+                order.buyer._id.toString(),
+                order._id.toString(),
+                order.orderCode,
+                failReason
+            );
+        }
+
+        res.status(200).json({ success: true, data: order });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
+
 
 
 

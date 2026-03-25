@@ -1196,6 +1196,29 @@
           }
         }
       },
+      "OrderDeliveryProof": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "isSuccess": { "type": "boolean" },
+          "deliveredAt": { "type": "string", "format": "date-time" },
+          "failedAt": { "type": "string", "format": "date-time" },
+          "failReason": { "type": "string" }
+        }
+      },
+      "OrderReceiveProof": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "receivedAt": { "type": "string", "format": "date-time" }
+        }
+      },
       "Order": {
         "type": "object",
         "properties": {
@@ -1219,6 +1242,7 @@
               "WAITING_FOR_PICKUP",
               "IN_TRANSIT",
               "DELIVERED",
+              "DELIVERY_FAILED",
               "WAITING_REMAINING_PAYMENT",
               "COMPLETED",
               "FUNDS_RELEASED",
@@ -1252,6 +1276,12 @@
           },
           "review": {
             "$ref": "#/components/schemas/OrderReview"
+          },
+          "deliveryProof": {
+            "$ref": "#/components/schemas/OrderDeliveryProof"
+          },
+          "receiveProof": {
+            "$ref": "#/components/schemas/OrderReceiveProof"
           },
           "reservedAt": {
             "type": "string",
@@ -9576,6 +9606,28 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "images"
+                ],
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Mảng các URL ảnh xác nhận đã nhận được hàng"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Order completed",
@@ -9727,9 +9779,40 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "isSuccess",
+                  "images"
+                ],
+                "properties": {
+                  "isSuccess": {
+                    "type": "boolean",
+                    "description": "Kết quả giao hàng (true: thành công, false: thất bại)"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Mảng các URL ảnh bằng chứng (ảnh giao hàng hoặc ảnh lý do thất bại)"
+                  },
+                  "failReason": {
+                    "type": "string",
+                    "description": "Lý do giao hàng thất bại (bắt buộc nếu isSuccess=false)"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Order updated to DELIVERED or WAITING_REMAINING_PAYMENT",
+            "description": "Order updated (DELIVERED, WAITING_REMAINING_PAYMENT, or DELIVERY_FAILED)",
             "content": {
               "application/json": {
                 "schema": {

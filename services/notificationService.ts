@@ -264,6 +264,15 @@ export const notifyReportSubmitted = (userId: string, orderId: string) =>
         url: `/orders/${orderId}`
     });
 
+export const notifyDeliveryFailed = (userId: string, orderId: string, orderCode: string, failReason?: string) =>
+    createNotification({
+        userId,
+        type: 'ORDER',
+        title: 'Giao hàng không thành công',
+        message: `Đơn hàng ${orderCode} giao không thành công. Lý do: ${failReason || 'Không xác định'}. Chúng tôi sẽ liên hệ để sắp xếp lại.`,
+        url: `/orders/${orderId}`
+    });
+
 // ── WALLET ─────────────────────────────────────────────────
 export const notifyWalletTopUpSuccess = (userId: string) =>
     createNotification({
