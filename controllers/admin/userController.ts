@@ -87,7 +87,7 @@ export const getUserById = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
@@ -151,14 +151,14 @@ export const updateUser = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'User updated successfully',
+            message: 'Cập nhật người dùng thành công',
             data: user
         });
     } catch (error: any) {
@@ -181,7 +181,7 @@ export const deactivateUser = async (
         if (id === req.user?._id?.toString()) {
             res.status(400).json({
                 success: false,
-                message: 'Cannot deactivate your own account'
+                message: 'Không thể vô hiệu hoá tài khoản của chính bạn'
             });
             return;
         }
@@ -195,14 +195,14 @@ export const deactivateUser = async (
         if (!user) {
             res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'Không tìm thấy người dùng'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'User deactivated successfully'
+            message: 'Vô hiệu hoá người dùng thành công'
         });
     } catch (error: any) {
         res.status(500).json({

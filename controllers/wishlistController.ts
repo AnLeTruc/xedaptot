@@ -18,7 +18,7 @@ export const addToWishlist = async (
         if (!bicycle || bicycle.status !== 'APPROVED') {
             res.status(400).json({
                 success: false,
-                message: 'Bicycle not available for wishlist'
+                message: 'Xe đạp không khả dụng để thêm vào yêu thích'
             });
             return;
         }
@@ -26,7 +26,7 @@ export const addToWishlist = async (
         if (bicycle.seller._id.toString() === req.user!._id.toString()) {
             res.status(400).json({
                 success: false,
-                message: 'Cannot add your own bicycle'
+                message: 'Không thể thêm xe đạp của chính bạn'
             });
             return;
         }
@@ -47,14 +47,14 @@ export const addToWishlist = async (
 
         res.status(201).json({
             success: true,
-            message: 'Bicycle added to wishlist',
+            message: 'Đã thêm xe đạp vào danh sách yêu thích',
             data: wishlistItem
         });
     } catch (error: any) {
         if (error.code === 11000) {
             res.status(409).json({
                 success: false,
-                message: 'Bicycle already added to wishlist'
+                message: 'Xe đạp đã có trong danh sách yêu thích'
             });
             return;
         }
@@ -82,14 +82,14 @@ export const removeFromWishlist = async (
         if (!wishlist) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found in wishlist'
+                message: 'Không tìm thấy xe đạp trong danh sách yêu thích'
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Bicycle removed from wishlist'
+            message: 'Đã xoá xe đạp khỏi danh sách yêu thích'
         });
     } catch (error: any) {
         res.status(500).json({
@@ -155,7 +155,7 @@ export const checkWishlist = async (
         }).select('_id');
         res.status(200).json({
             success: true,
-            message: 'Check wishlist',
+            message: 'Kiểm tra danh sách yêu thích',
             data: { isWishlisted: item !== null, wishlistId: item?._id ?? null }
         });
     } catch (error: any) {

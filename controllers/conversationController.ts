@@ -30,21 +30,21 @@ export const createConversation = async (
 
         if (!receiverId || !isValidateObjectId(receiverId)) {
             res.status(400).json({
-                message: 'Invalid receiverId format'
+                message: 'Định dạng receiverId không hợp lệ'
             });
             return;
         }
 
         if (senderId.toString() === receiverId.toString()) {
             res.status(400).json({
-                message: 'You cannot create a conversation with yourself'
+                message: 'Bạn không thể tạo cuộc hội thoại với chính mình'
             })
             return;
         };
 
         const receiverExists = await User.findById(receiverId);
         if (!receiverExists) {
-            res.status(404).json({ message: "Receiver User not found" });
+            res.status(404).json({ message: "Không tìm thấy người nhận" });
             return;
         }
 
@@ -59,7 +59,7 @@ export const createConversation = async (
         }
 
         res.status(200).json({
-            message: 'Conversation retrieved or created successfully',
+            message: 'Lấy hoặc tạo cuộc hội thoại thành công',
             conversation: {
                 ...conversation.toObject(),
                 violationCount: conversation.violationCount ?? 0,
@@ -85,7 +85,7 @@ export const getConversations = async (
 
         if (!userIdRaw) {
             res.status(401).json({
-                message: 'Unauthorized'
+                message: 'Chưa xác thực'
             });
             return;
         }
@@ -94,7 +94,7 @@ export const getConversations = async (
         const limit = parsePositiveInt(req.query.limit, 15, 100);
         if (limit === null) {
             res.status(400).json({
-                message: 'Limit must be a positive integer'
+                message: 'Limit phải là số nguyên dương'
             });
             return;
         }
@@ -102,7 +102,7 @@ export const getConversations = async (
         const cursor = parseCursorDate(req.query.cursor);
         if (req.query.cursor && !cursor) {
             res.status(400).json({
-                message: 'Invalid cursor format'
+                message: 'Định dạng cursor không hợp lệ'
             });
             return;
         }
@@ -214,7 +214,7 @@ export const getConversations = async (
         const nextCursor = conversations.length === limit ? conversations[conversations.length - 1].updatedAt : null;
 
         res.status(200).json({
-            message: 'Conversations retrieved successfully',
+            message: 'Lấy danh sách cuộc hội thoại thành công',
             data: conversations,
             pagination: {
                 nextCursor,
@@ -241,7 +241,7 @@ export const getMessageHistory = async (
         const limit = parsePositiveInt(req.query.limit, 20, 100);
         if (limit === null) {
             res.status(400).json({
-                message: 'Limit must be a positive integer'
+                message: 'Limit phải là số nguyên dương'
             });
             return;
         }
@@ -249,7 +249,7 @@ export const getMessageHistory = async (
         const cursor = parseCursorDate(req.query.cursor);
         if (req.query.cursor && !cursor) {
             res.status(400).json({
-                message: 'Invalid cursor format'
+                message: 'Định dạng cursor không hợp lệ'
             });
             return;
         }
@@ -263,7 +263,7 @@ export const getMessageHistory = async (
 
         if (!isValidateObjectId(conversationId)) {
             res.status(400).json({
-                message: 'Invalid conversationId format'
+                message: 'Định dạng conversationId không hợp lệ'
             });
             return;
         }
@@ -785,7 +785,7 @@ export const getHiddenConversations = async (
         const userIdRaw = (req as any).user?._id;
 
         if (!userIdRaw) {
-            res.status(401).json({ message: 'Unauthorized' });
+            res.status(401).json({ message: 'Chưa xác thực' });
             return;
         }
 
@@ -793,13 +793,13 @@ export const getHiddenConversations = async (
 
         const limit = parsePositiveInt(req.query.limit, 15, 100);
         if (limit === null) {
-            res.status(400).json({ message: 'Limit must be a positive integer' });
+            res.status(400).json({ message: 'Limit phải là số nguyên dương' });
             return;
         }
 
         const cursor = parseCursorDate(req.query.cursor);
         if (req.query.cursor && !cursor) {
-            res.status(400).json({ message: 'Invalid cursor format' });
+            res.status(400).json({ message: 'Định dạng cursor không hợp lệ' });
             return;
         }
 

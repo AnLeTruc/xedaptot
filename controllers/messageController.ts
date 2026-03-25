@@ -38,7 +38,7 @@ export const sendMessage = async (
 
         if (!conversation) {
             res.status(403).json({
-                message: 'Conversation not found or you don\'t have access'
+                message: 'Không tìm thấy cuộc hội thoại hoặc bạn không có quyền truy cập'
             });
             return;
         }
@@ -206,7 +206,7 @@ export const searchMessages = async (
         //conversationId (Search Local)
         if (conversationId) {
             if (typeof conversationId !== 'string' || !isValidateObjectId(conversationId)) {
-                res.status(400).json({ message: 'Invalid conversationId format' });
+                res.status(400).json({ message: 'Định dạng conversationId không hợp lệ' });
                 return;
             }
             const conversation = await Conversation.findOne({

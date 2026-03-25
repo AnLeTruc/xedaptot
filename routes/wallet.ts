@@ -22,6 +22,9 @@ router.get('/transactions', ctrl.getTransactions);
 // POST /api/wallets/deposit - Deposit via VNPay
 router.post('/deposit', validate(depositSchema, 'body'), ctrl.depositToWallet);
 
+// GET /api/wallets/banks - Get VietQR Banks Supported List
+router.get('/banks', ctrl.getBanks);
+
 // POST /api/wallets/withdraw - Create withdraw request
 router.post('/withdraw', validate(withdrawSchema, 'body'), ctrl.createWithdrawRequest);
 

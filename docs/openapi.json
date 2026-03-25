@@ -1196,6 +1196,29 @@
           }
         }
       },
+      "OrderDeliveryProof": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "isSuccess": { "type": "boolean" },
+          "deliveredAt": { "type": "string", "format": "date-time" },
+          "failedAt": { "type": "string", "format": "date-time" },
+          "failReason": { "type": "string" }
+        }
+      },
+      "OrderReceiveProof": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "receivedAt": { "type": "string", "format": "date-time" }
+        }
+      },
       "Order": {
         "type": "object",
         "properties": {
@@ -1219,6 +1242,7 @@
               "WAITING_FOR_PICKUP",
               "IN_TRANSIT",
               "DELIVERED",
+              "DELIVERY_FAILED",
               "WAITING_REMAINING_PAYMENT",
               "COMPLETED",
               "FUNDS_RELEASED",
@@ -1252,6 +1276,12 @@
           },
           "review": {
             "$ref": "#/components/schemas/OrderReview"
+          },
+          "deliveryProof": {
+            "$ref": "#/components/schemas/OrderDeliveryProof"
+          },
+          "receiveProof": {
+            "$ref": "#/components/schemas/OrderReceiveProof"
           },
           "reservedAt": {
             "type": "string",
@@ -8320,6 +8350,105 @@
         }
       }
     },
+    "/wallets/banks": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get VietQR Banks Supported List",
+        "description": "Returns a list of banks supported by VietQR",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of supported banks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Lấy danh sách ngân hàng thành công"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number",
+                            "example": 17
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Ngân hàng TMCP Ngoại Thương Việt Nam"
+                          },
+                          "code": {
+                            "type": "string",
+                            "example": "VCB"
+                          },
+                          "bin": {
+                            "type": "string",
+                            "example": "970436"
+                          },
+                          "shortName": {
+                            "type": "string",
+                            "example": "Vietcombank"
+                          },
+                          "logo": {
+                            "type": "string",
+                            "example": "https://api.vietqr.io/img/VCB.png"
+                          },
+                          "transferSupported": {
+                            "type": "number",
+                            "example": 1
+                          },
+                          "lookupSupported": {
+                            "type": "number",
+                            "example": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Lỗi hệ thống khi tải dữ liệu ngân hàng"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/wallets/transactions": {
       "get": {
         "tags": [
@@ -9477,6 +9606,28 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "images"
+                ],
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Mảng các URL ảnh xác nhận đã nhận được hàng"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Order completed",
@@ -9628,9 +9779,40 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "isSuccess",
+                  "images"
+                ],
+                "properties": {
+                  "isSuccess": {
+                    "type": "boolean",
+                    "description": "Kết quả giao hàng (true: thành công, false: thất bại)"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Mảng các URL ảnh bằng chứng (ảnh giao hàng hoặc ảnh lý do thất bại)"
+                  },
+                  "failReason": {
+                    "type": "string",
+                    "description": "Lý do giao hàng thất bại (bắt buộc nếu isSuccess=false)"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Order updated to DELIVERED or WAITING_REMAINING_PAYMENT",
+            "description": "Order updated (DELIVERED, WAITING_REMAINING_PAYMENT, or DELIVERY_FAILED)",
             "content": {
               "application/json": {
                 "schema": {
@@ -12343,6 +12525,159 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/users/{id}/reviews": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Lấy danh sách đánh giá của người bán",
+        "description": "Lấy danh sách đánh giá (review) từ các đơn hàng đã hoàn thành của người bán. Endpoint công khai, không yêu cầu đăng nhập.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID của người bán (seller)",
+            "schema": {
+              "type": "string",
+              "example": "64d1b5b5b5b5b5b5b5b5b5b5"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Số trang (mặc định: 1)",
+            "schema": {
+              "type": "string",
+              "default": "1",
+              "example": "1"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Số lượng mỗi trang (mặc định: 10)",
+            "schema": {
+              "type": "string",
+              "default": "10",
+              "example": "10"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách đánh giá của người bán",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reviews": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "review": {
+                                "type": "object",
+                                "properties": {
+                                  "rating": {
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "maximum": 5,
+                                    "example": 5
+                                  },
+                                  "comment": {
+                                    "type": "string",
+                                    "example": "Xe rất đẹp, đúng mô tả. Người bán nhiệt tình!"
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  }
+                                }
+                              },
+                              "bicycle": {
+                                "type": "object",
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "example": "Giant ATX 2022"
+                                  },
+                                  "primaryImage": {
+                                    "type": "string",
+                                    "example": "https://example.com/bike.jpg"
+                                  },
+                                  "condition": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NEW",
+                                      "LIKE_NEW",
+                                      "GOOD",
+                                      "FAIR",
+                                      "POOR"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "number",
+                              "example": 1
+                            },
+                            "limit": {
+                              "type": "number",
+                              "example": 10
+                            },
+                            "total": {
+                              "type": "number",
+                              "example": 25
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Lỗi server"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

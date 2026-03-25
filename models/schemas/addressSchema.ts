@@ -1,4 +1,14 @@
 export const addressSubSchema = {
+    fullName: {
+        type: String,
+        trim: true,
+        required: [true, 'Tên người nhận (fullName) là bắt buộc']
+    },
+    phone: {
+        type: String,
+        trim: true,
+        required: [true, 'Số điện thoại (phone) là bắt buộc']
+    },
     provinceId: {
         type: Number,
         required: [true, 'Province ID (GHN) is required']

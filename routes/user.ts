@@ -19,11 +19,15 @@ import { getMyInspectionRequests } from '../controllers/bicycleController';
 import { verifyToken, requireUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { addAddressSchema, updateAddressSchema } from '../validations/addressValidation';
+import { getSellerReviews } from '../controllers/orderController';
 
 const router = Router();
 
 // VNPay callback — no auth (VNPay redirects here after payment)
 router.get('/packages/vnpay-return', packageVnpayReturn);
+
+// Public reviews
+router.get('/:id/reviews', getSellerReviews);
 
 // Profile
 router.get('/profile', verifyToken, requireUser, getProfile);

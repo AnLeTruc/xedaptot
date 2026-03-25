@@ -11,7 +11,7 @@ const MODEL_FALLBACK_CHAIN = [
 
 function getAiClient(): GoogleGenAI {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+    if (!apiKey) throw new Error('GEMINI_API_KEY chưa được thiết lập');
     return new GoogleGenAI({ apiKey });
 }
 
@@ -51,14 +51,14 @@ export const analyzeBike = async (req: AuthRequest, res: Response): Promise<void
     const { imageUrl } = req.body;
 
     if (!imageUrl || typeof imageUrl !== 'string') {
-        res.status(400).json({ success: false, message: 'imageUrl is required' });
+        res.status(400).json({ success: false, message: 'imageUrl là bắt buộc' });
         return;
     }
 
     try {
         await runGeminiAnalysis(imageUrl, res);
     } catch (error: any) {
-        res.status(500).json({ success: false, message: error.message || 'AI service error' });
+        res.status(500).json({ success: false, message: error.message || 'Lỗi dịch vụ AI' });
     }
 };
 
@@ -68,7 +68,7 @@ export const priceSuggestion = async (req: AuthRequest, res: Response): Promise<
         const { brandId, categoryId, modelId, condition } = req.query;
 
         if (!brandId || !categoryId) {
-            res.status(400).json({ success: false, message: 'brandId and categoryId are required' });
+            res.status(400).json({ success: false, message: 'brandId và categoryId là bắt buộc' });
             return;
         }
 
@@ -107,7 +107,7 @@ export const priceSuggestion = async (req: AuthRequest, res: Response): Promise<
             }
         });
     } catch (error: any) {
-        res.status(500).json({ success: false, message: error.message || 'Server error' });
+        res.status(500).json({ success: false, message: error.message || 'Lỗi hệ thống' });
     }
 };
 
@@ -153,7 +153,7 @@ async function runGeminiAnalysis(imageUrl: string, res: Response): Promise<void>
 
 async function fetchImageAsBase64(url: string): Promise<string> {
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+    if (!response.ok) throw new Error(`Tải ảnh thất bại: ${response.status}`);
     const buffer = await response.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
 }
