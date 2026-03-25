@@ -568,6 +568,30 @@ export const reviewOrder = async (req: AuthRequest, res: Response) => {
     order.review = { rating: req.body.rating, comment: req.body.comment || '', createdAt: new Date() };
     await order.save();
 
+    // Tính rating tb cho seller
+    try {
+        const stats = await Order.aggregate([
+            {
+                $match: {
+                    'seller._id': order.seller._id,
+                    'review.rating': { $exists: true },
+                }
+            },
+            {
+                $group: {
+                    _id: '$seller._id',
+                    averageRating: { $avg: '$review.rating' },
+                }
+            }
+        ]);
+        if (stats.length > 0) {
+            const avgScore = Number(stats[0].averageRating.toFixed(1));  // làm tròn 1 số thập phân
+            await User.findByIdAndUpdate(order.seller._id, { reputationScore: avgScore });
+        }
+    } catch (error) {
+        console.error('Tính điểm uy tín thất bại:', error);
+    }
+
     //Noti order review
     notificationService.notifyReviewSubmitted(
         req.user!._id.toString()
@@ -576,6 +600,46 @@ export const reviewOrder = async (req: AuthRequest, res: Response) => {
 };
 
 
+
+
+// lấy các trường cần thiết hiện lên rating review của seller
+export const getSellerReviews = async (
+    req: AuthRequest,
+    res: Response
+) => {
+    try {
+        const { id } = req.params;
+        const { page = '1', limit = '10' } = req.query;
+        const filter = {
+            'seller._id': id,
+            'review.rating': { $exists: true }
+        };
+        const [orders, total] = await Promise.all([
+            Order.find(filter)
+                .sort({ 'review.createdAt': -1 })
+                .skip((+page - 1) * +limit)
+                .limit(+limit)
+                .select({
+                    'review': 1,
+                    'bicycle.title': 1,        // Tên xe để hiển thị
+                    'bicycle.primaryImage': 1, // Hình xe
+                    'bicycle.condition': 1,
+                    '_id': 0
+                }),
+            Order.countDocuments(filter)
+        ]);
+        res.status(200).json({
+            success: true,
+            data: {
+                reviews: orders,
+                pagination: { page: +page, limit: +limit, total }
+            }
+        });
+    } catch (error) {
+        console.error('Lấy đánh giá thất bại:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+};
 
 
 
