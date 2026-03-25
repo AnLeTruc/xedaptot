@@ -20,7 +20,7 @@ export class VietQRService {
         throw new Error(`Khoá kết nối VietQR trả về mã lỗi: ${response.status}`);
       }
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (result.code === '00') {
         return result.data as VietQRBankData[];
