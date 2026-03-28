@@ -156,7 +156,11 @@ const bicycleSchema = new Schema<IBicycleDocument>(
         }],
         rejectionReason: { type: String },
         approvalHistory: { type: [approvalHistorySchema], default: [] },
-        hasChangedSinceRejection: { type: Boolean, default: false }
+        hasChangedSinceRejection: { type: Boolean, default: false },
+        resubmitCount: {
+            type: Number,
+            default: 0
+        },
     },
     {
         timestamps: true
