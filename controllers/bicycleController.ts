@@ -389,6 +389,8 @@ export const createBicycle = async (
         }
 
         const locationData = {
+            fullName: location.fullName,
+            phone: location.phone,
             provinceId: location.provinceId,
             districtId: location.districtId,
             wardCode: location.wardCode,
@@ -540,6 +542,8 @@ export const updateBicycle = async (
             }
 
             updateData.location = {
+                fullName: location.fullName,
+                phone: location.phone,
                 provinceId: location.provinceId,
                 districtId: location.districtId,
                 wardCode: location.wardCode,
@@ -812,8 +816,18 @@ export const resubmitBicycle = async (
             return;
         }
 
+        if (bicycle.resubmitCount && bicycle.resubmitCount >= 3) {
+            res.status(400).json({
+                success: false,
+                message: 'Bạn đã đạt mốc giới hạn nộp lại 3 lần. Xin lỗi, tin đăng này không thể nộp lại được nữa!'
+            });
+            return;
+        }
+
+
         bicycle.status = 'PENDING';
         bicycle.hasChangedSinceRejection = false;
+        bicycle.resubmitCount = (bicycle.resubmitCount || 0) + 1;
         bicycle.rejectionReason = undefined;
         bicycle.inspectionStatus = 'PENDING';
         bicycle.assignedInspectorId = undefined;
