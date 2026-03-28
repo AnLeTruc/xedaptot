@@ -53,7 +53,7 @@ export const createBicycleModel = async (
         if (!brand) {
             res.status(404).json({
                 success: false,
-                message: 'Brand not found'
+                message: 'Không tìm thấy thương hiệu'
             });
             return;
         }
@@ -70,7 +70,7 @@ export const createBicycleModel = async (
         await bicycleModel.save();
         res.status(201).json({
             success: true,
-            message: 'Bicycle model created successfully',
+            message: 'Tạo mẫu xe thành công',
             data: bicycleModel
         });
     } catch (error: any) {
@@ -78,7 +78,7 @@ export const createBicycleModel = async (
         if (error.code === 11000) {
             res.status(400).json({
                 success: false,
-                message: 'Model name already exists for this brand'
+                message: 'Tên mẫu xe đã tồn tại cho thương hiệu này'
             });
             return;
         }
@@ -105,17 +105,17 @@ export const updateBicycleModel = async (req: Request, res: Response): Promise<v
             runValidators: true
         });
         if (!model) {
-            res.status(404).json({ success: false, message: 'Bicycle model not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy mẫu xe' });
             return;
         }
         res.status(200).json({
             success: true,
-            message: 'Bicycle model updated successfully',
+            message: 'Cập nhật mẫu xe thành công',
             data: model
         });
     } catch (error: any) {
         if (error.code === 11000) {
-            res.status(400).json({ success: false, message: 'Model name already exists for this brand' });
+            res.status(400).json({ success: false, message: 'Tên mẫu xe đã tồn tại cho thương hiệu này' });
             return;
         }
         res.status(500).json({ success: false, message: error.message });
@@ -132,12 +132,12 @@ export const deleteBicycleModel = async (req: Request, res: Response): Promise<v
         const { id } = req.params;
         const model = await BicycleModel.findByIdAndDelete(id);
         if (!model) {
-            res.status(404).json({ success: false, message: 'Bicycle model not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy mẫu xe' });
             return;
         }
         res.status(200).json({
             success: true,
-            message: 'Bicycle model deleted successfully'
+            message: 'Xoá mẫu xe thành công'
         });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });

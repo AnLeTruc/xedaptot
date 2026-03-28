@@ -103,7 +103,7 @@ export const claimBicycle = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -112,7 +112,7 @@ export const claimBicycle = async (
         if (bicycle.inspectionStatus !== 'PENDING') {
             res.status(400).json({
                 success: false,
-                message: 'Bicycle is not available for inspection'
+                message: 'Xe đạp không khả dụng để kiểm định'
             });
             return;
         }
@@ -131,7 +131,7 @@ export const claimBicycle = async (
 
         res.status(200).json({
             success: true,
-            message: 'Bicycle claimed successfully',
+            message: 'Nhận kiểm định xe đạp thành công',
             data: {
                 bicycle,
                 inspectionReport: report
@@ -204,7 +204,7 @@ export const submitReport = async (
         if (!bicycle) {
             res.status(404).json({
                 success: false,
-                message: 'Bicycle not found'
+                message: 'Không tìm thấy xe đạp'
             });
             return;
         }
@@ -213,7 +213,7 @@ export const submitReport = async (
         if (bicycle.assignedInspectorId?.toString() !== inspectorId?.toString()) {
             res.status(403).json({
                 success: false,
-                message: 'You are not assigned to inspect this bicycle'
+                message: 'Bạn không được phân công kiểm định xe đạp này'
             });
             return;
         }
@@ -258,8 +258,8 @@ export const submitReport = async (
         await Notification.create({
             userId: bicycle.seller._id,
             type: 'INSPECTION_COMPLETED',
-            title: 'Inspection Completed',
-            message: `Your bicycle "${bicycle.title}" has been inspected. Result: ${isPassed ? 'PASSED' : 'FAILED'}`,
+            title: 'Kiểm định hoàn tất',
+            message: `Xe đạp "${bicycle.title}" của bạn đã được kiểm định. Kết quả: ${isPassed ? 'ĐẠT' : 'KHÔNG ĐẠT'}`,
             metadata: {
                 bicycleId,
                 inspectionReportId: report._id
@@ -275,7 +275,7 @@ export const submitReport = async (
 
         res.status(201).json({
             success: true,
-            message: 'Inspection report submitted successfully',
+            message: 'Gửi báo cáo kiểm định thành công',
             data: report
         });
     } catch (error: any) {
@@ -303,7 +303,7 @@ export const getReportById = async (
         if (!report) {
             res.status(404).json({
                 success: false,
-                message: 'Report not found'
+                message: 'Không tìm thấy báo cáo'
             });
             return;
         }
@@ -363,7 +363,7 @@ export const markNotificationRead = async (
         if (!notification) {
             res.status(404).json({
                 success: false,
-                message: 'Notification not found'
+                message: 'Không tìm thấy thông báo'
             });
             return;
         }

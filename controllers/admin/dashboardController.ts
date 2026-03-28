@@ -27,7 +27,7 @@ export const getSummaryStats = async (
     if (!validPeriods.includes(period as string)) {
       res.status(400).json({
         success: false,
-        message: `Period phải là một trong: ${validPeriods.join(', ')}`
+        message: `Khoảng thời gian phải là một trong: ${validPeriods.join(', ')}`
       });
       return;
     }
@@ -45,7 +45,7 @@ export const getSummaryStats = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Lỗi hệ thống'
     });
   }
 };
@@ -124,7 +124,7 @@ export const getTopSellersChartController = async (
   try {
     const { limit = 5, year } = req.query as unknown as TopSellersQueryInput;
 
-    const data = await getTopSellersChart(Number(limit), year);
+    const data = await getTopSellersChart(Number(limit), year ? Number(year) : undefined);
 
     res.status(200).json({ success: true, data });
 

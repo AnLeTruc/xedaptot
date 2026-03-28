@@ -28,6 +28,19 @@ const transactionSchema = new Schema({
     gatewayResponseCode: String,
 }, { _id: false });
 
+const deliveryProofSchema = new Schema({
+    images: [{ type: String }],
+    isSuccess: { type: Boolean, required: true },
+    deliveredAt: Date,
+    failedAt: Date,
+    failReason: String,
+}, { _id: false });
+
+const receiveProofSchema = new Schema({
+    images: [{ type: String }],
+    receivedAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 
 const orderSchema = new Schema<IOrderDocument>({
     orderCode: { type: String, required: true, unique: true, index: true },
@@ -38,7 +51,7 @@ const orderSchema = new Schema<IOrderDocument>({
             'DEPOSIT_EXPIRED',
             'PAYMENT_TIMEOUT', 'WAITING_SELLER_CONFIRMATION',
             'CONFIRMED', 'REJECTED', 'WAITING_FOR_PICKUP',
-            'IN_TRANSIT', 'DELIVERED', 'WAITING_REMAINING_PAYMENT',
+            'IN_TRANSIT', 'DELIVERED', 'DELIVERY_FAILED', 'WAITING_REMAINING_PAYMENT',
             'COMPLETED', 'FUNDS_RELEASED', 'CANCELLED',
             'CANCELLED_BY_BUYER', 'DISPUTED'
         ],
@@ -82,6 +95,8 @@ const orderSchema = new Schema<IOrderDocument>({
         comment: { type: String, maxlength: 1000 },
         createdAt: Date,
     },
+    deliveryProof: { type: deliveryProofSchema },
+    receiveProof: { type: receiveProofSchema },
     completedAt: Date,
     sellerConfirmedAt: Date,
     buyerConfirmedAt: Date,

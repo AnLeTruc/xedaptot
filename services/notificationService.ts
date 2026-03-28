@@ -117,7 +117,7 @@ export const notifyListingCreated = (userId: string, listingId: string) =>
         type: 'LISTING',
         title: 'Tin đăng đang chờ duyệt',
         message: 'Tin đăng đã được tạo thành công và đang chờ duyệt.',
-        url: `/my-bicycles/${listingId}`
+        url: `/listings/${listingId}`
     });
 
 export const notifyListingApproved = (userId: string, listingId: string, bikeName: string) =>
@@ -126,7 +126,7 @@ export const notifyListingApproved = (userId: string, listingId: string, bikeNam
         type: 'LISTING',
         title: 'Tin đăng được duyệt',
         message: `Tin đăng "${bikeName}" đã được duyệt và hiển thị công khai.`,
-        url: `/my-bicycles/${listingId}`
+        url: `/listings/${listingId}`
     });
 
 export const notifyListingRejected = (userId: string, listingId: string, bikeName: string) =>
@@ -135,8 +135,9 @@ export const notifyListingRejected = (userId: string, listingId: string, bikeNam
         type: 'LISTING',
         title: 'Tin đăng không đạt kiểm định',
         message: `Xe ${bikeName} không đạt kiểm định. Vui lòng xem chi tiết để biết thêm.`,
-        url: `/my-bicycles/${listingId}`
+        url: `/listings/${listingId}`
     });
+
 
 export const notifyListingDeleted = (userId: string, bikeName: string) =>
     createNotification({
@@ -144,7 +145,7 @@ export const notifyListingDeleted = (userId: string, bikeName: string) =>
         type: 'LISTING',
         title: 'Xoá tin đăng thành công',
         message: `Bạn đã xoá ${bikeName}.`,
-        url: '/my-bicycles'
+        url: '/my-listings'
     });
 
 export const notifyListingHidden = (userId: string, bikeName: string) =>
@@ -153,8 +154,9 @@ export const notifyListingHidden = (userId: string, bikeName: string) =>
         type: 'LISTING',
         title: 'Ẩn tin đăng thành công',
         message: `Bạn đã ẩn ${bikeName}.`,
-        url: '/my-bicycles'
+        url: '/my-listings'
     });
+
 
 // ── ORDER ──────────────────────────────────────────────────
 export const notifyDepositSuccess = (userId: string, orderId: string) =>
@@ -261,6 +263,15 @@ export const notifyReportSubmitted = (userId: string, orderId: string) =>
         type: 'ORDER',
         title: 'Báo cáo đã được gửi',
         message: 'Báo cáo của bạn đã được gửi đi và đang chờ xem xét. Chúng tôi sẽ xử lí trong thời gian sớm nhất.',
+        url: `/orders/${orderId}`
+    });
+
+export const notifyDeliveryFailed = (userId: string, orderId: string, orderCode: string, failReason?: string) =>
+    createNotification({
+        userId,
+        type: 'ORDER',
+        title: 'Giao hàng không thành công',
+        message: `Đơn hàng ${orderCode} giao không thành công. Lý do: ${failReason || 'Không xác định'}. Chúng tôi sẽ liên hệ để sắp xếp lại.`,
         url: `/orders/${orderId}`
     });
 

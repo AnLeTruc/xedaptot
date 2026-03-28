@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as ctrl from '../controllers/orderController';
 import { verifyToken, requireUser } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createOrderSchema, cancelOrderSchema } from '../validations/orderValidation';
+import { createOrderSchema, cancelOrderSchema, deliverOrderSchema, receiveOrderSchema } from '../validations/orderValidation';
 
 const router = Router();
 
@@ -20,7 +20,7 @@ router.post('/:id/pay', ctrl.payOrder);
 router.post('/:id/pay-vnpay', ctrl.payOrderVnpay);
 router.put('/:id/cancel', validate(cancelOrderSchema, 'body'), ctrl.cancelOrder);
 router.post('/:id/review', ctrl.reviewOrder);
-router.put('/:id/receive', ctrl.receiveOrder);
+router.put('/:id/receive', validate(receiveOrderSchema, 'body'), ctrl.receiveOrder);
 
 // seller
 router.put('/:id/confirm', ctrl.confirmOrder);
@@ -30,6 +30,6 @@ router.put('/:id/reject', validate(cancelOrderSchema, 'body'), ctrl.rejectOrder)
 router.get('/', ctrl.getAllOrders);
 router.put('/:id/pickup', ctrl.pickupOrder);
 router.put('/:id/ship', ctrl.shipOrder);
-router.put('/:id/deliver', ctrl.deliverOrder);
+router.put('/:id/deliver', validate(deliverOrderSchema, 'body'), ctrl.deliverOrder);
 
 export default router;

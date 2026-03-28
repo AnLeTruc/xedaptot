@@ -17,7 +17,7 @@ const withdrawRequestSchema = new Schema<IWithdrawRequestDocument>(
         amount: {
             type: Number,
             required: [true, 'Amount is required'],
-            min: [1000, 'Minimum withdraw amount is 1,000đ']
+            min: [10000, 'Minimum withdraw amount is 10,000đ']
         },
         bankInfo: {
             bankName: {

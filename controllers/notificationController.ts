@@ -11,7 +11,7 @@ export const getNotifications = async (
     try {
         const userId = req.user?._id;
         if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
+            res.status(401).json({ success: false, message: 'Chưa xác thực' });
             return;
         }
 
@@ -67,7 +67,7 @@ export const markAsRead = async (
     try {
         const userId = req.user?._id;
         if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
+            res.status(401).json({ success: false, message: 'Chưa xác thực' });
             return;
         }
 
@@ -80,13 +80,13 @@ export const markAsRead = async (
         );
 
         if (!notification) {
-            res.status(404).json({ success: false, message: 'Notification not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy thông báo' });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Notification marked as read',
+            message: 'Đã đánh dấu thông báo đã đọc',
             data: {
                 id: notification._id,
                 is_read: notification.isRead
@@ -105,7 +105,7 @@ export const markAllAsRead = async (
     try {
         const userId = req.user?._id;
         if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
+            res.status(401).json({ success: false, message: 'Chưa xác thực' });
             return;
         }
 
@@ -116,7 +116,7 @@ export const markAllAsRead = async (
 
         res.status(200).json({
             success: true,
-            message: 'All notifications marked as read',
+            message: 'Đã đánh dấu tất cả thông báo đã đọc',
             data: { updatedCount: result.modifiedCount }
         });
     } catch (error: any) {

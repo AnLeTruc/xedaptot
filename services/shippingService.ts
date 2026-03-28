@@ -34,7 +34,7 @@ async function ghnRequest(endpoint: string, body?: any) {
     });
     const json: any = await res.json();
     if (json.code !== 200) {
-        throw new Error(`GHN API Error: ${json.message}`);
+        throw new Error(`Lỗi API GHN: ${json.message}`);
     }
     return json.data;
 }
@@ -89,7 +89,7 @@ export async function validateGhnLocation(
 ): Promise<LocationValidationResult> {
     const resolved = await resolveGhnLocationNames(provinceId, districtId, wardCode);
     if (!resolved) {
-        return { isValid: false, message: 'Invalid GHN location data' };
+        return { isValid: false, message: 'Dữ liệu vị trí GHN không hợp lệ' };
     }
 
     return { isValid: true };

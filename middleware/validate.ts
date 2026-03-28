@@ -21,7 +21,7 @@ export const validate = (
             }));
             res.status(400).json({
                 success: false,
-                message: 'Validation failed',
+                message: 'Dữ liệu không hợp lệ',
                 errors: errors
             });
             return;

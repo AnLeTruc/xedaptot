@@ -41,6 +41,7 @@ router.get('/my',
 );
 
 router.get('/:id',
+    optionalAuth,
     validate(bicycleIdParamSchema, 'params'),
     getBicycleById
 );
@@ -55,12 +56,14 @@ router.get('/:id/inspection-report',
             const report = await InspectionReport.findOne({
                 bicycleId: id,
                 status: { $in: ['COMPLETED', 'REJECTED'] }
-            }).populate('inspectorId', 'fullName');
+            })
+            .sort({ createdAt: -1 })
+            .populate('inspectorId', 'fullName');
 
             if (!report) {
                 return res.status(404).json({
                     success: false,
-                    message: 'No inspection report found for this bicycle'
+                    message: 'Không tìm thấy báo cáo kiểm định cho xe đạp này'
                 });
             }
 

@@ -122,7 +122,7 @@ export const initSocketServer = (server: HttpServer) => {
 
 export const getIO = () => {
     if (!io) {
-        throw new Error('Socket.io is not initialized!');
+        throw new Error('Socket.io chưa được khởi tạo!');
     }
     return io;
 }

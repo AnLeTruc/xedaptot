@@ -112,7 +112,7 @@ export const getUserPackageById = async (
         if (!userPackage) {
             res.status(404).json({
                 success: false,
-                message: 'User package not found'
+                message: 'Không tìm thấy gói người dùng'
             });
             return;
         }
@@ -139,7 +139,7 @@ export const purchasePackage = async (req: AuthRequest, res: Response): Promise<
         const { packageId } = req.body;
 
         if (!packageId) {
-            res.status(400).json({ success: false, message: 'Package ID is required' });
+            res.status(400).json({ success: false, message: 'Mã gói là bắt buộc' });
             return;
         }
 
@@ -157,11 +157,11 @@ export const purchasePackage = async (req: AuthRequest, res: Response): Promise<
         // Tìm package
         const packageItem = await Package.findById(packageId);
         if (!packageItem) {
-            res.status(404).json({ success: false, message: 'Package not found' });
+            res.status(404).json({ success: false, message: 'Không tìm thấy gói' });
             return;
         }
         if (!packageItem.isActive) {
-            res.status(400).json({ success: false, message: 'This package is not available' });
+            res.status(400).json({ success: false, message: 'Gói này không khả dụng' });
             return;
         }
 
@@ -232,7 +232,7 @@ export const packageVnpayReturn = async (req: Request, res: Response): Promise<v
         // Verify chữ ký
         const isValid = verifyReturnUrl(vnpParams);
         if (!isValid) {
-            res.status(400).json({ success: false, message: 'Invalid signature from VNPay' });
+            res.status(400).json({ success: false, message: 'Chữ ký VNPay không hợp lệ' });
             return;
         }
 
@@ -248,7 +248,7 @@ export const packageVnpayReturn = async (req: Request, res: Response): Promise<v
         });
 
         if (!transaction) {
-            res.status(404).json({ success: false, message: 'Transaction not found or already processed' });
+            res.status(404).json({ success: false, message: 'Giao dịch không tìm thấy hoặc đã được xử lý' });
             return;
         }
 
@@ -345,7 +345,7 @@ export const cancelUserPackage = async (
         if (!userPackage) {
             res.status(404).json({
                 success: false,
-                message: 'User package not found'
+                message: 'Không tìm thấy gói người dùng'
             });
             return;
         }
@@ -353,7 +353,7 @@ export const cancelUserPackage = async (
         if (userPackage.status !== 'ACTIVE') {
             res.status(400).json({
                 success: false,
-                message: 'Only active packages can be cancelled'
+                message: 'Chỉ gói đang hoạt động mới có thể huỷ'
             });
             return;
         }
@@ -368,7 +368,7 @@ export const cancelUserPackage = async (
 
         res.status(200).json({
             success: true,
-            message: 'Package cancelled successfully',
+            message: 'Huỷ gói thành công',
             data: userPackage
         });
     } catch (error: any) {

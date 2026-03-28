@@ -38,7 +38,7 @@ export const registerToken = async (req: AuthRequest, res: Response): Promise<vo
         console.error('Error registering FCM token:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to register FCM token',
+            message: 'Đăng ký FCM token thất bại',
         });
     }
 };
@@ -56,14 +56,14 @@ export const sendNotification = async (req: AuthRequest, res: Response): Promise
         if (result.successCount === 0 && result.failureCount === 0) {
             res.status(404).json({
                 success: false,
-                message: 'No device tokens found for this user',
+                message: 'Không tìm thấy device token cho người dùng này',
             });
             return;
         }
 
         res.status(200).json({
             success: true,
-            message: 'Notification sent successfully',
+            message: 'Gửi thông báo thành công',
             data: {
                 successCount: result.successCount,
                 failureCount: result.failureCount,
@@ -73,7 +73,7 @@ export const sendNotification = async (req: AuthRequest, res: Response): Promise
         console.error('Error sending notification:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to send notification',
+            message: 'Gửi thông báo thất bại',
         });
     }
 };
@@ -105,7 +105,7 @@ export const removeToken = async (req: AuthRequest, res: Response): Promise<void
         console.error('Error removing FCM token:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to remove FCM token',
+            message: 'Xoá FCM token thất bại',
         });
     }
 };
