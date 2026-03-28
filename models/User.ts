@@ -25,6 +25,13 @@ const userSchema = new Schema<IUserDocument>(
             type: String,
             trim: true,
         },
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other'],
+        },
+        dateOfBirth: {
+            type: Date,
+        },
         addresses: [{
             label: {
                 type: String,

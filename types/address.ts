@@ -6,6 +6,8 @@ export interface ICoordinates {
 }
 
 export interface IAddress {
+    fullName: string;
+    phone: string;
     provinceId: number;
     districtId: number;
     wardCode: string;
