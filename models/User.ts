@@ -109,6 +109,35 @@ const userSchema = new Schema<IUserDocument>(
             type: Date,
             select: false
         },
+        // KYC fields
+        kycStatus: {
+            type: String,
+            enum: ['NONE', 'PENDING', 'VERIFIED', 'REJECTED'],
+            default: 'NONE'
+        },
+        kycFullName: {
+            type: String,
+            trim: true
+        },
+        kycIdNumber: {
+            type: String,
+            trim: true
+        },
+        kycDob: {
+            type: String,
+            trim: true
+        },
+        kycAddress: {
+            type: String,
+            trim: true
+        },
+        kycVerifiedAt: {
+            type: Date
+        },
+        kycData: {
+            type: Schema.Types.Mixed,
+            select: false
+        },
         isOnline: {
             type: Boolean,
             default: false
