@@ -4738,29 +4738,108 @@
           {
             "name": "condition",
             "in": "query",
+            "description": "Filter by one or more conditions. Accepts repeated params or comma-separated values.",
             "schema": {
-              "type": "string",
-              "enum": [
-                "NEW",
-                "LIKE_NEW",
-                "GOOD",
-                "FAIR",
-                "POOR"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "NEW",
+                    "LIKE_NEW",
+                    "GOOD",
+                    "FAIR",
+                    "POOR"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "NEW",
+                      "LIKE_NEW",
+                      "GOOD",
+                      "FAIR",
+                      "POOR"
+                    ]
+                  }
+                }
               ]
+            },
+            "examples": {
+              "commaSeparated": {
+                "summary": "Comma-separated values",
+                "value": "NEW,GOOD"
+              },
+              "repeated": {
+                "summary": "Repeated parameters",
+                "value": [
+                  "NEW",
+                  "GOOD"
+                ]
+              }
             }
           },
           {
             "name": "category",
             "in": "query",
+            "description": "Filter by one or more category IDs. Accepts repeated params or comma-separated values.",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "commaSeparated": {
+                "summary": "Comma-separated values",
+                "value": "64d1b5b5b5b5b5b5b5b5b5b1,64d1b5b5b5b5b5b5b5b5b5b2"
+              },
+              "repeated": {
+                "summary": "Repeated parameters",
+                "value": [
+                  "64d1b5b5b5b5b5b5b5b5b5b1",
+                  "64d1b5b5b5b5b5b5b5b5b5b2"
+                ]
+              }
             }
           },
           {
             "name": "brand",
             "in": "query",
+            "description": "Filter by one or more brand IDs. Accepts repeated params or comma-separated values.",
             "schema": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "examples": {
+              "commaSeparated": {
+                "summary": "Comma-separated values",
+                "value": "64d1b5b5b5b5b5b5b5b5b5c1,64d1b5b5b5b5b5b5b5b5b5c2"
+              },
+              "repeated": {
+                "summary": "Repeated parameters",
+                "value": [
+                  "64d1b5b5b5b5b5b5b5b5b5c1",
+                  "64d1b5b5b5b5b5b5b5b5b5c2"
+                ]
+              }
             }
           },
           {
@@ -4792,6 +4871,14 @@
               "type": "integer"
             },
             "description": "Filter by GHN provinceId"
+          },
+          {
+            "name": "provinceName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by province name (case-insensitive, matches provinceName or city)"
           },
           {
             "name": "search",
@@ -4856,6 +4943,22 @@
                       }
                     }
                   }
+                },
+                "example": {
+                  "success": true,
+                  "count": 1,
+                  "total": 1,
+                  "page": 1,
+                  "totalPages": 1,
+                  "data": [
+                    {
+                      "_id": "64d1b5b5b5b5b5b5b5b5b5d1",
+                      "title": "City bike 7-speed",
+                      "price": 3500000,
+                      "condition": "GOOD",
+                      "status": "APPROVED"
+                    }
+                  ]
                 }
               }
             }

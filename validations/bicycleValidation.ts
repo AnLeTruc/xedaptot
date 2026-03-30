@@ -129,13 +129,17 @@ export const updateBicycleStatusSchema = z.object({
 
 export const getBicyclesQuerySchema = z.object({
     status: z.enum(['PENDING', 'APPROVED', 'SOLD', 'HIDDEN', 'REJECTED']).optional(),
-    condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']).optional(),
-    category: z.string().optional(),
-    brand: z.string().optional(),
+    condition: z.union([
+        z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']),
+        z.array(z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']))
+    ]).optional(),
+    category: z.union([z.string(), z.array(z.string())]).optional(),
+    brand: z.union([z.string(), z.array(z.string())]).optional(),
     sellerId: z.string().optional(),
     minPrice: z.string().optional(),
     maxPrice: z.string().optional(),
     provinceId: z.string().optional(),
+    provinceName: z.string().optional(),
     search: z.string().optional(),
     page: z.string().optional().default('1'),
     limit: z.string().optional().default('10'),

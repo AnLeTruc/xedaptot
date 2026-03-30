@@ -32,6 +32,28 @@ const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: n
     };
 };
 
+const normalizeQueryValues = (value: unknown): string[] => {
+    if (!value) {
+        return [];
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .flatMap((item) => (typeof item === 'string' ? item.split(',') : []))
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    return [];
+};
+
 // GET /api/bicycles/my
 export const getMyBicycles = async (
     req: AuthRequest,
@@ -138,14 +160,19 @@ export const getAllBicycles = async (
             filter['seller._id'] = sellerId;
         }
 
-        if (condition) {
-            filter.condition = condition;
+        const conditionValues = normalizeQueryValues(condition);
+        if (conditionValues.length > 0) {
+            filter.condition = { $in: conditionValues };
         }
-        if (category) {
-            filter['category._id'] = category;
+
+        const categoryValues = normalizeQueryValues(category);
+        if (categoryValues.length > 0) {
+            filter['category._id'] = { $in: categoryValues };
         }
-        if (brand) {
-            filter['brand._id'] = brand;
+
+        const brandValues = normalizeQueryValues(brand);
+        if (brandValues.length > 0) {
+            filter['brand._id'] = { $in: brandValues };
         }
 
         // Price range
