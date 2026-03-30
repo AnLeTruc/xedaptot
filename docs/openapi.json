@@ -1492,6 +1492,14 @@
             ],
             "example": "PENDING"
           },
+          "type": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL"
+            ],
+            "example": "MANUAL"
+          },
           "processedAt": {
             "type": "string",
             "format": "date-time"
@@ -1541,7 +1549,7 @@
         "properties": {
           "amount": {
             "type": "number",
-            "minimum": 1000,
+            "minimum": 10000,
             "maximum": 500000000,
             "example": 500000
           },
@@ -8733,7 +8741,7 @@
           "Wallet"
         ],
         "summary": "Create withdraw request",
-        "description": "Creates a pending withdraw request. A user can have up to 3 pending requests at the same time. Amount will be frozen until admin approves/rejects.",
+        "description": "Creates a withdraw request. If amount < 3,000,000 and user is trusted, the request is auto-completed and wallet is debited immediately. Otherwise the request is pending manual review. A user can have up to 3 pending requests at the same time.",
         "security": [
           {
             "bearerAuth": []
@@ -8763,7 +8771,7 @@
                     },
                     "message": {
                       "type": "string",
-                      "example": "Withdraw request created, pending admin approval"
+                      "example": "Yêu cầu rút tiền đã tạo, đang chờ admin duyệt"
                     },
                     "data": {
                       "$ref": "#/components/schemas/WithdrawRequest"
@@ -8775,6 +8783,9 @@
           },
           "400": {
             "description": "Insufficient balance or user already has 3 pending withdraw requests"
+          },
+          "403": {
+            "description": "KYC verification required"
           },
           "401": {
             "description": "Unauthorized"
