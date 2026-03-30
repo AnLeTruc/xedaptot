@@ -9,6 +9,7 @@ import {
     verifyKYC,
     getKYCStatus
 } from '../controllers/authController';
+import { getSellerDashboard } from '../controllers/sellerDashboardController';
 import {
     getMyPackages,
     getMyActivePackage,
@@ -34,6 +35,9 @@ router.get('/:id/reviews', getSellerReviews);
 // Profile
 router.get('/profile', verifyToken, requireUser, getProfile);
 router.put('/profile', verifyToken, requireUser, updateProfile);
+
+// Seller dashboard
+router.get('/seller/dashboard', verifyToken, requireUser, getSellerDashboard);
 
 // Address
 router.post('/addresses', verifyToken, requireUser, validate(addAddressSchema, 'body'), addAddress);
