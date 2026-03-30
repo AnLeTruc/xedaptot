@@ -41,6 +41,11 @@ const withdrawRequestSchema = new Schema<IWithdrawRequestDocument>(
             enum: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'],
             default: 'PENDING'
         },
+        type: {
+            type: String,
+            enum: ['AUTO', 'MANUAL'],
+            required: [true, 'Withdraw type is required']
+        },
         processedAt: Date,
         processedBy: {
             type: Schema.Types.ObjectId,

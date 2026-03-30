@@ -40,6 +40,39 @@ const generateCode = (prefix: string) => {
 };
 
 const MAX_PENDING_WITHDRAW_REQUESTS = 3;
+const WITHDRAW_AUTO_THRESHOLD = 3000000;
+const AUTO_TRANSFER_DELAY_MS = 30000;
+
+const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
+    const isTrusted = user?.isTrusted === true;
+    const isNewUser = user?.isNewUser === true;
+    const isAuto = amount <= WITHDRAW_AUTO_THRESHOLD && isTrusted;
+
+    if (isAuto) {
+        return {
+            status: 'COMPLETED' as const,
+            type: 'AUTO' as const,
+            isAuto: true,
+            message: 'Tiền đã được chuyển về tài khoản Ngân Hàng của bạn'
+        };
+    }
+
+    if (amount > WITHDRAW_AUTO_THRESHOLD || isNewUser) {
+        return {
+            status: 'PENDING' as const,
+            type: 'MANUAL' as const,
+            isAuto: false,
+            message: 'Yêu cầu rút tiền đã tạo, đang chờ admin duyệt'
+        };
+    }
+
+    return {
+        status: 'PENDING' as const,
+        type: 'MANUAL' as const,
+        isAuto: false,
+        message: 'Yêu cầu rút tiền đã tạo, đang chờ admin duyệt'
+    };
+};
 
 
 // GET /wallets/me - Get my wallet
@@ -361,6 +394,16 @@ export const createWithdrawRequest = async (
     try {
         const userId = req.user!._id;
         const { amount, bankInfo } = req.body;
+        const user = req.user;
+
+        if (!user || user.kycStatus !== 'VERIFIED') {
+            await session.abortTransaction();
+            res.status(403).json({
+                success: false,
+                message: 'Vui lòng xác thực CCCD trước khi rút tiền.'
+            });
+            return;
+        }
 
         const wallet = await Wallet.findOne({ userId }).session(session);
         if (!wallet) {
@@ -384,47 +427,56 @@ export const createWithdrawRequest = async (
             return;
         }
 
-        // Allow a user to keep at most 3 pending withdraw requests at a time
-        const pendingRequestCount = await WithdrawRequest.countDocuments({
-            userId,
-            status: 'PENDING'
-        }).session(session);
+        const strategy = checkWithdrawalStrategy(amount, user);
 
-        if (pendingRequestCount >= MAX_PENDING_WITHDRAW_REQUESTS) {
-            await session.abortTransaction();
-            res.status(400).json({
-                success: false,
-                message: `You can only have up to ${MAX_PENDING_WITHDRAW_REQUESTS} pending withdraw requests`,
-                data: {
-                    pendingRequestCount,
-                    maxPendingRequests: MAX_PENDING_WITHDRAW_REQUESTS
-                }
-            });
-            return;
+        if (!strategy.isAuto) {
+            // Allow a user to keep at most 3 pending withdraw requests at a time
+            const pendingRequestCount = await WithdrawRequest.countDocuments({
+                userId,
+                status: 'PENDING'
+            }).session(session);
+
+            if (pendingRequestCount >= MAX_PENDING_WITHDRAW_REQUESTS) {
+                await session.abortTransaction();
+                res.status(400).json({
+                    success: false,
+                    message: `You can only have up to ${MAX_PENDING_WITHDRAW_REQUESTS} pending withdraw requests`,
+                    data: {
+                        pendingRequestCount,
+                        maxPendingRequests: MAX_PENDING_WITHDRAW_REQUESTS
+                    }
+                });
+                return;
+            }
         }
 
-        // Freeze the amount
-        wallet.frozenBalance += amount;
+        const balanceBefore = availableBalance;
+        const balanceAfter = balanceBefore - amount;
+
+        if (strategy.isAuto) {
+            wallet.totalWithdrawn += amount;
+        } else {
+            wallet.frozenBalance += amount;
+        }
         await wallet.save({ session });
 
-        // Create withdraw request
         const [withdrawRequest] = await WithdrawRequest.create([{
             userId,
             walletId: wallet._id,
             amount,
             bankInfo,
-            status: 'PENDING'
+            status: strategy.status,
+            type: strategy.type,
+            processedAt: strategy.isAuto ? new Date() : undefined
         }], { session });
 
-        // Create transaction record
-        const balanceBefore = availableBalance;
-        const balanceAfter = balanceBefore - amount;
         await Transaction.create([{
             transactionCode: generateCode('WDR'),
             paymentMethod: 'BANK_TRANSFER',
             data: {
-                status: 'PENDING',
-                withdrawRequestId: withdrawRequest._id.toString()
+                status: strategy.isAuto ? 'SUCCESS' : 'PENDING',
+                withdrawRequestId: withdrawRequest._id.toString(),
+                strategy: strategy.type
             },
             walletId: wallet._id,
             type: 'WITHDRAW',
@@ -436,15 +488,21 @@ export const createWithdrawRequest = async (
 
         await session.commitTransaction();
 
-        notificationService.notifyWithdrawRequested(userId.toString());
-        notificationService.notifyAdminWithdrawRequest(
-            req.user!.fullName || req.user!.email,
-            amount
-        );
+        if (strategy.isAuto) {
+            setTimeout(() => {
+                notificationService.notifyWithdrawApproved(userId.toString());
+            }, AUTO_TRANSFER_DELAY_MS);
+        } else {
+            notificationService.notifyWithdrawRequested(userId.toString());
+            notificationService.notifyAdminWithdrawRequest(
+                req.user!.fullName || req.user!.email,
+                amount
+            );
+        }
 
         res.status(201).json({
             success: true,
-            message: 'Yêu cầu rút tiền đã tạo, đang chờ admin duyệt',
+            message: strategy.message,
             data: withdrawRequest
         });
     } catch (error: any) {

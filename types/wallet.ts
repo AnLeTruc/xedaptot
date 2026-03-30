@@ -20,6 +20,8 @@ export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
 
 export type WithdrawStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
+export type WithdrawType = 'AUTO' | 'MANUAL';
+
 
 export interface IWallet {
     userId: Types.ObjectId;
@@ -70,6 +72,7 @@ export interface IWithdrawRequest {
     amount: number;
     bankInfo: IBankInfo;
     status: WithdrawStatus;
+    type: WithdrawType;
     processedAt?: Date;
     processedBy?: Types.ObjectId;
     rejectedReason?: string;
