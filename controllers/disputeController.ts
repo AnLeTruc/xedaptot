@@ -7,6 +7,7 @@ import { getOrCreateWallet } from './walletController';
 import Bicycle from '../models/Bicycle';
 import Transaction from '../models/Transaction';
 import * as notificationService from '../services/notificationService';
+import { syncWishlistBicycle } from './wishlistController';
 
 
 
@@ -228,6 +229,8 @@ export const resolveDispute = async (
             order.amounts.escrowAmount = 0;
 
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
+            
+            syncWishlistBicycle(order.bicycle._id.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
 
             // người bán thắng
