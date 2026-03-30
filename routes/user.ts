@@ -5,7 +5,9 @@ import {
     addAddress,
     updateAddress,
     deleteAddress,
-    setDefaultAddress
+    setDefaultAddress,
+    verifyKYC,
+    getKYCStatus
 } from '../controllers/authController';
 import {
     getMyPackages,
@@ -38,6 +40,10 @@ router.post('/addresses', verifyToken, requireUser, validate(addAddressSchema, '
 router.put('/addresses/:id', verifyToken, requireUser, validate(updateAddressSchema, 'body'), updateAddress);
 router.delete('/addresses/:id', verifyToken, requireUser, deleteAddress);
 router.put('/addresses/:id/default', verifyToken, requireUser, setDefaultAddress);
+
+// KYC
+router.post('/kyc', verifyToken, requireUser, verifyKYC);
+router.get('/kyc', verifyToken, requireUser, getKYCStatus);
 
 // Inspection Requests
 router.get('/inspection-requests', verifyToken, requireUser, getMyInspectionRequests);

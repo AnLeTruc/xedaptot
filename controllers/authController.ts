@@ -1345,3 +1345,137 @@ export const changePassword = async (
     }
 };
 
+
+// POST /api/users/kyc - Verify KYC via CCCD
+export const verifyKYC = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Người dùng chưa xác thực'
+            });
+            return;
+        }
+
+        const { imageUrl } = req.body;
+
+        if (!imageUrl || typeof imageUrl !== 'string') {
+            res.status(400).json({
+                success: false,
+                message: 'imageUrl (URL ảnh CCCD) là bắt buộc'
+            });
+            return;
+        }
+
+        // Check if already verified
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng'
+            });
+            return;
+        }
+
+        if (user.kycStatus === 'VERIFIED') {
+            res.status(400).json({
+                success: false,
+                message: 'Tài khoản đã được xác thực KYC trước đó',
+                data: {
+                    kycStatus: user.kycStatus,
+                    kycFullName: user.kycFullName,
+                    kycIdNumber: user.kycIdNumber,
+                    kycVerifiedAt: user.kycVerifiedAt
+                }
+            });
+            return;
+        }
+
+        // Call FPT.AI
+        const { recognizeIdCard } = await import('../services/fptaiService');
+        const idData = await recognizeIdCard(imageUrl);
+
+        // Save KYC data to user
+        await User.findByIdAndUpdate(userId, {
+            kycStatus: 'VERIFIED',
+            kycFullName: idData.name,
+            kycIdNumber: idData.id,
+            kycDob: idData.dob,
+            kycAddress: idData.address,
+            kycVerifiedAt: new Date(),
+            kycData: idData
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Xác thực CCCD thành công',
+            data: {
+                kycStatus: 'VERIFIED',
+                kycFullName: idData.name,
+                kycIdNumber: idData.id,
+                kycDob: idData.dob,
+                kycAddress: idData.address,
+                kycVerifiedAt: new Date()
+            }
+        });
+
+        // Notify
+        notificationService.notifyProfileUpdated(userId.toString());
+    } catch (error: any) {
+        console.error('KYC verification error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Xác thực CCCD thất bại. Vui lòng thử lại.'
+        });
+    }
+};
+
+
+// GET /api/users/kyc - Get KYC status
+export const getKYCStatus = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.user?._id;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Người dùng chưa xác thực'
+            });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                kycStatus: user.kycStatus || 'NONE',
+                kycFullName: user.kycFullName || null,
+                kycIdNumber: user.kycIdNumber || null,
+                kycDob: user.kycDob || null,
+                kycAddress: user.kycAddress || null,
+                kycVerifiedAt: user.kycVerifiedAt || null
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lấy trạng thái KYC thất bại'
+        });
+    }
+};
