@@ -2228,6 +2228,21 @@
           }
         }
       }
+    },
+    "BankAccount": {
+      "type": "object",
+      "properties": {
+        "_id": { "type": "string", "example": "64d1b5b5b5b5b5b5b5b5b5b5" },
+        "userId": { "type": "string", "example": "64d1b5b5b5b5b5b5b5b5b5b5" },
+        "bankName": { "type": "string", "example": "Vietcombank" },
+        "accountNumber": { "type": "string", "example": "0123456789" },
+        "accountOwner": { "type": "string", "example": "NGUYEN VAN A" },
+        "isDefault": { "type": "boolean", "example": true },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"], "example": "ACTIVE" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "paths": {
@@ -12679,6 +12694,386 @@
               }
             }
           }
+        }
+      }
+    },
+    "/users/kyc": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Xác thực CCCD (KYC)",
+        "description": "Upload ảnh CCCD (đã upload lên Cloudinary) để xác thực danh tính qua FPT.AI Vision API. User phải upload ảnh CCCD lên Cloudinary trước, sau đó gửi imageUrl.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["imageUrl"],
+                "properties": {
+                  "imageUrl": {
+                    "type": "string",
+                    "description": "URL ảnh CCCD đã upload lên Cloudinary",
+                    "example": "https://res.cloudinary.com/dfzy7lort/image/upload/v1234567890/cccd_front.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Xác thực CCCD thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Xác thực CCCD thành công" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "kycStatus": { "type": "string", "example": "VERIFIED" },
+                        "kycFullName": { "type": "string", "example": "NGUYEN VAN A" },
+                        "kycIdNumber": { "type": "string", "example": "001234567890" },
+                        "kycDob": { "type": "string", "example": "01/01/1990" },
+                        "kycAddress": { "type": "string", "example": "123 Đường ABC, Quận 1, TP.HCM" },
+                        "kycVerifiedAt": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Đã KYC rồi hoặc thiếu imageUrl",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "Tài khoản đã được xác thực KYC trước đó" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          },
+          "500": {
+            "description": "Lỗi server hoặc FPT.AI không nhận diện được"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lấy trạng thái KYC",
+        "description": "Trả về trạng thái KYC hiện tại của user (NONE, PENDING, VERIFIED, REJECTED) và thông tin CCCD đã xác thực.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "kycStatus": { "type": "string", "enum": ["NONE", "PENDING", "VERIFIED", "REJECTED"], "example": "VERIFIED" },
+                        "kycFullName": { "type": "string", "nullable": true, "example": "NGUYEN VAN A" },
+                        "kycIdNumber": { "type": "string", "nullable": true, "example": "001234567890" },
+                        "kycDob": { "type": "string", "nullable": true, "example": "01/01/1990" },
+                        "kycAddress": { "type": "string", "nullable": true, "example": "123 Đường ABC, Quận 1, TP.HCM" },
+                        "kycVerifiedAt": { "type": "string", "format": "date-time", "nullable": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/bank-accounts": {
+      "get": {
+        "tags": ["Bank Account"],
+        "summary": "Lấy danh sách tài khoản ngân hàng",
+        "description": "Lấy tất cả tài khoản ngân hàng của user hiện tại. Có thể filter theo status (ACTIVE/INACTIVE).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["ACTIVE", "INACTIVE"]
+            },
+            "description": "Lọc theo trạng thái tài khoản"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/BankAccount" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Chưa xác thực" },
+          "403": { "description": "Tài khoản chưa xác thực email" }
+        }
+      },
+      "post": {
+        "tags": ["Bank Account"],
+        "summary": "Thêm tài khoản ngân hàng",
+        "description": "Thêm tài khoản ngân hàng mới. Yêu cầu: (1) User phải đã KYC (kycStatus = VERIFIED), (2) Tên chủ tài khoản (accountOwner) phải trùng khớp với tên trên CCCD (so sánh không dấu, không phân biệt hoa thường). Tài khoản đầu tiên sẽ tự động được đặt làm mặc định.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bankName", "accountNumber", "accountOwner"],
+                "properties": {
+                  "bankName": {
+                    "type": "string",
+                    "description": "Tên ngân hàng",
+                    "example": "Vietcombank"
+                  },
+                  "accountNumber": {
+                    "type": "string",
+                    "description": "Số tài khoản (chỉ chứa số)",
+                    "example": "0123456789"
+                  },
+                  "accountOwner": {
+                    "type": "string",
+                    "description": "Tên chủ tài khoản (phải khớp tên CCCD đã KYC)",
+                    "example": "NGUYEN VAN A"
+                  },
+                  "isDefault": {
+                    "type": "boolean",
+                    "description": "Đặt làm tài khoản mặc định",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Thêm thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Thêm tài khoản ngân hàng thành công" },
+                    "data": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chưa KYC / Tên không khớp / Trùng tài khoản / Vượt quá giới hạn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": false },
+                    "message": { "type": "string", "example": "Tên chủ tài khoản phải trùng khớp với tên trên CCCD đã xác thực KYC." },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "kycFullName": { "type": "string", "example": "NGUYEN VAN A" },
+                        "inputName": { "type": "string", "example": "TRAN VAN B" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Chưa xác thực" },
+          "403": { "description": "Tài khoản chưa xác thực email" }
+        }
+      }
+    },
+    "/bank-accounts/{id}": {
+      "get": {
+        "tags": ["Bank Account"],
+        "summary": "Lấy chi tiết tài khoản ngân hàng",
+        "description": "Lấy thông tin chi tiết một tài khoản ngân hàng theo ID.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID tài khoản ngân hàng"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Không tìm thấy tài khoản ngân hàng" }
+        }
+      },
+      "put": {
+        "tags": ["Bank Account"],
+        "summary": "Cập nhật tài khoản ngân hàng",
+        "description": "Cập nhật thông tin tài khoản ngân hàng. Nếu đổi accountOwner thì phải validate lại với tên KYC.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID tài khoản ngân hàng"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bankName": { "type": "string", "example": "Techcombank" },
+                  "accountNumber": { "type": "string", "example": "9876543210" },
+                  "accountOwner": { "type": "string", "example": "NGUYEN VAN A" },
+                  "isDefault": { "type": "boolean" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Cập nhật tài khoản ngân hàng thành công" },
+                    "data": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Tên không khớp KYC hoặc trùng tài khoản" },
+          "404": { "description": "Không tìm thấy tài khoản ngân hàng" }
+        }
+      },
+      "delete": {
+        "tags": ["Bank Account"],
+        "summary": "Xoá tài khoản ngân hàng (soft delete)",
+        "description": "Soft delete: đặt status = INACTIVE. Nếu tài khoản bị xoá đang là default, hệ thống tự chọn tài khoản active đầu tiên làm default.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID tài khoản ngân hàng"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xoá thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Xoá tài khoản ngân hàng thành công" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Không tìm thấy tài khoản ngân hàng" }
+        }
+      }
+    },
+    "/bank-accounts/{id}/default": {
+      "put": {
+        "tags": ["Bank Account"],
+        "summary": "Đặt tài khoản ngân hàng mặc định",
+        "description": "Đặt một tài khoản ngân hàng ACTIVE làm tài khoản mặc định. Các tài khoản khác sẽ bị bỏ default.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID tài khoản ngân hàng"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đặt mặc định thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Đặt tài khoản ngân hàng mặc định thành công" },
+                    "data": { "$ref": "#/components/schemas/BankAccount" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Không tìm thấy tài khoản ngân hàng hoặc đã bị vô hiệu hoá" }
         }
       }
     }
