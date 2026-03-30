@@ -40,8 +40,8 @@ const geoPointSchema = z.object({
 
 
 const locationSchema = z.object({
-    fullName: z.string().min(1, 'Họ tên người bán là bắt buộc'),
-    phone: z.string().min(1, 'Số điện thoại là bắt buộc'),
+    fullName: z.string().optional(),
+    phone: z.string().optional(),
     provinceId: z.number().int().positive('Mã tỉnh/thành phố là bắt buộc'),
     districtId: z.number().int().positive('Mã quận/huyện là bắt buộc'),
     wardCode: z.string().min(1, 'Mã phường/xã là bắt buộc'),
