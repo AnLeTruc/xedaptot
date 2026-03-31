@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import * as notificationService from '../services/notificationService';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import { VietQRService } from '../services/vietqrService';
+import { encryptSensitive, maskSensitive } from '../utils/sensitiveData';
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
@@ -42,6 +43,27 @@ const generateCode = (prefix: string) => {
 const MAX_PENDING_WITHDRAW_REQUESTS = 3;
 const WITHDRAW_AUTO_THRESHOLD = 3000000;
 const AUTO_TRANSFER_DELAY_MS = 30000;
+
+const sanitizeWithdrawRequest = (request: any) => {
+    if (!request) {
+        return request;
+    }
+
+    const plain = typeof request.toObject === 'function' ? request.toObject() : request;
+    const maskedAccountNumber = plain?.bankInfo?.accountNumberMasked;
+
+    if (plain?.bankInfo?.accountNumber) {
+        plain.bankInfo.accountNumber = maskedAccountNumber
+            ? maskedAccountNumber
+            : maskSensitive(plain.bankInfo.accountNumber);
+    }
+
+    if (plain?.bankInfo?.accountNumberMasked) {
+        delete plain.bankInfo.accountNumberMasked;
+    }
+
+    return plain;
+};
 
 const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
     const isTrusted = user?.isTrusted === true;
@@ -396,11 +418,11 @@ export const createWithdrawRequest = async (
         const { amount, bankInfo } = req.body;
         const user = req.user;
 
-        if (!user || user.kycStatus !== 'VERIFIED') {
+        if (!user || user.kycStatus !== 'VERIFIED' || !user.kycIdNumberMasked || !user.kycFullName) {
             await session.abortTransaction();
             res.status(403).json({
                 success: false,
-                message: 'Vui lòng xác thực CCCD trước khi rút tiền.'
+                message: 'Vui lòng xác thực CCCD đầy đủ trước khi rút tiền.'
             });
             return;
         }
@@ -460,11 +482,19 @@ export const createWithdrawRequest = async (
         }
         await wallet.save({ session });
 
+        const maskedAccountNumber = maskSensitive(bankInfo.accountNumber);
+        const encryptedAccountNumber = encryptSensitive(bankInfo.accountNumber);
+        const bankInfoToSave = {
+            ...bankInfo,
+            accountNumber: encryptedAccountNumber,
+            accountNumberMasked: maskedAccountNumber
+        };
+
         const [withdrawRequest] = await WithdrawRequest.create([{
             userId,
             walletId: wallet._id,
             amount,
-            bankInfo,
+            bankInfo: bankInfoToSave,
             status: strategy.status,
             type: strategy.type,
             processedAt: strategy.isAuto ? new Date() : undefined
@@ -483,7 +513,7 @@ export const createWithdrawRequest = async (
             amount,
             balanceBefore,
             balanceAfter,
-            description: `Withdraw request - ${bankInfo.bankName} - ${bankInfo.accountNumber}`
+            description: `Withdraw request - ${bankInfo.bankName} - ${maskedAccountNumber}`
         }], { session });
 
         await session.commitTransaction();
@@ -503,7 +533,7 @@ export const createWithdrawRequest = async (
         res.status(201).json({
             success: true,
             message: strategy.message,
-            data: withdrawRequest
+            data: sanitizeWithdrawRequest(withdrawRequest)
         });
     } catch (error: any) {
         await session.abortTransaction();
@@ -543,7 +573,7 @@ export const getWithdrawRequests = async (
         res.status(200).json({
             success: true,
             data: {
-                withdrawRequests: requests,
+                withdrawRequests: requests.map(sanitizeWithdrawRequest),
                 pagination: {
                     page: pageNum,
                     limit: limitNum,

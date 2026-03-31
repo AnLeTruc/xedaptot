@@ -123,6 +123,10 @@ const userSchema = new Schema<IUserDocument>(
             type: String,
             trim: true
         },
+        kycIdNumberMasked: {
+            type: String,
+            trim: true
+        },
         kycDob: {
             type: String,
             trim: true

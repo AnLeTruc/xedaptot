@@ -63,6 +63,7 @@ export interface IBankInfo {
     bankShortName?: string;
     bankName: string;
     accountNumber: string;
+    accountNumberMasked?: string;
     accountName: string;
 }
 

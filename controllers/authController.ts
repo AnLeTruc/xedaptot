@@ -10,6 +10,7 @@ import * as shippingService from '../services/shippingService';
 import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import crypto from 'crypto';
+import { encryptSensitive, maskSensitive } from '../utils/sensitiveData';
 
 const { auth } = require('../config/firebase');
 
@@ -1383,13 +1384,15 @@ export const verifyKYC = async (
         }
 
         if (user.kycStatus === 'VERIFIED') {
+            const maskedIdNumber = user.kycIdNumberMasked
+                || (user.kycIdNumber ? maskSensitive(user.kycIdNumber) : null);
             res.status(400).json({
                 success: false,
                 message: 'Tài khoản đã được xác thực KYC trước đó',
                 data: {
                     kycStatus: user.kycStatus,
                     kycFullName: user.kycFullName,
-                    kycIdNumber: user.kycIdNumber,
+                    kycIdNumber: maskedIdNumber,
                     kycVerifiedAt: user.kycVerifiedAt
                 }
             });
@@ -1400,11 +1403,15 @@ export const verifyKYC = async (
         const { recognizeIdCard } = await import('../services/fptaiService');
         const idData = await recognizeIdCard(imageUrl);
 
+        const maskedIdNumber = maskSensitive(idData.id);
+        const encryptedIdNumber = encryptSensitive(idData.id);
+
         // Save KYC data to user
         await User.findByIdAndUpdate(userId, {
             kycStatus: 'VERIFIED',
             kycFullName: idData.name,
-            kycIdNumber: idData.id,
+            kycIdNumber: encryptedIdNumber,
+            kycIdNumberMasked: maskedIdNumber,
             kycDob: idData.dob,
             kycAddress: idData.address,
             kycVerifiedAt: new Date(),
@@ -1417,7 +1424,7 @@ export const verifyKYC = async (
             data: {
                 kycStatus: 'VERIFIED',
                 kycFullName: idData.name,
-                kycIdNumber: idData.id,
+                kycIdNumber: maskedIdNumber,
                 kycDob: idData.dob,
                 kycAddress: idData.address,
                 kycVerifiedAt: new Date()
@@ -1466,7 +1473,8 @@ export const getKYCStatus = async (
             data: {
                 kycStatus: user.kycStatus || 'NONE',
                 kycFullName: user.kycFullName || null,
-                kycIdNumber: user.kycIdNumber || null,
+                kycIdNumber: user.kycIdNumberMasked
+                    || (user.kycIdNumber ? maskSensitive(user.kycIdNumber) : null),
                 kycDob: user.kycDob || null,
                 kycAddress: user.kycAddress || null,
                 kycVerifiedAt: user.kycVerifiedAt || null

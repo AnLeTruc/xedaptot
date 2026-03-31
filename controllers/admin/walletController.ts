@@ -7,6 +7,7 @@ import Wallet from '../../models/Wallet';
 import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
+import { maskSensitive } from '../../utils/sensitiveData';
 
 import * as notificationService from '../../services/notificationService';
 
@@ -20,6 +21,27 @@ const getWithdrawTransaction = async (
         type: 'WITHDRAW',
         'data.withdrawRequestId': withdrawRequestId
     }).session(session);
+};
+
+const sanitizeWithdrawRequest = (request: any) => {
+    if (!request) {
+        return request;
+    }
+
+    const plain = typeof request.toObject === 'function' ? request.toObject() : request;
+    const maskedAccountNumber = plain?.bankInfo?.accountNumberMasked;
+
+    if (plain?.bankInfo?.accountNumber) {
+        plain.bankInfo.accountNumber = maskedAccountNumber
+            ? maskedAccountNumber
+            : maskSensitive(plain.bankInfo.accountNumber);
+    }
+
+    if (plain?.bankInfo?.accountNumberMasked) {
+        delete plain.bankInfo.accountNumberMasked;
+    }
+
+    return plain;
 };
 
 export const getWithdrawRequestsAdmin = async (
@@ -82,7 +104,7 @@ export const getWithdrawRequestsAdmin = async (
         res.status(200).json({
             success: true,
             data: {
-                withdrawRequests: requests,
+                withdrawRequests: requests.map(sanitizeWithdrawRequest),
                 pagination: {
                     page: pageNum,
                     limit: limitNum,

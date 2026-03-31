@@ -35,6 +35,7 @@ export interface IUser {
     kycStatus?: KycStatus;
     kycFullName?: string;       // Tên trên CCCD
     kycIdNumber?: string;       // Số CCCD
+    kycIdNumberMasked?: string;
     kycDob?: string;            // Ngày sinh trên CCCD
     kycAddress?: string;        // Địa chỉ trên CCCD
     kycVerifiedAt?: Date;
