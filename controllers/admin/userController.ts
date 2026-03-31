@@ -1,10 +1,18 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../types';
+import mongoose from 'mongoose';
 import User from '../../models/User';
 import Order from '../../models/Order';
 import Bicycle from '../../models/Bicycle';
 import Wallet from '../../models/Wallet';
+import Transaction from '../../models/Transaction';
+import * as notificationService from '../../services/notificationService';
 import { fromZonedTime } from "date-fns-tz";
+
+const generateCode = (prefix: string) => {
+    const d = new Date().toISOString().replace(/[-T:.Z]/g, '');
+    return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+};
 
 // GET /admin/users - Get all users with filters & pagination
 export const getAllUsers = async (
@@ -198,6 +206,72 @@ export const deactivateUser = async (
                 message: 'Không tìm thấy người dùng'
             });
             return;
+        }
+
+        if (user.roles.includes('SELLER')) {
+            // Cập nhật trạng thái xe đã đăng
+            await Bicycle.updateMany(
+                { 'seller._id': id, status: 'APPROVED' },
+                { $set: { status: 'HIDDEN' } }
+            );
+
+            await Bicycle.updateMany(
+                { 'seller._id': id, status: 'PENDING' },
+                { $set: { status: 'REJECTED', rejectReason: 'Tài khoản người bán đang bị khóa' } }
+            );
+
+            // Chuyển đơn hàng đang chờ xác nhận sang hủy và hoàn tiền
+            const waitingOrders = await Order.find({ 'seller._id': id, status: 'WAITING_SELLER_CONFIRMATION' });
+
+            for (const order of waitingOrders) {
+                const buyerWallet = await Wallet.findOne({ userId: order.buyer._id });
+                const refund = order.amounts.escrowAmount;
+
+                if (refund > 0 && buyerWallet) {
+                    const buyerBalBefore = buyerWallet.totalEarn - buyerWallet.totalWithdrawn - buyerWallet.frozenBalance;
+                    buyerWallet.frozenBalance -= refund;
+                    await buyerWallet.save();
+
+                    const txnCode = generateCode('TXN');
+                    await Transaction.create({
+                        transactionCode: txnCode,
+                        paymentMethod: 'SYSTEM',
+                        walletId: buyerWallet._id,
+                        type: 'REFUND',
+                        amount: refund,
+                        balanceBefore: buyerBalBefore,
+                        balanceAfter: buyerBalBefore + refund,
+                        description: `Seller deactivated - Refund - ${order.orderCode}`,
+                        orderId: order._id,
+                    });
+
+                    order.transactions.push({
+                        transactionCode: txnCode, type: 'REFUND', amount: refund, status: 'SUCCESS',
+                        createdAt: new Date(), walletId: buyerWallet._id, paymentMethod: 'SYSTEM',
+                        balanceBefore: buyerBalBefore, balanceAfter: buyerBalBefore + refund,
+                        description: `Seller deactivated - Refund - ${order.orderCode}`,
+                        paymentGateway: '', gatewayTransactionId: '', gatewayResponseCode: ''
+                    } as any);
+                }
+
+                order.status = 'REJECTED';
+                order.cancelledAt = new Date();
+                order.cancelReason = 'Tài khoản người bán đang bị khóa';
+                order.amounts.escrowAmount = 0;
+                await order.save();
+
+                // Đổi trạng thái xe trong đơn hàng đó từ RESERVED về HIDDEN luôn
+                await Bicycle.updateMany(
+                    { _id: order.bicycle._id },
+                    { $set: { status: 'HIDDEN' } }
+                );
+
+                notificationService.notifyOrderRejected(
+                    order.buyer._id.toString(),
+                    order._id.toString(),
+                    order.orderCode
+                );
+            }
         }
 
         res.status(200).json({
