@@ -36,6 +36,14 @@ export const verifyToken = async (
         const user = await User.findOne({ firebaseUId: decodedToken.uid });
 
         if (user) {
+            if (!user.isActive) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                    isDeactivated: true
+                });
+                return;
+            }
             req.user = user;
         }
 

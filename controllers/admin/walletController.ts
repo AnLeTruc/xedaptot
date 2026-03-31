@@ -11,6 +11,11 @@ import { maskSensitive } from '../../utils/sensitiveData';
 
 import * as notificationService from '../../services/notificationService';
 
+const generateCode = (prefix: string) => {
+    const d = new Date().toISOString().replace(/[-T:.Z]/g, '');
+    return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+};
+
 const getWithdrawTransaction = async (
     walletId: mongoose.Types.ObjectId,
     withdrawRequestId: string,
@@ -478,7 +483,9 @@ export const rejectWithdrawRequest = async (
         }
 
         const processedAt = new Date();
+        const balanceBefore = wallet.availableBalance;
         wallet.frozenBalance -= withdrawRequest.amount;
+        wallet.availableBalance += withdrawRequest.amount; // Refund amount back to available balance
         await wallet.save({ session });
 
         withdrawRequest.status = 'REJECTED';
@@ -495,7 +502,7 @@ export const rejectWithdrawRequest = async (
         );
 
         if (transaction) {
-            transaction.balanceAfter = transaction.balanceBefore;
+            transaction.balanceAfter = transaction.balanceBefore; // For the WITHDRAW transaction itself
             transaction.data = {
                 ...(transaction.data || {}),
                 status: 'FAILED',
@@ -509,6 +516,22 @@ export const rejectWithdrawRequest = async (
             transaction.gatewayResponseCode = 'REJECTED';
             await transaction.save({ session });
         }
+
+        // Create a separate REFUND transaction to accurately reflect the balance return
+        await Transaction.create([{
+            transactionCode: generateCode('REFUND'),
+            paymentMethod: 'SYSTEM',
+            walletId: wallet._id,
+            type: 'REFUND',
+            amount: withdrawRequest.amount,
+            balanceBefore: balanceBefore,
+            balanceAfter: wallet.availableBalance,
+            description: `Hoàn tiền yêu cầu rút tiền bị từ chối`,
+            data: {
+                withdrawRequestId: withdrawRequest._id.toString(),
+                reason: reason
+            }
+        }], { session });
 
         await session.commitTransaction();
 

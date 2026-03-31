@@ -207,6 +207,16 @@ export const firebaseAuth = async (
 
         // Have user with same mail
         if (existingUser) {
+            // Block deactivated users
+            if (!existingUser.isActive) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                    isDeactivated: true
+                });
+                return;
+            }
+
             if (existingUser.authProvider !== authProvider) {
                 const firebaseUser = await auth.getUser(uid);
                 const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
@@ -598,6 +608,16 @@ export const emailLogin = async (
 
         const user = await User.findOne({ firebaseUId: data.localId });
 
+        // Block deactivated users
+        if (user && !user.isActive) {
+            res.status(401).json({
+                success: false,
+                message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                isDeactivated: true
+            });
+            return;
+        }
+
         res.status(200).json({
             success: true,
             message: 'Đăng nhập thành công',
@@ -659,6 +679,17 @@ export const refreshToken = async (
             res.status(401).json({
                 success: false,
                 message: data.error?.message || 'Làm mới token thất bại'
+            });
+            return;
+        }
+
+        // Block deactivated users from refreshing token
+        const user = await User.findOne({ firebaseUId: data.user_id });
+        if (user && !user.isActive) {
+            res.status(401).json({
+                success: false,
+                message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                isDeactivated: true
             });
             return;
         }
