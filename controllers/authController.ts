@@ -698,7 +698,7 @@ export const addAddress = async (
             return;
         }
 
-        const { label, provinceId, districtId, wardCode, street, coordinates, isDefault } = req.body;
+        const { label, fullName, phone, provinceId, districtId, wardCode, street, coordinates, isDefault } = req.body;
 
         const resolvedLocation = await shippingService.resolveGhnLocationNames(
             provinceId,
@@ -715,6 +715,8 @@ export const addAddress = async (
 
         const addressData = {
             label,
+            fullName,
+            phone,
             provinceId,
             districtId,
             wardCode,
@@ -782,10 +784,12 @@ export const updateAddress = async (
             return;
         }
 
-        const { label, street, provinceId, districtId, wardCode, coordinates } = req.body;
+        const { label, fullName, phone, street, provinceId, districtId, wardCode, coordinates } = req.body;
 
         const updates: Record<string, any> = {};
         if (label !== undefined) updates['addresses.$.label'] = label;
+        if (fullName !== undefined) updates['addresses.$.fullName'] = fullName;
+        if (phone !== undefined) updates['addresses.$.phone'] = phone;
         if (street !== undefined) updates['addresses.$.street'] = street;
         if (coordinates !== undefined) updates['addresses.$.coordinates'] = coordinates;
 
@@ -965,15 +969,20 @@ export const setDefaultAddress = async (
             return;
         }
 
+        const { fullName, phone } = req.body || {};
+
         await User.updateOne(
             { _id: userId },
             { $set: { 'addresses.$[].isDefault': false } }
         );
 
+        const setFields: Record<string, any> = { 'addresses.$.isDefault': true };
+        if (fullName !== undefined) setFields['addresses.$.fullName'] = fullName;
+        if (phone !== undefined) setFields['addresses.$.phone'] = phone;
 
         const updatedUser = await User.findOneAndUpdate(
             { _id: userId, 'addresses._id': id },
-            { $set: { 'addresses.$.isDefault': true } },
+            { $set: setFields },
             { new: true }
         );
         if (!updatedUser) {
