@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
 //Interface
 interface EmailOptions {
@@ -28,35 +28,32 @@ const formatDateTime = (value?: Date): string => {
     return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 };
 
-//Send mail function using SendGrid API
+//Send mail function using Resend API
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
-        const sendgridApiKey = process.env.SENDGRID_API_KEY;
+        const resendApiKey = process.env.RESEND_API_KEY;
         const emailFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
-        if (!sendgridApiKey) {
-            throw new Error('SendGrid chưa được cấu hình. Cần thiết lập SENDGRID_API_KEY.');
+        if (!resendApiKey) {
+            throw new Error('Resend chưa được cấu hình. Cần thiết lập RESEND_API_KEY.');
         }
 
         if (!emailFrom) {
             throw new Error('Thiếu EMAIL_FROM. Cần thiết lập EMAIL_FROM thành email đã xác thực.');
         }
 
-        sgMail.setApiKey(sendgridApiKey);
+        const resend = new Resend(resendApiKey);
 
-        await sgMail.send({
-            from: {
-                email: emailFrom,
-                name: 'Đội ngũ Xedaptot'
-            },
+        await resend.emails.send({
+            from: `Đội ngũ Xedaptot <${emailFrom}>`,
             to: options.to,
             subject: options.subject,
             html: options.html
         });
 
-        console.log('Email sent via SendGrid.');
+        console.log('Email sent via Resend.');
         return true;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -129,7 +126,7 @@ export const sendInspectorWelcomeEmail = async (
             
             <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
                 <p style="margin: 0 0 8px;"><strong>Thông tin đăng nhập:</strong></p>
-                <p style="margin: 0 0 4px;">📧 Email: <strong>${email}</strong></p>
+                <p style="margin: 0 0 4px;">Email: <strong>${email}</strong></p>
                 <p style="margin: 0;">Mật khẩu tạm thời: <strong>${tempPassword}</strong></p>
             </div>
             
