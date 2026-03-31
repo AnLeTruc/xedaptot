@@ -73,6 +73,8 @@ export const createOrder = async (
         }
 
         const pickupAddr = {
+            fullName: seller.fullName,
+            phone: seller.phone,
             provinceId: bicycle.location.provinceId,
             districtId: bicycle.location.districtId,
             wardCode: bicycle.location.wardCode,
@@ -127,6 +129,8 @@ export const createOrder = async (
                 phone: seller.phone,
             },
             shippingAddress: {
+                fullName: buyer.fullName,
+                phone: buyer.phone,
                 provinceId: shippingAddr.provinceId,
                 districtId: shippingAddr.districtId,
                 wardCode: shippingAddr.wardCode,
@@ -168,7 +172,7 @@ export const createOrder = async (
 
         await order.save();
         await Bicycle.findByIdAndUpdate(bicycleId, { status: 'RESERVED' });
-        
+
         syncWishlistBicycle(bicycleId.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
         // Push notification to seller
@@ -245,7 +249,7 @@ export const payOrder = async (
             order.status = order.paymentType === 'FULL_100' ? 'PAYMENT_TIMEOUT' : 'DEPOSIT_EXPIRED';
             await order.save();
             await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-            
+
             syncWishlistBicycle(order.bicycle._id.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
             //Noti order expired
@@ -523,7 +527,7 @@ export const cancelOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-        
+
         syncWishlistBicycle(order.bicycle._id.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
         // Push notification to seller (FCM)
@@ -562,7 +566,7 @@ export const receiveOrder = async (req: AuthRequest, res: Response) => {
         order.buyerConfirmedAt = new Date();
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'SOLD' });
-        
+
         syncWishlistBicycle(order.bicycle._id.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
 
@@ -740,7 +744,7 @@ export const rejectOrder = async (req: AuthRequest, res: Response) => {
         order.amounts.escrowAmount = 0;
         await order.save();
         await Bicycle.findByIdAndUpdate(order.bicycle._id, { status: 'APPROVED' });
-        
+
         syncWishlistBicycle(order.bicycle._id.toString()).catch(err => console.error('Sync wishlist bicycle error: ', err));
 
         // Push notification to buyer (FCM)
