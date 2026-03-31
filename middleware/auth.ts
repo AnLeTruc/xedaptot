@@ -93,6 +93,15 @@ export const requireUser = async (
         });
         return;
     }
+
+    if (!req.user.isActive) {
+        res.status(403).json({
+            success: false,
+            message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+        });
+        return;
+    }
+
     next();
 }
 
