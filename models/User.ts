@@ -142,14 +142,6 @@ const userSchema = new Schema<IUserDocument>(
             type: Schema.Types.Mixed,
             select: false
         },
-        isTrusted: {
-            type: Boolean,
-            default: false
-        },
-        isNewUser: {
-            type: Boolean,
-            default: true
-        },
         isOnline: {
             type: Boolean,
             default: false

@@ -40,8 +40,7 @@ export interface IUser {
     kycAddress?: string;        // Địa chỉ trên CCCD
     kycVerifiedAt?: Date;
     kycData?: any;              // Raw response từ FPT.AI
-    isTrusted?: boolean;
-    isNewUser?: boolean;
+    
 }
 
 //Interface Mongoose Document

@@ -66,9 +66,8 @@ const sanitizeWithdrawRequest = (request: any) => {
 };
 
 const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
-    const isTrusted = user?.isTrusted === true;
-    const isNewUser = user?.isNewUser === true;
-    const isAuto = amount <= WITHDRAW_AUTO_THRESHOLD && isTrusted;
+    // Auto-approve when user has completed KYC and amount is within threshold
+    const isAuto = amount <= WITHDRAW_AUTO_THRESHOLD && user?.kycStatus === 'VERIFIED';
 
     if (isAuto) {
         return {
@@ -79,7 +78,7 @@ const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
         };
     }
 
-    if (amount > WITHDRAW_AUTO_THRESHOLD || isNewUser) {
+    if (amount > WITHDRAW_AUTO_THRESHOLD) {
         return {
             status: 'PENDING' as const,
             type: 'MANUAL' as const,
@@ -175,44 +174,40 @@ export const depositToWallet = async (
     try {
         const userId = req.user!._id;
         const { amount, bankCode } = req.body;
-        //           ^^^^^^^^ thêm bankCode (optional, user có thể chọn trước ngân hàng)
 
         const wallet = await getOrCreateWallet(userId);
 
-        // Tạo mã giao dịch nội bộ — dùng để MAP khi VNPay callback về
         const txnRef = generateCode('DEP');
 
         await Transaction.create({
-            transactionCode: txnRef,          // Internal ref code for mapping
+            transactionCode: txnRef,      
             paymentMethod: 'VNPAY',
             walletId: wallet._id,
             type: 'DEPOSIT',
             amount,
             balanceBefore: wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance,
-            balanceAfter: 0,                  // Unknown yet, will update on callback
+            balanceAfter: 0,           
             description: `Deposit ${amount.toLocaleString()} VND to wallet via VNPay`,
             paymentGateway: 'VNPAY',
-            gatewayTransactionId: '',         // Not available yet, VNPay will provide
-            gatewayResponseCode: '',          // Not available yet
+            gatewayTransactionId: '',       
+            gatewayResponseCode: '',          
             data: { status: 'PENDING', userId: userId.toString() },
         });
 
         let ipAddr = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
             || req.socket.remoteAddress
             || '127.0.0.1';
-        // VNPay doesn't accept IPv6 — convert ::1 and ::ffff:x.x.x.x to IPv4
         if (ipAddr === '::1') ipAddr = '127.0.0.1';
         if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
         // Gọi VNPay service tạo URL
         const paymentUrl = createPaymentUrl({
             amount,
-            orderId: txnRef,                     // Gửi mã nội bộ cho VNPay
+            orderId: txnRef,                     
             orderInfo: `Deposit+${txnRef}`,
             ipAddr,
-            bankCode,                            // Optional
+            bankCode,                        
         });
 
-        // Trả URL cho frontend — KHÔNG cộng tiền ở đây!
         res.status(200).json({
             success: true,
             message: 'Chuyển hướng người dùng đến paymentUrl để hoàn tất nạp tiền',
@@ -231,7 +226,7 @@ export const depositToWallet = async (
 
 // GET /api/wallets/vnpay-return
 export const vnpayReturn = async (
-    req: Request,       // ← Request thường, KHÔNG phải AuthRequest (không có JWT)
+    req: Request,
     res: Response
 ): Promise<void> => {
     try {
