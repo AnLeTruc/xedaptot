@@ -1521,6 +1521,99 @@
           }
         }
       },
+      "SellerDashboard": {
+        "type": "object",
+        "properties": {
+          "totalListings": {
+            "type": "integer",
+            "example": 12
+          },
+          "activeListings": {
+            "type": "integer",
+            "example": 5
+          },
+          "totalSales": {
+            "type": "integer",
+            "example": 8
+          },
+          "revenue": {
+            "type": "number",
+            "example": 12500000
+          },
+          "pendingOrders": {
+            "type": "integer",
+            "example": 2
+          },
+          "revenueChart": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "revenue": {
+                  "type": "number",
+                  "example": 2500000
+                }
+              }
+            }
+          },
+          "recentOrders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "orderCode": {
+                  "type": "string",
+                  "example": "ORD-20260318T14:45:01.780Z-75863"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "WAITING_SELLER_CONFIRMATION"
+                },
+                "total": {
+                  "type": "number",
+                  "example": 3500000
+                },
+                "buyerName": {
+                  "type": "string",
+                  "example": "Nguyen Van A"
+                },
+                "bicycleTitle": {
+                  "type": "string",
+                  "example": "City bike 7-speed"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "topListings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bicycleId": {
+                  "type": "string",
+                  "example": "64d1b5b5b5b5b5b5b5b5b5d1"
+                },
+                "title": {
+                  "type": "string",
+                  "example": "City bike 7-speed"
+                },
+                "orderCount": {
+                  "type": "integer",
+                  "example": 3
+                }
+              }
+            }
+          }
+        }
+      },
       "DepositInput": {
         "type": "object",
         "required": [
@@ -4134,6 +4227,58 @@
           },
           "404": {
             "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/seller/dashboard": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get seller dashboard",
+        "description": "Returns seller dashboard metrics for the authenticated seller.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "type": "integer",
+              "example": 2026
+            },
+            "description": "Optional year filter for revenue chart"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seller dashboard metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SellerDashboard"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User not authenticated"
+          },
+          "403": {
+            "description": "Forbidden - Seller access required"
           }
         }
       }
