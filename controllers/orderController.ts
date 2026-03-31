@@ -122,11 +122,13 @@ export const createOrder = async (
                 fullName: buyer.fullName || '',
                 phone: buyer.phone,
                 email: buyer.email,
+                avatarUrl: buyerDoc?.avatarUrl,
             },
             seller: {
                 _id: seller._id,
                 fullName: seller.fullName || '',
                 phone: seller.phone,
+                avatarUrl: seller.avatarUrl,
             },
             shippingAddress: {
                 fullName: buyer.fullName,

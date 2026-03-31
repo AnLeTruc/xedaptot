@@ -55,6 +55,7 @@ export interface IOrderUser {
     fullName: string;
     email: string;
     phone: string;
+    avatarUrl?: string;
 }
 
 export interface IOrderBicycle {
