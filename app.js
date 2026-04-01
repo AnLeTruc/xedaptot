@@ -49,6 +49,7 @@ const notificationRouter = require('./routes/notification').default;
 const wishlistRouter = require('./routes/wishlist').default;
 const aiRouter = require('./routes/ai').default;
 const chatbotRouter = require('./routes/chatbot').default;
+const bankAccountRouter = require('./routes/bankAccount').default;
 var app = express();
 
 // Trust proxy for Render
@@ -103,5 +104,6 @@ app.use('/api/notifications', notificationRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/chatbot', chatbotRouter);
+app.use('/api/bank-accounts', bankAccountRouter);
 
 module.exports = app;

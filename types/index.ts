@@ -4,6 +4,8 @@ import { IUserAddress } from './address';
 
 export type UserRole = 'BUYER' | 'SELLER' | 'ADMIN' | 'INSPECTOR';
 
+export type KycStatus = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export interface IUser {
     firebaseUId: string;
     email: string;
@@ -29,6 +31,16 @@ export interface IUser {
     passwordChangedAt?: Date;
     isOnline?: boolean;
     lastActiveAt?: Date;
+    // KYC fields
+    kycStatus?: KycStatus;
+    kycFullName?: string;       // Tên trên CCCD
+    kycIdNumber?: string;       // Số CCCD
+    kycDob?: string;            // Ngày sinh trên CCCD
+    kycAddress?: string;        // Địa chỉ trên CCCD
+    kycVerifiedAt?: Date;
+    kycData?: any;              // Raw response từ FPT.AI
+    isTrusted?: boolean;
+    isNewUser?: boolean;
 }
 
 //Interface Mongoose Document
@@ -72,3 +84,4 @@ export * from './conversation';
 export * from './restrictedWord';
 export * from './summary';
 export * from './disputes';
+export * from './bankAccount';

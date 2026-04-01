@@ -82,6 +82,8 @@ export interface IBicycle {
     rejectionReason?: string;
     approvalHistory?: IApprovalHistoryEntry[];
     hasChangedSinceRejection?: boolean;
+    resubmitCount?: number;
+
 }
 
 export interface IBicycleDocument extends IBicycle, Omit<Document, 'model'> {

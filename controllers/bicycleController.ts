@@ -32,6 +32,28 @@ const getValidatedGeoPoint = (coordinates: any): { type: 'Point'; coordinates: n
     };
 };
 
+const normalizeQueryValues = (value: unknown): string[] => {
+    if (!value) {
+        return [];
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .flatMap((item) => (typeof item === 'string' ? item.split(',') : []))
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+    }
+
+    return [];
+};
+
 // GET /api/bicycles/my
 export const getMyBicycles = async (
     req: AuthRequest,
@@ -138,14 +160,19 @@ export const getAllBicycles = async (
             filter['seller._id'] = sellerId;
         }
 
-        if (condition) {
-            filter.condition = condition;
+        const conditionValues = normalizeQueryValues(condition);
+        if (conditionValues.length > 0) {
+            filter.condition = { $in: conditionValues };
         }
-        if (category) {
-            filter['category._id'] = category;
+
+        const categoryValues = normalizeQueryValues(category);
+        if (categoryValues.length > 0) {
+            filter['category._id'] = { $in: categoryValues };
         }
-        if (brand) {
-            filter['brand._id'] = brand;
+
+        const brandValues = normalizeQueryValues(brand);
+        if (brandValues.length > 0) {
+            filter['brand._id'] = { $in: brandValues };
         }
 
         // Price range
@@ -389,6 +416,8 @@ export const createBicycle = async (
         }
 
         const locationData = {
+            fullName: location.fullName,
+            phone: location.phone,
             provinceId: location.provinceId,
             districtId: location.districtId,
             wardCode: location.wardCode,
@@ -550,6 +579,8 @@ export const updateBicycle = async (
             }
 
             updateData.location = {
+                fullName: location.fullName,
+                phone: location.phone,
                 provinceId: location.provinceId,
                 districtId: location.districtId,
                 wardCode: location.wardCode,
@@ -822,8 +853,18 @@ export const resubmitBicycle = async (
             return;
         }
 
+        if (bicycle.resubmitCount && bicycle.resubmitCount >= 3) {
+            res.status(400).json({
+                success: false,
+                message: 'Bạn đã đạt mốc giới hạn nộp lại 3 lần. Xin lỗi, tin đăng này không thể nộp lại được nữa!'
+            });
+            return;
+        }
+
+
         bicycle.status = 'PENDING';
         bicycle.hasChangedSinceRejection = false;
+        bicycle.resubmitCount = (bicycle.resubmitCount || 0) + 1;
         bicycle.rejectionReason = undefined;
         bicycle.inspectionStatus = 'PENDING';
         bicycle.assignedInspectorId = undefined;

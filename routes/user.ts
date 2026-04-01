@@ -6,8 +6,11 @@ import {
     addAddress,
     updateAddress,
     deleteAddress,
-    setDefaultAddress
+    setDefaultAddress,
+    verifyKYC,
+    getKYCStatus
 } from '../controllers/authController';
+import { getSellerDashboard } from '../controllers/sellerDashboardController';
 import {
     getMyPackages,
     getMyActivePackage,
@@ -35,11 +38,18 @@ router.get('/:id/reviews', getSellerReviews);
 router.get('/profile', verifyToken, requireUser, getProfile);
 router.put('/profile', verifyToken, requireUser, updateProfile);
 
+// Seller dashboard
+router.get('/seller/dashboard', verifyToken, requireUser, getSellerDashboard);
+
 // Address
 router.post('/addresses', verifyToken, requireUser, validate(addAddressSchema, 'body'), addAddress);
 router.put('/addresses/:id', verifyToken, requireUser, validate(updateAddressSchema, 'body'), updateAddress);
 router.delete('/addresses/:id', verifyToken, requireUser, deleteAddress);
 router.put('/addresses/:id/default', verifyToken, requireUser, setDefaultAddress);
+
+// KYC
+router.post('/kyc', verifyToken, requireUser, verifyKYC);
+router.get('/kyc', verifyToken, requireUser, getKYCStatus);
 
 // Inspection Requests
 router.get('/inspection-requests', verifyToken, requireUser, getMyInspectionRequests);
