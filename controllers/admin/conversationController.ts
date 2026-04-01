@@ -95,6 +95,10 @@ export const getAllConversationsAdmin = async (
                                 participants: '$participantsInfo',
                                 createdAt: 1,
                                 updatedAt: 1,
+                                violationCount: 1,
+                                lockedStatus: 1,
+                                lockedUntil: 1,
+                                lockedReason: 1,
                                 lastMessage: {
                                     _id: '$lastMessageInfo._id',
                                     content: '$lastMessageInfo.content',
