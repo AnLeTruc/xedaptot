@@ -269,8 +269,14 @@ export const firebaseAuth = async (
         }
 
         if (!email) {
+            console.warn('[Auth][Firebase] Missing email in token/userRecord', {
+                uid,
+                signInProvider: decodedToken.firebase?.sign_in_provider,
+                hasEmailInToken: Boolean(decodedToken.email),
+            });
             res.status(400).json({
                 success: false,
+                code: 'auth/missing-email',
                 message: 'Không lấy được email từ tài khoản Google/Firebase. Vui lòng cấp quyền email hoặc dùng phương thức đăng nhập khác.',
             });
             return;
@@ -294,17 +300,34 @@ export const firebaseAuth = async (
             }
 
             if (existingUser.authProvider !== authProvider) {
-                const firebaseUser = await auth.getUser(uid);
-                const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+                console.warn('[Auth][Firebase] Provider mismatch for email', {
+                    uid,
+                    existingAuthProvider: existingUser.authProvider,
+                    requestAuthProvider: authProvider,
+                });
 
-                if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
-                    await auth.updateUser(uid, {
-                        providerToUnlink: 'google.com'
+                // Best-effort: If the Firebase user has a linked provider that conflicts with
+                // the system record, attempt to unlink to avoid future confusion.
+                try {
+                    const firebaseUser = await auth.getUser(uid);
+                    const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
+
+                    if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
+                        await auth.updateUser(uid, {
+                            providersToUnlink: ['google.com']
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[Auth][Firebase] Best-effort provider unlink failed', {
+                        uid,
+                        code: (e as any)?.code || (e as any)?.errorInfo?.code,
+                        message: (e as any)?.message,
                     });
                 }
 
                 res.status(400).json({
                     success: false,
+                    code: 'auth/provider-mismatch',
                     message: `Email đã đăng ký với ${existingUser.authProvider}.`
                 });
                 return;
@@ -312,6 +335,7 @@ export const firebaseAuth = async (
             if (existingUser.firebaseUId !== uid) {
                 res.status(400).json({
                     success: false,
+                    code: 'auth/account-mismatch',
                     message: `Email đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng đúng tài khoản để đăng nhập.`
                 });
                 return;
