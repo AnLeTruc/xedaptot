@@ -23,6 +23,8 @@ export const addAddressSchema = z.object({
 
 export const updateAddressSchema = z.object({
     label: z.string().min(1).max(50).optional(),
+    fullName: z.string().min(1, 'Họ tên người nhận (fullName) là bắt buộc').optional(),
+    phone: z.string().min(1, 'Số điện thoại (phone) là bắt buộc').optional(),
     isDefault: z.boolean().optional(),
     provinceId: z.number().int().positive().optional(),
     districtId: z.number().int().positive().optional(),

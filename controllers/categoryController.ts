@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
+import Bicycle from '../models/Bicycle';
 
 // GET /api/categories - Lấy tất cả categories
 export const getAllCategories = async (
@@ -137,6 +138,16 @@ export const updateCategory = async (
         const { id } = req.params;
         const { name, description, isActive, imageUrl } = req.body;
 
+        if (isActive === false) {
+            const hasBicycles = await Bicycle.exists({ 'category._id': id });
+            if (hasBicycles) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Không thể ẩn danh mục này vì đang có xe đạp gắn với nó'
+                });
+                return;
+            }
+        }
 
         const category = await Category.findById(id);
         if (!category) {
@@ -186,6 +197,15 @@ export const deleteCategory = async (
 ): Promise<void> => {
     try {
         const { id } = req.params;
+
+        const hasBicycles = await Bicycle.exists({ 'category._id': id });
+        if (hasBicycles) {
+            res.status(400).json({
+                success: false,
+                message: 'Không thể xoá danh mục này vì đang có xe đạp gắn với nó'
+            });
+            return;
+        }
 
         const category = await Category.findById(id);
         if (!category) {

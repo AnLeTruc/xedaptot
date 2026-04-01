@@ -30,6 +30,10 @@ const withdrawRequestSchema = new Schema<IWithdrawRequestDocument>(
                 required: [true, 'Account number is required'],
                 trim: true
             },
+            accountNumberMasked: {
+                type: String,
+                trim: true
+            },
             accountName: {
                 type: String,
                 required: [true, 'Account name is required'],

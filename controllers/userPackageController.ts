@@ -143,16 +143,7 @@ export const purchasePackage = async (req: AuthRequest, res: Response): Promise<
             return;
         }
 
-        // Kiểm tra user đã có gói ACTIVE chưa (bỏ qua gói FREE)
-        const existingActive = await UserPackage.findOne({
-            userId,
-            status: 'ACTIVE',
-            'package.code': { $ne: 'FREE' }
-        });
-        if (existingActive) {
-            res.status(400).json({ success: false, message: 'Bạn đang có gói hoạt động. Vui lòng huỷ gói hiện tại trước khi mua gói mới.' });
-            return;
-        }
+
 
         // Tìm package
         const packageItem = await Package.findById(packageId);

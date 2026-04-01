@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import BicycleModel from '../models/BicycleModel';
 import Brand from '../models/Brand';
+import Bicycle from '../models/Bicycle';
 
 // GET /api/bicycle-models
 export const getAllBicycleModels = async (
@@ -94,6 +95,18 @@ export const updateBicycleModel = async (req: Request, res: Response): Promise<v
     try {
         const { id } = req.params;
         const { name, year, description, imageUrl, isActive } = req.body;
+
+        if (isActive === false) {
+            const hasBicycles = await Bicycle.exists({ 'model._id': id });
+            if (hasBicycles) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Không thể ẩn dòng xe này vì đang có xe đạp gắn với nó'
+                });
+                return;
+            }
+        }
+
         const updateData: any = {};
         if (name !== undefined) updateData.name = name.trim();
         if (year !== undefined) updateData.year = year;
@@ -130,6 +143,16 @@ export const updateBicycleModel = async (req: Request, res: Response): Promise<v
 export const deleteBicycleModel = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+
+        const hasBicycles = await Bicycle.exists({ 'model._id': id });
+        if (hasBicycles) {
+            res.status(400).json({
+                success: false,
+                message: 'Không thể xoá dòng xe này vì đang có xe đạp gắn với nó'
+            });
+            return;
+        }
+
         const model = await BicycleModel.findByIdAndDelete(id);
         if (!model) {
             res.status(404).json({ success: false, message: 'Không tìm thấy mẫu xe' });

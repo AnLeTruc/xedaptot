@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
 //Interface
 interface EmailOptions {
@@ -21,6 +21,20 @@ interface WithdrawEmailPayload {
     transferReference?: string;
 }
 
+const WITHDRAW_CONTACT_EMAIL = 'xedaptot.contact@gmail.com';
+
+const maskFixedLast3 = (value: string): string => {
+    const normalized = `${value ?? ''}`.trim();
+    if (!normalized) return '***';
+    const tail = normalized.slice(-3);
+    return `***${tail}`;
+};
+
+const getMaskedBankAccountForEmail = (bankInfo: any): string => {
+    const masked = bankInfo?.accountNumberMasked || bankInfo?.accountNumber;
+    return maskFixedLast3(masked);
+};
+
 const formatVndCurrency = (amount: number): string => `${amount.toLocaleString('vi-VN')}đ`;
 
 const formatDateTime = (value?: Date): string => {
@@ -28,35 +42,32 @@ const formatDateTime = (value?: Date): string => {
     return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 };
 
-//Send mail function using SendGrid API
+//Send mail function using Resend API
 export const sendMail = async (
     options: EmailOptions
 ): Promise<boolean> => {
     try {
-        const sendgridApiKey = process.env.SENDGRID_API_KEY;
+        const resendApiKey = process.env.RESEND_API_KEY;
         const emailFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
-        if (!sendgridApiKey) {
-            throw new Error('SendGrid chưa được cấu hình. Cần thiết lập SENDGRID_API_KEY.');
+        if (!resendApiKey) {
+            throw new Error('Resend chưa được cấu hình. Cần thiết lập RESEND_API_KEY.');
         }
 
         if (!emailFrom) {
             throw new Error('Thiếu EMAIL_FROM. Cần thiết lập EMAIL_FROM thành email đã xác thực.');
         }
 
-        sgMail.setApiKey(sendgridApiKey);
+        const resend = new Resend(resendApiKey);
 
-        await sgMail.send({
-            from: {
-                email: emailFrom,
-                name: 'Đội ngũ Xedaptot'
-            },
+        await resend.emails.send({
+            from: `Đội ngũ Xedaptot <${emailFrom}>`,
             to: options.to,
             subject: options.subject,
             html: options.html
         });
 
-        console.log('Email sent via SendGrid.');
+        console.log('Email sent via Resend.');
         return true;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -129,7 +140,7 @@ export const sendInspectorWelcomeEmail = async (
             
             <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
                 <p style="margin: 0 0 8px;"><strong>Thông tin đăng nhập:</strong></p>
-                <p style="margin: 0 0 4px;">📧 Email: <strong>${email}</strong></p>
+                <p style="margin: 0 0 4px;">Email: <strong>${email}</strong></p>
                 <p style="margin: 0;">Mật khẩu tạm thời: <strong>${tempPassword}</strong></p>
             </div>
             
@@ -203,6 +214,8 @@ export const sendWithdrawApprovedEmail = async (
     payload: WithdrawEmailPayload
 ): Promise<boolean> => {
     const supportEmail = process.env.EMAIL_SUPPORT || process.env.EMAIL_USER || 'support@xedaptot.com';
+    const maskedRequestId = maskFixedLast3(payload.requestId);
+    const maskedAccountNumber = getMaskedBankAccountForEmail(payload.bankInfo);
 
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
@@ -211,16 +224,17 @@ export const sendWithdrawApprovedEmail = async (
             <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
             <p style="margin: 0 0 16px;">Yêu cầu rút tiền của bạn đã được duyệt và xử lý bởi đội ngũ quản trị Xedaptot.</p>
             <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${maskedRequestId}</p>
                 <p style="margin: 0 0 8px;"><strong>Số tiền:</strong> ${formatVndCurrency(payload.amount)}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngân hàng:</strong> ${payload.bankInfo.bankName}</p>
-                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${maskedAccountNumber}</p>
                 <p style="margin: 0 0 8px;"><strong>Tên tài khoản:</strong> ${payload.bankInfo.accountName}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngày yêu cầu:</strong> ${formatDateTime(payload.requestedAt)}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngày xử lý:</strong> ${formatDateTime(payload.processedAt)}</p>
                 <p style="margin: 0;"><strong>Mã tham chiếu:</strong> ${payload.transferReference || 'N/A'}</p>
             </div>
-            <p style="margin: 0 0 16px;">Nếu bạn có thắc mắc, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 8px;">Nếu bạn có thắc mắc, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 16px;">Hoặc liên hệ <a href="mailto:${WITHDRAW_CONTACT_EMAIL}" style="color: #2563eb;">${WITHDRAW_CONTACT_EMAIL}</a>.</p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
     </div>
@@ -233,12 +247,50 @@ export const sendWithdrawApprovedEmail = async (
     });
 };
 
+export const sendWithdrawApprovedAdminEmail = async (
+    adminEmail: string,
+    adminName: string,
+    userInfo: { email?: string; fullName?: string },
+    payload: WithdrawEmailPayload
+): Promise<boolean> => {
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+        <div style="padding: 20px 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+            <h2 style="color: #16a34a; margin: 0 0 8px;">[Admin] Yêu cầu rút tiền đã được duyệt</h2>
+            <p style="margin: 0 0 12px;">Xin chào <strong>${adminName || 'bạn'}</strong>,</p>
+            <p style="margin: 0 0 16px;">Hệ thống vừa duyệt/hoàn tất một yêu cầu rút tiền.</p>
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 0 0 8px;"><strong>Người dùng:</strong> ${(userInfo.fullName || 'N/A')} (${userInfo.email || 'N/A'})</p>
+                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${maskFixedLast3(payload.requestId)}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tiền:</strong> ${formatVndCurrency(payload.amount)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngân hàng:</strong> ${payload.bankInfo.bankName}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${getMaskedBankAccountForEmail(payload.bankInfo)}</p>
+                <p style="margin: 0 0 8px;"><strong>Tên tài khoản:</strong> ${payload.bankInfo.accountName}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày yêu cầu:</strong> ${formatDateTime(payload.requestedAt)}</p>
+                <p style="margin: 0 0 8px;"><strong>Ngày xử lý:</strong> ${formatDateTime(payload.processedAt)}</p>
+                <p style="margin: 0;"><strong>Mã tham chiếu:</strong> ${payload.transferReference || 'N/A'}</p>
+            </div>
+            <p style="margin: 0 0 16px;">Liên hệ: <a href="mailto:${WITHDRAW_CONTACT_EMAIL}" style="color: #2563eb;">${WITHDRAW_CONTACT_EMAIL}</a></p>
+        </div>
+        <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
+    </div>
+    `;
+
+    return sendMail({
+        to: adminEmail,
+        subject: '[Xedaptot][Admin] Yêu cầu rút tiền đã được duyệt',
+        html,
+    });
+};
+
 export const sendWithdrawRejectedEmail = async (
     email: string,
     fullName: string,
     payload: WithdrawEmailPayload
 ): Promise<boolean> => {
     const supportEmail = process.env.EMAIL_SUPPORT || process.env.EMAIL_USER || 'support@xedaptot.com';
+    const maskedRequestId = maskFixedLast3(payload.requestId);
+    const maskedAccountNumber = getMaskedBankAccountForEmail(payload.bankInfo);
 
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
@@ -247,16 +299,17 @@ export const sendWithdrawRejectedEmail = async (
             <p style="margin: 0 0 12px;">Xin chào <strong>${fullName || 'bạn'}</strong>,</p>
             <p style="margin: 0 0 16px;">Yêu cầu rút tiền của bạn đã bị từ chối bởi đội ngũ quản trị Xedaptot.</p>
             <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${payload.requestId}</p>
+                <p style="margin: 0 0 8px;"><strong>Mã yêu cầu:</strong> ${maskedRequestId}</p>
                 <p style="margin: 0 0 8px;"><strong>Số tiền:</strong> ${formatVndCurrency(payload.amount)}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngân hàng:</strong> ${payload.bankInfo.bankName}</p>
-                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${payload.bankInfo.accountNumber}</p>
+                <p style="margin: 0 0 8px;"><strong>Số tài khoản:</strong> ${maskedAccountNumber}</p>
                 <p style="margin: 0 0 8px;"><strong>Tên tài khoản:</strong> ${payload.bankInfo.accountName}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngày yêu cầu:</strong> ${formatDateTime(payload.requestedAt)}</p>
                 <p style="margin: 0 0 8px;"><strong>Ngày xử lý:</strong> ${formatDateTime(payload.processedAt)}</p>
                 <p style="margin: 0;"><strong>Lý do:</strong> ${payload.reason || 'Không có lý do'}</p>
             </div>
-            <p style="margin: 0 0 16px;">Số tiền đã đóng băng đã được hoàn lại vào ví của bạn. Nếu cần hỗ trợ, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 8px;">Số tiền đã đóng băng đã được hoàn lại vào ví của bạn. Nếu cần hỗ trợ, vui lòng liên hệ <a href="mailto:${supportEmail}" style="color: #2563eb;">${supportEmail}</a>.</p>
+            <p style="margin: 0 0 16px;">Hoặc liên hệ <a href="mailto:${WITHDRAW_CONTACT_EMAIL}" style="color: #2563eb;">${WITHDRAW_CONTACT_EMAIL}</a>.</p>
         </div>
         <p style="color: #9ca3af; font-size: 11px; text-align: center; margin-top: 12px;">© Xedaptot</p>
     </div>

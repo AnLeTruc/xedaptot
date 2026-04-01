@@ -80,6 +80,11 @@ const userSchema = new Schema<IUserDocument>(
             enum: ['google', 'email'],
             required: [true, 'Auth provider is required'],
         },
+        authProviders: {
+            type: [String],
+            enum: ['google', 'email'],
+            default: undefined,
+        },
         passwordResetCodeHash: {
             type: String,
             select: false
@@ -123,6 +128,10 @@ const userSchema = new Schema<IUserDocument>(
             type: String,
             trim: true
         },
+        kycIdNumberMasked: {
+            type: String,
+            trim: true
+        },
         kycDob: {
             type: String,
             trim: true
@@ -137,14 +146,6 @@ const userSchema = new Schema<IUserDocument>(
         kycData: {
             type: Schema.Types.Mixed,
             select: false
-        },
-        isTrusted: {
-            type: Boolean,
-            default: false
-        },
-        isNewUser: {
-            type: Boolean,
-            default: true
         },
         isOnline: {
             type: Boolean,

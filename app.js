@@ -12,6 +12,7 @@ const { releaseFundsJob } = require('./jobs/releaseFunds');
 const cron = require('node-cron');
 const { cleanupExpiredOrdersJob } = require('./jobs/cleanupOrders');
 const { sellerConfirmationTimeoutJob } = require('./jobs/sellerConfirmationTimeout');
+const { autoCompleteOrdersJob } = require('./jobs/autoCompleteOrders');
 
 // Start Cronjobs
 startCleanupJob();
@@ -21,6 +22,7 @@ cron.schedule('* * * * *', releaseFundsJob);
 cron.schedule('* * * * *', cleanupExpiredOrdersJob); // Run every minute for testing, can be adjusted to hourly 0 * * * * later
 console.log('[Cronjob] Jobs scheduled (Release Funds & Cleanup Expired)');
 cron.schedule('* * * * *', sellerConfirmationTimeoutJob);
+cron.schedule('* * * * *', autoCompleteOrdersJob);
 
 //Routes
 const authRouter = require('./routes/auth').default;

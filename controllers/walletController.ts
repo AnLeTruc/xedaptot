@@ -5,8 +5,10 @@ import Transaction from '../models/Transaction';
 import WithdrawRequest from '../models/WithdrawRequest';
 import mongoose from 'mongoose';
 import * as notificationService from '../services/notificationService';
+import { sendWithdrawApprovedEmail } from '../services/emailService';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import { VietQRService } from '../services/vietqrService';
+import { encryptSensitive, maskSensitive } from '../utils/sensitiveData';
 
 //Get or create wallet for any user
 export const getOrCreateWallet = async (userId: mongoose.Types.ObjectId) => {
@@ -43,10 +45,30 @@ const MAX_PENDING_WITHDRAW_REQUESTS = 3;
 const WITHDRAW_AUTO_THRESHOLD = 3000000;
 const AUTO_TRANSFER_DELAY_MS = 30000;
 
+const sanitizeWithdrawRequest = (request: any) => {
+    if (!request) {
+        return request;
+    }
+
+    const plain = typeof request.toObject === 'function' ? request.toObject() : request;
+    const maskedAccountNumber = plain?.bankInfo?.accountNumberMasked;
+
+    if (plain?.bankInfo?.accountNumber) {
+        plain.bankInfo.accountNumber = maskedAccountNumber
+            ? maskedAccountNumber
+            : maskSensitive(plain.bankInfo.accountNumber);
+    }
+
+    if (plain?.bankInfo?.accountNumberMasked) {
+        delete plain.bankInfo.accountNumberMasked;
+    }
+
+    return plain;
+};
+
 const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
-    const isTrusted = user?.isTrusted === true;
-    const isNewUser = user?.isNewUser === true;
-    const isAuto = amount <= WITHDRAW_AUTO_THRESHOLD && isTrusted;
+    // Auto-approve when user has completed KYC and amount is within threshold
+    const isAuto = amount <= WITHDRAW_AUTO_THRESHOLD && user?.kycStatus === 'VERIFIED';
 
     if (isAuto) {
         return {
@@ -57,7 +79,7 @@ const checkWithdrawalStrategy = (amount: number, user: AuthRequest['user']) => {
         };
     }
 
-    if (amount > WITHDRAW_AUTO_THRESHOLD || isNewUser) {
+    if (amount > WITHDRAW_AUTO_THRESHOLD) {
         return {
             status: 'PENDING' as const,
             type: 'MANUAL' as const,
@@ -153,44 +175,40 @@ export const depositToWallet = async (
     try {
         const userId = req.user!._id;
         const { amount, bankCode } = req.body;
-        //           ^^^^^^^^ thêm bankCode (optional, user có thể chọn trước ngân hàng)
 
         const wallet = await getOrCreateWallet(userId);
 
-        // Tạo mã giao dịch nội bộ — dùng để MAP khi VNPay callback về
         const txnRef = generateCode('DEP');
 
         await Transaction.create({
-            transactionCode: txnRef,          // Internal ref code for mapping
+            transactionCode: txnRef,
             paymentMethod: 'VNPAY',
             walletId: wallet._id,
             type: 'DEPOSIT',
             amount,
             balanceBefore: wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance,
-            balanceAfter: 0,                  // Unknown yet, will update on callback
+            balanceAfter: 0,
             description: `Deposit ${amount.toLocaleString()} VND to wallet via VNPay`,
             paymentGateway: 'VNPAY',
-            gatewayTransactionId: '',         // Not available yet, VNPay will provide
-            gatewayResponseCode: '',          // Not available yet
+            gatewayTransactionId: '',
+            gatewayResponseCode: '',
             data: { status: 'PENDING', userId: userId.toString() },
         });
 
         let ipAddr = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
             || req.socket.remoteAddress
             || '127.0.0.1';
-        // VNPay doesn't accept IPv6 — convert ::1 and ::ffff:x.x.x.x to IPv4
         if (ipAddr === '::1') ipAddr = '127.0.0.1';
         if (ipAddr.startsWith('::ffff:')) ipAddr = ipAddr.substring(7);
         // Gọi VNPay service tạo URL
         const paymentUrl = createPaymentUrl({
             amount,
-            orderId: txnRef,                     // Gửi mã nội bộ cho VNPay
+            orderId: txnRef,
             orderInfo: `Deposit+${txnRef}`,
             ipAddr,
-            bankCode,                            // Optional
+            bankCode,
         });
 
-        // Trả URL cho frontend — KHÔNG cộng tiền ở đây!
         res.status(200).json({
             success: true,
             message: 'Chuyển hướng người dùng đến paymentUrl để hoàn tất nạp tiền',
@@ -209,7 +227,7 @@ export const depositToWallet = async (
 
 // GET /api/wallets/vnpay-return
 export const vnpayReturn = async (
-    req: Request,       // ← Request thường, KHÔNG phải AuthRequest (không có JWT)
+    req: Request,
     res: Response
 ): Promise<void> => {
     try {
@@ -396,11 +414,11 @@ export const createWithdrawRequest = async (
         const { amount, bankInfo } = req.body;
         const user = req.user;
 
-        if (!user || user.kycStatus !== 'VERIFIED') {
+        if (!user || user.kycStatus !== 'VERIFIED' || !user.kycIdNumberMasked || !user.kycFullName) {
             await session.abortTransaction();
             res.status(403).json({
                 success: false,
-                message: 'Vui lòng xác thực CCCD trước khi rút tiền.'
+                message: 'Vui lòng xác thực CCCD đầy đủ trước khi rút tiền.'
             });
             return;
         }
@@ -460,11 +478,19 @@ export const createWithdrawRequest = async (
         }
         await wallet.save({ session });
 
+        const maskedAccountNumber = maskSensitive(bankInfo.accountNumber);
+        const encryptedAccountNumber = encryptSensitive(bankInfo.accountNumber);
+        const bankInfoToSave = {
+            ...bankInfo,
+            accountNumber: encryptedAccountNumber,
+            accountNumberMasked: maskedAccountNumber
+        };
+
         const [withdrawRequest] = await WithdrawRequest.create([{
             userId,
             walletId: wallet._id,
             amount,
-            bankInfo,
+            bankInfo: bankInfoToSave,
             status: strategy.status,
             type: strategy.type,
             processedAt: strategy.isAuto ? new Date() : undefined
@@ -483,17 +509,27 @@ export const createWithdrawRequest = async (
             amount,
             balanceBefore,
             balanceAfter,
-            description: `Withdraw request - ${bankInfo.bankName} - ${bankInfo.accountNumber}`
+            description: `Withdraw request - ${bankInfo.bankName} - ${maskedAccountNumber}`
         }], { session });
 
         await session.commitTransaction();
 
         if (strategy.isAuto) {
-            setTimeout(() => {
-                notificationService.notifyWithdrawApproved(userId.toString());
-            }, AUTO_TRANSFER_DELAY_MS);
+            notificationService.notifyWithdrawRequestedAuto(userId.toString());
+
+            // Auto-approved withdrawals don't go through admin flow, so send approval email here.
+            if (user?.email) {
+                await sendWithdrawApprovedEmail(user.email, user.fullName || '', {
+                    requestId: withdrawRequest._id.toString(),
+                    amount: withdrawRequest.amount,
+                    bankInfo: withdrawRequest.bankInfo as any,
+                    requestedAt: withdrawRequest.createdAt,
+                    processedAt: withdrawRequest.processedAt || new Date(),
+                    transferReference: withdrawRequest.transferReference
+                });
+            }
         } else {
-            notificationService.notifyWithdrawRequested(userId.toString());
+            notificationService.notifyWithdrawRequestedManual(userId.toString());
             notificationService.notifyAdminWithdrawRequest(
                 req.user!.fullName || req.user!.email,
                 amount
@@ -503,7 +539,7 @@ export const createWithdrawRequest = async (
         res.status(201).json({
             success: true,
             message: strategy.message,
-            data: withdrawRequest
+            data: sanitizeWithdrawRequest(withdrawRequest)
         });
     } catch (error: any) {
         await session.abortTransaction();
@@ -543,7 +579,7 @@ export const getWithdrawRequests = async (
         res.status(200).json({
             success: true,
             data: {
-                withdrawRequests: requests,
+                withdrawRequests: requests.map(sanitizeWithdrawRequest),
                 pagination: {
                     page: pageNum,
                     limit: limitNum,

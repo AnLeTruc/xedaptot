@@ -20,6 +20,7 @@ export interface IUser {
     isVerified: boolean;
     isActive: boolean;
     authProvider: 'google' | 'email';
+    authProviders?: Array<'google' | 'email'>;
     emailVerificationToken?: string;
     emailVerificationExpires?: Date;
     passwordResetCodeHash?: string;
@@ -35,12 +36,12 @@ export interface IUser {
     kycStatus?: KycStatus;
     kycFullName?: string;       // Tên trên CCCD
     kycIdNumber?: string;       // Số CCCD
+    kycIdNumberMasked?: string;
     kycDob?: string;            // Ngày sinh trên CCCD
     kycAddress?: string;        // Địa chỉ trên CCCD
     kycVerifiedAt?: Date;
     kycData?: any;              // Raw response từ FPT.AI
-    isTrusted?: boolean;
-    isNewUser?: boolean;
+    
 }
 
 //Interface Mongoose Document

@@ -10,6 +10,7 @@ import * as shippingService from '../services/shippingService';
 import * as notificationService from '../services/notificationService';
 import { buildFullAddress } from '../utils/address';
 import crypto from 'crypto';
+import { encryptSensitive, maskSensitive } from '../utils/sensitiveData';
 
 const { auth } = require('../config/firebase');
 
@@ -146,7 +147,7 @@ export const verifyEmail = async (
 };
 
 // Helper: Map Firebase provider
-const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'facebook' => {
+const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' => {
     switch (signInProvider) {
         case 'google.com':
             return 'google';
@@ -154,6 +155,24 @@ const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'face
         default:
             return 'email';
     }
+};
+
+const mergeAuthProviders = (
+    current: Array<'google' | 'email'> | undefined,
+    ...toAdd: Array<'google' | 'email' | undefined>
+): Array<'google' | 'email'> => {
+    const merged = new Set<'google' | 'email'>(Array.isArray(current) ? current : []);
+    for (const provider of toAdd) {
+        if (provider) merged.add(provider);
+    }
+    return Array.from(merged);
+};
+
+const userHasEmailPasswordProvider = (user: any): boolean => {
+    if (!user) return false;
+    if (user.authProvider === 'email') return true;
+    const providers = user.authProviders as Array<'google' | 'email'> | undefined;
+    return Array.isArray(providers) && providers.includes('email');
 };
 
 //Helper: Assign free package to new user
@@ -195,9 +214,104 @@ export const firebaseAuth = async (
             return;
         }
 
-        const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await auth.verifyIdToken(token);
-        const { uid, email, name, picture } = decodedToken;
+        let token = authHeader.slice('Bearer '.length).trim();
+
+        if (!token) {
+            res.status(401).json({
+                success: false,
+                message: 'Chưa xác thực'
+            });
+            return;
+        }
+
+        let decodedToken: any;
+        try {
+            decodedToken = await auth.verifyIdToken(token);
+        } catch (error: any) {
+            const code = error?.code || error?.errorInfo?.code;
+
+            if (code === 'auth/id-token-expired') {
+                const providedRefreshToken = req.body?.refreshToken;
+
+                if (providedRefreshToken && process.env.FIREBASE_API_KEY) {
+                    const refreshResponse = await fetch(
+                        `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_API_KEY}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                grant_type: 'refresh_token',
+                                refresh_token: providedRefreshToken,
+                            }),
+                        }
+                    );
+
+                    const refreshData: any = await refreshResponse.json();
+                    if (refreshResponse.ok && refreshData?.id_token) {
+                        token = refreshData.id_token;
+                        decodedToken = await auth.verifyIdToken(token);
+                    } else {
+                        res.status(401).json({
+                            success: false,
+                            code: 'auth/id-token-expired',
+                            message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+                        });
+                        return;
+                    }
+                } else {
+                    res.status(401).json({
+                        success: false,
+                        code: 'auth/id-token-expired',
+                        message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+                    });
+                    return;
+                }
+            } else {
+                throw error;
+            }
+        }
+
+        const uid = decodedToken.uid as string;
+        let email = decodedToken.email as string | undefined;
+        let name = decodedToken.name as string | undefined;
+        let picture = decodedToken.picture as string | undefined;
+
+        // Some tokens omit top-level email but include it under identities.
+        const identityEmails = decodedToken.firebase?.identities?.email as string[] | undefined;
+        if (!email && Array.isArray(identityEmails) && identityEmails[0]) {
+            email = identityEmails[0];
+        }
+
+        if (!email) {
+            try {
+                const userRecord = await auth.getUser(uid);
+                email = userRecord.email || email;
+                name = name || userRecord.displayName || undefined;
+                picture = picture || userRecord.photoURL || undefined;
+
+                if (!email && Array.isArray(userRecord.providerData)) {
+                    const providerEmail = userRecord.providerData.find((p: any) => p?.email)?.email;
+                    if (providerEmail) {
+                        email = providerEmail;
+                    }
+                }
+            } catch (_) {
+            }
+        }
+
+        if (!email) {
+            console.warn('[Auth][Firebase] Missing email in token/userRecord', {
+                uid,
+                signInProvider: decodedToken.firebase?.sign_in_provider,
+                hasEmailInToken: Boolean(decodedToken.email),
+            });
+            res.status(400).json({
+                success: false,
+                code: 'auth/missing-email',
+                message: 'Không lấy được email từ tài khoản Google/Firebase. Vui lòng cấp quyền email hoặc dùng phương thức đăng nhập khác.',
+            });
+            return;
+        }
 
         const signInProvider = decodedToken.firebase?.sign_in_provider || 'password';
         const authProvider = mapFirebaseProvider(signInProvider);
@@ -206,24 +320,6 @@ export const firebaseAuth = async (
 
         // Have user with same mail
         if (existingUser) {
-<<<<<<< Updated upstream
-            if (existingUser.authProvider !== authProvider) {
-                const firebaseUser = await auth.getUser(uid);
-                const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
-
-                if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
-                    await auth.updateUser(uid, {
-                        providerToUnlink: 'google.com'
-                    });
-                }
-
-                res.status(400).json({
-                    success: false,
-                    message: `Email đã đăng ký với ${existingUser.authProvider}.`
-                });
-                return;
-            }
-=======
             // Block deactivated users
             if (!existingUser.isActive) {
                 res.status(401).json({
@@ -236,7 +332,6 @@ export const firebaseAuth = async (
 
             // Cho phép đăng nhập cross-provider (email user login Google hoặc ngược lại)
             // Firebase đã xác thực token, chỉ cần cập nhật firebaseUId nếu thay đổi
->>>>>>> Stashed changes
             if (existingUser.firebaseUId !== uid) {
                 existingUser.firebaseUId = uid;
             }
@@ -260,6 +355,17 @@ export const firebaseAuth = async (
             }
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
+            existingUser.authProviders = mergeAuthProviders(
+                (existingUser as any).authProviders,
+                existingUser.authProvider,
+                authProvider
+            ) as any;
+            // Keep authProvider for backward compatibility (treated as last-used provider)
+            existingUser.authProvider = authProvider;
+            // If user signs in with Google, mark email as verified
+            if (authProvider === 'google' && !existingUser.isVerified) {
+                existingUser.isVerified = true;
+            }
             await existingUser.save();
             //Noti login success
             notificationService.notifyLoggedIn(existingUser._id.toString());
@@ -275,6 +381,7 @@ export const firebaseAuth = async (
                     roles: existingUser.roles,
                     isVerified: existingUser.isVerified,
                     authProvider: existingUser.authProvider,
+                    authProviders: (existingUser as any).authProviders,
                     idToken: tokenData.idToken,
                     refreshToken: tokenData.refreshToken,
                     expiresIn: tokenData.expiresIn,
@@ -303,14 +410,16 @@ export const firebaseAuth = async (
         }
         const newUser = await User.create({
             firebaseUId: uid,
-            email: email || '',
+            email,
             fullName: name || '',
             avatarUrl: picture || '',
             roles: ['BUYER'],
             reputationScore: 0,
-            isVerified: false,
+            // auto-verify when registering via Google
+            isVerified: authProvider === 'google',
             isActive: true,
-            authProvider
+            authProvider,
+            authProviders: [authProvider]
         });
         await assignFreePackage(newUser._id);
         //Noti create google success
@@ -327,6 +436,7 @@ export const firebaseAuth = async (
                 roles: newUser.roles,
                 isVerified: newUser.isVerified,
                 authProvider: newUser.authProvider,
+                authProviders: (newUser as any).authProviders,
                 idToken: tokenData.idToken,
                 refreshToken: tokenData.refreshToken,
                 expiresIn: tokenData.expiresIn,
@@ -334,6 +444,16 @@ export const firebaseAuth = async (
         });
     } catch (error: any) {
         console.error('Firebase auth error:', error);
+        const code = error?.code || error?.errorInfo?.code;
+        if (code === 'auth/id-token-expired') {
+            res.status(401).json({
+                success: false,
+                code: 'auth/id-token-expired',
+                message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+            });
+            return;
+        }
+
         res.status(401).json({
             success: false,
             message: 'Xác thực thất bại'
@@ -510,7 +630,7 @@ export const emailRegister = async (
         if (existingUser) {
             res.status(400).json({
                 success: false,
-                message: `Email đã được đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
+                message: 'Email này đã tồn tại. Vui lòng đăng nhập vào tài khoản hiện có và liên kết thêm mật khẩu trong phần Cài đặt tài khoản (Thêm mật khẩu).'
             });
             return;
         }
@@ -543,7 +663,8 @@ export const emailRegister = async (
             reputationScore: 0,
             isVerified: false,
             isActive: true,
-            authProvider: 'email'
+            authProvider: 'email',
+            authProviders: ['email']
         });
 
         await assignFreePackage(newUser._id);
@@ -560,6 +681,7 @@ export const emailRegister = async (
                 avatarUrl: newUser.avatarUrl,
                 roles: newUser.roles,
                 authProvider: newUser.authProvider,
+                authProviders: (newUser as any).authProviders,
                 isVerified: newUser.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
@@ -593,6 +715,8 @@ export const emailLogin = async (
 
         // Không block theo authProvider nữa - Firebase tự validate password
         // Nếu user Google chưa link password, Firebase sẽ trả INVALID_LOGIN_CREDENTIALS
+        const existingUserByEmail = await User.findOne({ email });
+
         const response = await fetch(`${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -649,6 +773,36 @@ export const emailLogin = async (
             }
         }
 
+        // Block deactivated users
+        if (user && !user.isActive) {
+            res.status(401).json({
+                success: false,
+                message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                isDeactivated: true
+            });
+            return;
+        }
+
+        // If this email exists in DB but belongs to a different Firebase UID, instruct linking.
+        if (existingUserByEmail && existingUserByEmail.firebaseUId !== data.localId) {
+            res.status(409).json({
+                success: false,
+                code: 'auth/account-mismatch',
+                message: 'Email này đã tồn tại trong hệ thống nhưng thuộc về một tài khoản khác. Vui lòng đăng nhập bằng phương thức bạn đã dùng trước đó, sau đó liên kết thêm Email/Password trong phần Cài đặt tài khoản.'
+            });
+            return;
+        }
+
+        if (user) {
+            (user as any).authProviders = mergeAuthProviders(
+                (user as any).authProviders,
+                (user as any).authProvider,
+                'email'
+            );
+            (user as any).authProvider = 'email';
+            await user.save();
+        }
+
         res.status(200).json({
             success: true,
             message: 'Đăng nhập thành công',
@@ -659,6 +813,7 @@ export const emailLogin = async (
                 avatarUrl: user?.avatarUrl,
                 roles: user?.roles,
                 authProvider: user?.authProvider,
+                authProviders: (user as any)?.authProviders,
                 isVerified: user?.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
@@ -714,6 +869,17 @@ export const refreshToken = async (
             return;
         }
 
+        // Block deactivated users from refreshing token
+        const user = await User.findOne({ firebaseUId: data.user_id });
+        if (user && !user.isActive) {
+            res.status(401).json({
+                success: false,
+                message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                isDeactivated: true
+            });
+            return;
+        }
+
         //Return new token
         res.status(200).json({
             success: true,
@@ -749,7 +915,7 @@ export const addAddress = async (
             return;
         }
 
-        const { label, provinceId, districtId, wardCode, street, coordinates, isDefault } = req.body;
+        const { label, fullName, phone, provinceId, districtId, wardCode, street, coordinates, isDefault } = req.body;
 
         const resolvedLocation = await shippingService.resolveGhnLocationNames(
             provinceId,
@@ -766,6 +932,8 @@ export const addAddress = async (
 
         const addressData = {
             label,
+            fullName,
+            phone,
             provinceId,
             districtId,
             wardCode,
@@ -833,10 +1001,12 @@ export const updateAddress = async (
             return;
         }
 
-        const { label, street, provinceId, districtId, wardCode, coordinates } = req.body;
+        const { label, fullName, phone, street, provinceId, districtId, wardCode, coordinates } = req.body;
 
         const updates: Record<string, any> = {};
         if (label !== undefined) updates['addresses.$.label'] = label;
+        if (fullName !== undefined) updates['addresses.$.fullName'] = fullName;
+        if (phone !== undefined) updates['addresses.$.phone'] = phone;
         if (street !== undefined) updates['addresses.$.street'] = street;
         if (coordinates !== undefined) updates['addresses.$.coordinates'] = coordinates;
 
@@ -1016,15 +1186,20 @@ export const setDefaultAddress = async (
             return;
         }
 
+        const { fullName, phone } = req.body || {};
+
         await User.updateOne(
             { _id: userId },
             { $set: { 'addresses.$[].isDefault': false } }
         );
 
+        const setFields: Record<string, any> = { 'addresses.$.isDefault': true };
+        if (fullName !== undefined) setFields['addresses.$.fullName'] = fullName;
+        if (phone !== undefined) setFields['addresses.$.phone'] = phone;
 
         const updatedUser = await User.findOneAndUpdate(
             { _id: userId, 'addresses._id': id },
-            { $set: { 'addresses.$.isDefault': true } },
+            { $set: setFields },
             { new: true }
         );
         if (!updatedUser) {
@@ -1078,7 +1253,7 @@ export const forgotPassword = async (
         genericOk();
         return;
     }
-    if (user.authProvider !== 'email') {
+    if (!userHasEmailPasswordProvider(user)) {
         genericOk();
         return;
     }
@@ -1133,7 +1308,7 @@ export const verifyResetCode = async (
     })
         .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
 
-    if (!user || user.authProvider !== 'email') {
+    if (!user || !userHasEmailPasswordProvider(user)) {
         res.status(400).json({
             success: false,
             message: 'Mã không hợp lệ'
@@ -1220,7 +1395,7 @@ export const resetPassword = async (
     const user = await User.findOne({ email: String(email).toLowerCase() })
         .select('+passwordResetTokenHash +passwordResetTokenExpires');
 
-    if (!user || user.authProvider !== 'email') {
+    if (!user || !userHasEmailPasswordProvider(user)) {
         res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
@@ -1285,11 +1460,11 @@ export const changePassword = async (
             return;
         }
 
-        // Only email-registered users can change password
-        if (user.authProvider !== 'email') {
+        // Only users with password provider linked can change password
+        if (!userHasEmailPasswordProvider(user)) {
             res.status(400).json({
                 success: false,
-                message: 'Đổi mật khẩu chỉ khả dụng cho tài khoản đăng ký bằng email'
+                message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
             });
             return;
         }
@@ -1435,13 +1610,15 @@ export const verifyKYC = async (
         }
 
         if (user.kycStatus === 'VERIFIED') {
+            const maskedIdNumber = user.kycIdNumberMasked
+                || (user.kycIdNumber ? maskSensitive(user.kycIdNumber) : null);
             res.status(400).json({
                 success: false,
                 message: 'Tài khoản đã được xác thực KYC trước đó',
                 data: {
                     kycStatus: user.kycStatus,
                     kycFullName: user.kycFullName,
-                    kycIdNumber: user.kycIdNumber,
+                    kycIdNumber: maskedIdNumber,
                     kycVerifiedAt: user.kycVerifiedAt
                 }
             });
@@ -1452,11 +1629,15 @@ export const verifyKYC = async (
         const { recognizeIdCard } = await import('../services/fptaiService');
         const idData = await recognizeIdCard(imageUrl);
 
+        const maskedIdNumber = maskSensitive(idData.id);
+        const encryptedIdNumber = encryptSensitive(idData.id);
+
         // Save KYC data to user
         await User.findByIdAndUpdate(userId, {
             kycStatus: 'VERIFIED',
             kycFullName: idData.name,
-            kycIdNumber: idData.id,
+            kycIdNumber: encryptedIdNumber,
+            kycIdNumberMasked: maskedIdNumber,
             kycDob: idData.dob,
             kycAddress: idData.address,
             kycVerifiedAt: new Date(),
@@ -1469,7 +1650,7 @@ export const verifyKYC = async (
             data: {
                 kycStatus: 'VERIFIED',
                 kycFullName: idData.name,
-                kycIdNumber: idData.id,
+                kycIdNumber: maskedIdNumber,
                 kycDob: idData.dob,
                 kycAddress: idData.address,
                 kycVerifiedAt: new Date()
@@ -1518,7 +1699,8 @@ export const getKYCStatus = async (
             data: {
                 kycStatus: user.kycStatus || 'NONE',
                 kycFullName: user.kycFullName || null,
-                kycIdNumber: user.kycIdNumber || null,
+                kycIdNumber: user.kycIdNumberMasked
+                    || (user.kycIdNumber ? maskSensitive(user.kycIdNumber) : null),
                 kycDob: user.kycDob || null,
                 kycAddress: user.kycAddress || null,
                 kycVerifiedAt: user.kycVerifiedAt || null

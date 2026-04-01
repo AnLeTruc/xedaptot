@@ -14,7 +14,7 @@ export const verifyToken = async (
     try {
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith('Bearer')) {
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
             res.status(401).json({
                 success: false,
                 message: 'Chưa xác thực'
@@ -22,7 +22,15 @@ export const verifyToken = async (
             return;
         }
 
-        const token = authHeader.split('Bearer ')[1];
+        const token = authHeader.slice('Bearer '.length).trim();
+
+        if (!token) {
+            res.status(401).json({
+                success: false,
+                message: 'Chưa xác thực'
+            });
+            return;
+        }
 
         const decodedToken = await auth.verifyIdToken(token);
 
@@ -36,12 +44,36 @@ export const verifyToken = async (
         const user = await User.findOne({ firebaseUId: decodedToken.uid });
 
         if (user) {
+            if (!user.isActive) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                    isDeactivated: true
+                });
+                return;
+            }
             req.user = user;
         }
 
         next();
     } catch (error) {
-        console.error('Auth error: ', error);
+        console.error('Auth error: ', {
+            method: req.method,
+            url: (req as any).originalUrl || req.url,
+            code: (error as any)?.code || (error as any)?.errorInfo?.code,
+            message: (error as any)?.message,
+        });
+
+        const code = (error as any)?.code || (error as any)?.errorInfo?.code;
+        if (code === 'auth/id-token-expired') {
+            res.status(401).json({
+                success: false,
+                code: 'auth/id-token-expired',
+                message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+            });
+            return;
+        }
+
         res.status(401).json({
             success: false,
             message: 'Token không hợp lệ',
@@ -59,7 +91,11 @@ export const optionalAuth = async (
     try {
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.split('Bearer ')[1];
+            const token = authHeader.slice('Bearer '.length).trim();
+            if (!token) {
+                next();
+                return;
+            }
             const decodedToken = await auth.verifyIdToken(token);
             req.firebaseUser = {
                 uid: decodedToken.uid,
@@ -93,6 +129,15 @@ export const requireUser = async (
         });
         return;
     }
+
+    if (!req.user.isActive) {
+        res.status(403).json({
+            success: false,
+            message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+        });
+        return;
+    }
+
     next();
 }
 

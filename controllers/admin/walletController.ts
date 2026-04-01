@@ -7,8 +7,14 @@ import Wallet from '../../models/Wallet';
 import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
+import { maskSensitive } from '../../utils/sensitiveData';
 
 import * as notificationService from '../../services/notificationService';
+
+const generateCode = (prefix: string) => {
+    const d = new Date().toISOString().replace(/[-T:.Z]/g, '');
+    return `${prefix}-${d}-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`;
+};
 
 const getWithdrawTransaction = async (
     walletId: mongoose.Types.ObjectId,
@@ -20,6 +26,27 @@ const getWithdrawTransaction = async (
         type: 'WITHDRAW',
         'data.withdrawRequestId': withdrawRequestId
     }).session(session);
+};
+
+const sanitizeWithdrawRequest = (request: any) => {
+    if (!request) {
+        return request;
+    }
+
+    const plain = typeof request.toObject === 'function' ? request.toObject() : request;
+    const maskedAccountNumber = plain?.bankInfo?.accountNumberMasked;
+
+    if (plain?.bankInfo?.accountNumber) {
+        plain.bankInfo.accountNumber = maskedAccountNumber
+            ? maskedAccountNumber
+            : maskSensitive(plain.bankInfo.accountNumber);
+    }
+
+    if (plain?.bankInfo?.accountNumberMasked) {
+        delete plain.bankInfo.accountNumberMasked;
+    }
+
+    return plain;
 };
 
 export const getWithdrawRequestsAdmin = async (
@@ -82,7 +109,7 @@ export const getWithdrawRequestsAdmin = async (
         res.status(200).json({
             success: true,
             data: {
-                withdrawRequests: requests,
+                withdrawRequests: requests.map(sanitizeWithdrawRequest),
                 pagination: {
                     page: pageNum,
                     limit: limitNum,
@@ -280,7 +307,7 @@ export const completeWithdrawRequest = async (
             await sendWithdrawApprovedEmail(user.email, user.fullName || '', {
                 requestId: withdrawRequest._id.toString(),
                 amount: withdrawRequest.amount,
-                bankInfo: withdrawRequest.bankInfo,
+                bankInfo: withdrawRequest.bankInfo as any,
                 requestedAt: withdrawRequest.createdAt,
                 processedAt,
                 transferReference
@@ -456,7 +483,9 @@ export const rejectWithdrawRequest = async (
         }
 
         const processedAt = new Date();
+        const balanceBefore = wallet.availableBalance;
         wallet.frozenBalance -= withdrawRequest.amount;
+        wallet.availableBalance += withdrawRequest.amount; // Refund amount back to available balance
         await wallet.save({ session });
 
         withdrawRequest.status = 'REJECTED';
@@ -473,7 +502,7 @@ export const rejectWithdrawRequest = async (
         );
 
         if (transaction) {
-            transaction.balanceAfter = transaction.balanceBefore;
+            transaction.balanceAfter = transaction.balanceBefore; // For the WITHDRAW transaction itself
             transaction.data = {
                 ...(transaction.data || {}),
                 status: 'FAILED',
@@ -488,6 +517,22 @@ export const rejectWithdrawRequest = async (
             await transaction.save({ session });
         }
 
+        // Create a separate REFUND transaction to accurately reflect the balance return
+        await Transaction.create([{
+            transactionCode: generateCode('REFUND'),
+            paymentMethod: 'SYSTEM',
+            walletId: wallet._id,
+            type: 'REFUND',
+            amount: withdrawRequest.amount,
+            balanceBefore: balanceBefore,
+            balanceAfter: wallet.availableBalance,
+            description: `Hoàn tiền yêu cầu rút tiền bị từ chối`,
+            data: {
+                withdrawRequestId: withdrawRequest._id.toString(),
+                reason: reason
+            }
+        }], { session });
+
         await session.commitTransaction();
 
         const user = await User.findById(withdrawRequest.userId)
@@ -497,7 +542,7 @@ export const rejectWithdrawRequest = async (
             await sendWithdrawRejectedEmail(user.email, user.fullName || '', {
                 requestId: withdrawRequest._id.toString(),
                 amount: withdrawRequest.amount,
-                bankInfo: withdrawRequest.bankInfo,
+                bankInfo: withdrawRequest.bankInfo as any,
                 requestedAt: withdrawRequest.createdAt,
                 processedAt,
                 reason

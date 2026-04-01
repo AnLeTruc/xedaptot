@@ -294,12 +294,21 @@ export const notifyWalletTopUpFailed = (userId: string) =>
         url: '/wallet'
     });
 
-export const notifyWithdrawRequested = (userId: string) =>
+export const notifyWithdrawRequestedAuto = (userId: string) =>
+    createNotification({
+        userId,
+        type: 'WALLET',
+        title: 'Yêu cầu rút tiền thành công',
+        message: 'Đã gửi yêu cầu thành công. Tiền sẽ được chuyển về Tài khoản Ngân hàng của bạn',
+        url: '/wallet'
+    });
+
+export const notifyWithdrawRequestedManual = (userId: string) =>
     createNotification({
         userId,
         type: 'WALLET',
         title: 'Yêu cầu rút tiền đã gửi',
-        message: 'Yêu cầu rút tiền đã được gửi và đang chờ xét duyệt.',
+        message: 'Đã gửi yêu cầu thành công. Chúng tôi sẽ xem xét và xử lí cho bạn trong vòng ít nhất 2 ngày, không tính ngày nghỉ',
         url: '/wallet'
     });
 
