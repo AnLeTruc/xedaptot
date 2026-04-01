@@ -341,6 +341,44 @@ export const firebaseAuth = async (
     }
 };
 
+// Public profile — no auth required
+export const getPublicProfile = async (
+    req: AuthRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id).select(
+            'fullName avatarUrl reputationScore createdAt isActive'
+        );
+
+        if (!user || !user.isActive) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng',
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                _id: user._id,
+                fullName: user.fullName,
+                avatarUrl: user.avatarUrl,
+                reputationScore: user.reputationScore,
+                createdAt: user.createdAt,
+            },
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 export const getProfile = async (
     req: AuthRequest,
     res: Response
