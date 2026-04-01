@@ -329,13 +329,11 @@ export const firebaseAuth = async (
                 });
                 return;
             }
+
+            // Cho phép đăng nhập cross-provider (email user login Google hoặc ngược lại)
+            // Firebase đã xác thực token, chỉ cần cập nhật firebaseUId nếu thay đổi
             if (existingUser.firebaseUId !== uid) {
-                res.status(400).json({
-                    success: false,
-                    code: 'auth/account-mismatch',
-                    message: 'Email này đã tồn tại trong hệ thống nhưng thuộc về một tài khoản khác. Vui lòng đăng nhập bằng phương thức bạn đã dùng trước đó, sau đó liên kết thêm Google/Email trong phần Cài đặt tài khoản.'
-                });
-                return;
+                existingUser.firebaseUId = uid;
             }
 
             const customToken = await auth.createCustomToken(uid);
@@ -715,6 +713,8 @@ export const emailLogin = async (
             return;
         }
 
+        // Không block theo authProvider nữa - Firebase tự validate password
+        // Nếu user Google chưa link password, Firebase sẽ trả INVALID_LOGIN_CREDENTIALS
         const existingUserByEmail = await User.findOne({ email });
 
         const response = await fetch(`${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`, {
@@ -740,7 +740,8 @@ export const emailLogin = async (
                         if (linkedProviders.includes('google.com') && !linkedProviders.includes('password')) {
                             res.status(401).json({
                                 success: false,
-                                message: 'Tài khoản của bạn đã bị ảnh hưởng bởi đăng nhập Google. Vui lòng đặt lại mật khẩu.'
+                                message: 'Tài khoản này đăng ký bằng Google và chưa có mật khẩu. Vui lòng đăng nhập bằng Google hoặc thêm mật khẩu trong trang cá nhân.',
+                                needsPasswordLink: true
                             });
                             return;
                         }
@@ -761,7 +762,16 @@ export const emailLogin = async (
             return;
         }
 
-        const user = await User.findOne({ firebaseUId: data.localId });
+        // Tìm user bằng firebaseUId, nếu không có thì tìm bằng email (cross-provider login)
+        let user = await User.findOne({ firebaseUId: data.localId });
+        if (!user) {
+            user = await User.findOne({ email });
+            if (user) {
+                // Cập nhật firebaseUId cho cross-provider login
+                user.firebaseUId = data.localId;
+                await user.save();
+            }
+        }
 
         // Block deactivated users
         if (user && !user.isActive) {
