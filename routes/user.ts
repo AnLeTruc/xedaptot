@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
     getProfile,
+    getPublicProfile,
     updateProfile,
     addAddress,
     updateAddress,
@@ -29,7 +30,8 @@ const router = Router();
 // VNPay callback — no auth (VNPay redirects here after payment)
 router.get('/packages/vnpay-return', packageVnpayReturn);
 
-// Public reviews
+// Public profile & reviews (no auth required)
+router.get('/:id/public-profile', getPublicProfile);
 router.get('/:id/reviews', getSellerReviews);
 
 // Profile
