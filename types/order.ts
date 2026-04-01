@@ -27,8 +27,9 @@ export const FEE_CONFIG = { DEPOSIT_PERCENT: 0.1 };
 export const ORDER_TIMEOUTS = {
     FULL_PAYMENT: 10 * 60 * 60 * 1000,
     DEPOSIT_RESERVATION: 1 * 60 * 60 * 1000,
-    FUNDS_RELEASE: 48 * 60 * 60 * 1000,
-    SELLER_CONFIRMATION: 48 * 60 * 60 * 1000
+    FUNDS_RELEASE: 2 * 60 * 1000,              // DEMO: 2 phút (Production: 48 * 60 * 60 * 1000)
+    SELLER_CONFIRMATION: 48 * 60 * 60 * 1000,
+    AUTO_COMPLETE: 2 * 60 * 1000               // DEMO: 2 phút (Production: 48 * 60 * 60 * 1000)
 };
 
 export interface IOrderPricing {
