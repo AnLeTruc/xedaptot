@@ -307,7 +307,7 @@ export const completeWithdrawRequest = async (
             await sendWithdrawApprovedEmail(user.email, user.fullName || '', {
                 requestId: withdrawRequest._id.toString(),
                 amount: withdrawRequest.amount,
-                bankInfo: withdrawRequest.bankInfo,
+                bankInfo: withdrawRequest.bankInfo as any,
                 requestedAt: withdrawRequest.createdAt,
                 processedAt,
                 transferReference
@@ -542,7 +542,7 @@ export const rejectWithdrawRequest = async (
             await sendWithdrawRejectedEmail(user.email, user.fullName || '', {
                 requestId: withdrawRequest._id.toString(),
                 amount: withdrawRequest.amount,
-                bankInfo: withdrawRequest.bankInfo,
+                bankInfo: withdrawRequest.bankInfo as any,
                 requestedAt: withdrawRequest.createdAt,
                 processedAt,
                 reason

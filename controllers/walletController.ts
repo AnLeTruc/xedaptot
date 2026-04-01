@@ -5,6 +5,7 @@ import Transaction from '../models/Transaction';
 import WithdrawRequest from '../models/WithdrawRequest';
 import mongoose from 'mongoose';
 import * as notificationService from '../services/notificationService';
+import { sendWithdrawApprovedEmail } from '../services/emailService';
 import { createPaymentUrl, verifyReturnUrl, getResponseMessage } from '../services/vnpayService';
 import { VietQRService } from '../services/vietqrService';
 import { encryptSensitive, maskSensitive } from '../utils/sensitiveData';
@@ -515,6 +516,18 @@ export const createWithdrawRequest = async (
 
         if (strategy.isAuto) {
             notificationService.notifyWithdrawRequestedAuto(userId.toString());
+
+            // Auto-approved withdrawals don't go through admin flow, so send approval email here.
+            if (user?.email) {
+                await sendWithdrawApprovedEmail(user.email, user.fullName || '', {
+                    requestId: withdrawRequest._id.toString(),
+                    amount: withdrawRequest.amount,
+                    bankInfo: withdrawRequest.bankInfo as any,
+                    requestedAt: withdrawRequest.createdAt,
+                    processedAt: withdrawRequest.processedAt || new Date(),
+                    transferReference: withdrawRequest.transferReference
+                });
+            }
         } else {
             notificationService.notifyWithdrawRequestedManual(userId.toString());
             notificationService.notifyAdminWithdrawRequest(
