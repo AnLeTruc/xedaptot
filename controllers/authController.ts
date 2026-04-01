@@ -196,8 +196,63 @@ export const firebaseAuth = async (
             return;
         }
 
-        const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await auth.verifyIdToken(token);
+        let token = authHeader.slice('Bearer '.length).trim();
+
+        if (!token) {
+            res.status(401).json({
+                success: false,
+                message: 'Chưa xác thực'
+            });
+            return;
+        }
+
+        let decodedToken: any;
+        try {
+            decodedToken = await auth.verifyIdToken(token);
+        } catch (error: any) {
+            const code = error?.code || error?.errorInfo?.code;
+
+            if (code === 'auth/id-token-expired') {
+                const providedRefreshToken = req.body?.refreshToken;
+
+                if (providedRefreshToken && process.env.FIREBASE_API_KEY) {
+                    const refreshResponse = await fetch(
+                        `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_API_KEY}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                grant_type: 'refresh_token',
+                                refresh_token: providedRefreshToken,
+                            }),
+                        }
+                    );
+
+                    const refreshData: any = await refreshResponse.json();
+                    if (refreshResponse.ok && refreshData?.id_token) {
+                        token = refreshData.id_token;
+                        decodedToken = await auth.verifyIdToken(token);
+                    } else {
+                        res.status(401).json({
+                            success: false,
+                            code: 'auth/id-token-expired',
+                            message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+                        });
+                        return;
+                    }
+                } else {
+                    res.status(401).json({
+                        success: false,
+                        code: 'auth/id-token-expired',
+                        message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+                    });
+                    return;
+                }
+            } else {
+                throw error;
+            }
+        }
+
         const { uid, email, name, picture } = decodedToken;
 
         const signInProvider = decodedToken.firebase?.sign_in_provider || 'password';
@@ -339,6 +394,16 @@ export const firebaseAuth = async (
         });
     } catch (error: any) {
         console.error('Firebase auth error:', error);
+        const code = error?.code || error?.errorInfo?.code;
+        if (code === 'auth/id-token-expired') {
+            res.status(401).json({
+                success: false,
+                code: 'auth/id-token-expired',
+                message: 'Token đã hết hạn. Vui lòng làm mới token và thử lại.',
+            });
+            return;
+        }
+
         res.status(401).json({
             success: false,
             message: 'Xác thực thất bại'
