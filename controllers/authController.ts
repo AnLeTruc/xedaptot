@@ -784,7 +784,7 @@ export const emailLogin = async (
         }
 
         // If this email exists in DB but belongs to a different Firebase UID, instruct linking.
-        if (existingUserByEmail && existingUserByEmail.firebaseUId !== data.localId) {
+        if (!user && existingUserByEmail && existingUserByEmail.firebaseUId !== data.localId) {
             res.status(409).json({
                 success: false,
                 code: 'auth/account-mismatch',
