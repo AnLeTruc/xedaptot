@@ -258,12 +258,25 @@ export const firebaseAuth = async (
         let name = decodedToken.name as string | undefined;
         let picture = decodedToken.picture as string | undefined;
 
+        // Some tokens omit top-level email but include it under identities.
+        const identityEmails = decodedToken.firebase?.identities?.email as string[] | undefined;
+        if (!email && Array.isArray(identityEmails) && identityEmails[0]) {
+            email = identityEmails[0];
+        }
+
         if (!email) {
             try {
                 const userRecord = await auth.getUser(uid);
                 email = userRecord.email || email;
                 name = name || userRecord.displayName || undefined;
                 picture = picture || userRecord.photoURL || undefined;
+
+                if (!email && Array.isArray(userRecord.providerData)) {
+                    const providerEmail = userRecord.providerData.find((p: any) => p?.email)?.email;
+                    if (providerEmail) {
+                        email = providerEmail;
+                    }
+                }
             } catch (_) {
             }
         }
