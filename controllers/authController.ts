@@ -260,6 +260,10 @@ export const firebaseAuth = async (
             }
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
+            // If user signs in with Google, mark email as verified
+            if (authProvider === 'google' && !existingUser.isVerified) {
+                existingUser.isVerified = true;
+            }
             await existingUser.save();
             //Noti login success
             notificationService.notifyLoggedIn(existingUser._id.toString());
@@ -308,7 +312,8 @@ export const firebaseAuth = async (
             avatarUrl: picture || '',
             roles: ['BUYER'],
             reputationScore: 0,
-            isVerified: false,
+            // auto-verify when registering via Google
+            isVerified: authProvider === 'google',
             isActive: true,
             authProvider
         });
