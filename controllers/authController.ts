@@ -147,7 +147,7 @@ export const verifyEmail = async (
 };
 
 // Helper: Map Firebase provider
-const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'facebook' => {
+const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' => {
     switch (signInProvider) {
         case 'google.com':
             return 'google';
@@ -155,6 +155,24 @@ const mapFirebaseProvider = (signInProvider: string): 'google' | 'email' | 'face
         default:
             return 'email';
     }
+};
+
+const mergeAuthProviders = (
+    current: Array<'google' | 'email'> | undefined,
+    ...toAdd: Array<'google' | 'email' | undefined>
+): Array<'google' | 'email'> => {
+    const merged = new Set<'google' | 'email'>(Array.isArray(current) ? current : []);
+    for (const provider of toAdd) {
+        if (provider) merged.add(provider);
+    }
+    return Array.from(merged);
+};
+
+const userHasEmailPasswordProvider = (user: any): boolean => {
+    if (!user) return false;
+    if (user.authProvider === 'email') return true;
+    const providers = user.authProviders as Array<'google' | 'email'> | undefined;
+    return Array.isArray(providers) && providers.includes('email');
 };
 
 //Helper: Assign free package to new user
@@ -311,45 +329,11 @@ export const firebaseAuth = async (
                 });
                 return;
             }
-
-            if (existingUser.authProvider !== authProvider) {
-                console.warn('[Auth][Firebase] Provider mismatch for email', {
-                    uid,
-                    existingAuthProvider: existingUser.authProvider,
-                    requestAuthProvider: authProvider,
-                });
-
-                // Best-effort: If the Firebase user has a linked provider that conflicts with
-                // the system record, attempt to unlink to avoid future confusion.
-                try {
-                    const firebaseUser = await auth.getUser(uid);
-                    const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
-
-                    if (linkedProviders.includes('google.com') && existingUser.authProvider === 'email') {
-                        await auth.updateUser(uid, {
-                            providersToUnlink: ['google.com']
-                        });
-                    }
-                } catch (e) {
-                    console.warn('[Auth][Firebase] Best-effort provider unlink failed', {
-                        uid,
-                        code: (e as any)?.code || (e as any)?.errorInfo?.code,
-                        message: (e as any)?.message,
-                    });
-                }
-
-                res.status(400).json({
-                    success: false,
-                    code: 'auth/provider-mismatch',
-                    message: `Email đã đăng ký với ${existingUser.authProvider}.`
-                });
-                return;
-            }
             if (existingUser.firebaseUId !== uid) {
                 res.status(400).json({
                     success: false,
                     code: 'auth/account-mismatch',
-                    message: `Email đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng đúng tài khoản để đăng nhập.`
+                    message: 'Email này đã tồn tại trong hệ thống nhưng thuộc về một tài khoản khác. Vui lòng đăng nhập bằng phương thức bạn đã dùng trước đó, sau đó liên kết thêm Google/Email trong phần Cài đặt tài khoản.'
                 });
                 return;
             }
@@ -373,6 +357,13 @@ export const firebaseAuth = async (
             }
             existingUser.fullName = name || existingUser.fullName;
             existingUser.avatarUrl = picture || existingUser.avatarUrl;
+            existingUser.authProviders = mergeAuthProviders(
+                (existingUser as any).authProviders,
+                existingUser.authProvider,
+                authProvider
+            ) as any;
+            // Keep authProvider for backward compatibility (treated as last-used provider)
+            existingUser.authProvider = authProvider;
             // If user signs in with Google, mark email as verified
             if (authProvider === 'google' && !existingUser.isVerified) {
                 existingUser.isVerified = true;
@@ -392,6 +383,7 @@ export const firebaseAuth = async (
                     roles: existingUser.roles,
                     isVerified: existingUser.isVerified,
                     authProvider: existingUser.authProvider,
+                    authProviders: (existingUser as any).authProviders,
                     idToken: tokenData.idToken,
                     refreshToken: tokenData.refreshToken,
                     expiresIn: tokenData.expiresIn,
@@ -428,7 +420,8 @@ export const firebaseAuth = async (
             // auto-verify when registering via Google
             isVerified: authProvider === 'google',
             isActive: true,
-            authProvider
+            authProvider,
+            authProviders: [authProvider]
         });
         await assignFreePackage(newUser._id);
         //Noti create google success
@@ -445,6 +438,7 @@ export const firebaseAuth = async (
                 roles: newUser.roles,
                 isVerified: newUser.isVerified,
                 authProvider: newUser.authProvider,
+                authProviders: (newUser as any).authProviders,
                 idToken: tokenData.idToken,
                 refreshToken: tokenData.refreshToken,
                 expiresIn: tokenData.expiresIn,
@@ -638,7 +632,7 @@ export const emailRegister = async (
         if (existingUser) {
             res.status(400).json({
                 success: false,
-                message: `Email đã được đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
+                message: 'Email này đã tồn tại. Vui lòng đăng nhập vào tài khoản hiện có và liên kết thêm mật khẩu trong phần Cài đặt tài khoản (Thêm mật khẩu).'
             });
             return;
         }
@@ -671,7 +665,8 @@ export const emailRegister = async (
             reputationScore: 0,
             isVerified: false,
             isActive: true,
-            authProvider: 'email'
+            authProvider: 'email',
+            authProviders: ['email']
         });
 
         await assignFreePackage(newUser._id);
@@ -688,6 +683,7 @@ export const emailRegister = async (
                 avatarUrl: newUser.avatarUrl,
                 roles: newUser.roles,
                 authProvider: newUser.authProvider,
+                authProviders: (newUser as any).authProviders,
                 isVerified: newUser.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
@@ -719,14 +715,7 @@ export const emailLogin = async (
             return;
         }
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser && existingUser.authProvider !== 'email') {
-            res.status(400).json({
-                success: false,
-                message: `Email này đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
-            });
-            return;
-        }
+        const existingUserByEmail = await User.findOne({ email });
 
         const response = await fetch(`${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`, {
             method: 'POST',
@@ -784,6 +773,26 @@ export const emailLogin = async (
             return;
         }
 
+        // If this email exists in DB but belongs to a different Firebase UID, instruct linking.
+        if (existingUserByEmail && existingUserByEmail.firebaseUId !== data.localId) {
+            res.status(409).json({
+                success: false,
+                code: 'auth/account-mismatch',
+                message: 'Email này đã tồn tại trong hệ thống nhưng thuộc về một tài khoản khác. Vui lòng đăng nhập bằng phương thức bạn đã dùng trước đó, sau đó liên kết thêm Email/Password trong phần Cài đặt tài khoản.'
+            });
+            return;
+        }
+
+        if (user) {
+            (user as any).authProviders = mergeAuthProviders(
+                (user as any).authProviders,
+                (user as any).authProvider,
+                'email'
+            );
+            (user as any).authProvider = 'email';
+            await user.save();
+        }
+
         res.status(200).json({
             success: true,
             message: 'Đăng nhập thành công',
@@ -794,6 +803,7 @@ export const emailLogin = async (
                 avatarUrl: user?.avatarUrl,
                 roles: user?.roles,
                 authProvider: user?.authProvider,
+                authProviders: (user as any)?.authProviders,
                 isVerified: user?.isVerified,
                 idToken: data.idToken,
                 refreshToken: data.refreshToken,
@@ -1233,7 +1243,7 @@ export const forgotPassword = async (
         genericOk();
         return;
     }
-    if (user.authProvider !== 'email') {
+    if (!userHasEmailPasswordProvider(user)) {
         genericOk();
         return;
     }
@@ -1288,7 +1298,7 @@ export const verifyResetCode = async (
     })
         .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
 
-    if (!user || user.authProvider !== 'email') {
+    if (!user || !userHasEmailPasswordProvider(user)) {
         res.status(400).json({
             success: false,
             message: 'Mã không hợp lệ'
@@ -1375,7 +1385,7 @@ export const resetPassword = async (
     const user = await User.findOne({ email: String(email).toLowerCase() })
         .select('+passwordResetTokenHash +passwordResetTokenExpires');
 
-    if (!user || user.authProvider !== 'email') {
+    if (!user || !userHasEmailPasswordProvider(user)) {
         res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
@@ -1440,11 +1450,11 @@ export const changePassword = async (
             return;
         }
 
-        // Only email-registered users can change password
-        if (user.authProvider !== 'email') {
+        // Only users with password provider linked can change password
+        if (!userHasEmailPasswordProvider(user)) {
             res.status(400).json({
                 success: false,
-                message: 'Đổi mật khẩu chỉ khả dụng cho tài khoản đăng ký bằng email'
+                message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
             });
             return;
         }

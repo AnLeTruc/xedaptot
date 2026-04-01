@@ -20,6 +20,7 @@ export interface IUser {
     isVerified: boolean;
     isActive: boolean;
     authProvider: 'google' | 'email';
+    authProviders?: Array<'google' | 'email'>;
     emailVerificationToken?: string;
     emailVerificationExpires?: Date;
     passwordResetCodeHash?: string;

@@ -80,6 +80,11 @@ const userSchema = new Schema<IUserDocument>(
             enum: ['google', 'email'],
             required: [true, 'Auth provider is required'],
         },
+        authProviders: {
+            type: [String],
+            enum: ['google', 'email'],
+            default: undefined,
+        },
         passwordResetCodeHash: {
             type: String,
             select: false
