@@ -206,6 +206,7 @@ export const firebaseAuth = async (
 
         // Have user with same mail
         if (existingUser) {
+<<<<<<< Updated upstream
             if (existingUser.authProvider !== authProvider) {
                 const firebaseUser = await auth.getUser(uid);
                 const linkedProviders = firebaseUser.providerData.map((p: any) => p.providerId);
@@ -222,12 +223,22 @@ export const firebaseAuth = async (
                 });
                 return;
             }
-            if (existingUser.firebaseUId !== uid) {
-                res.status(400).json({
+=======
+            // Block deactivated users
+            if (!existingUser.isActive) {
+                res.status(401).json({
                     success: false,
-                    message: `Email đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng đúng tài khoản để đăng nhập.`
+                    message: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.',
+                    isDeactivated: true
                 });
                 return;
+            }
+
+            // Cho phép đăng nhập cross-provider (email user login Google hoặc ngược lại)
+            // Firebase đã xác thực token, chỉ cần cập nhật firebaseUId nếu thay đổi
+>>>>>>> Stashed changes
+            if (existingUser.firebaseUId !== uid) {
+                existingUser.firebaseUId = uid;
             }
 
             const customToken = await auth.createCustomToken(uid);
@@ -580,15 +591,8 @@ export const emailLogin = async (
             return;
         }
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser && existingUser.authProvider !== 'email') {
-            res.status(400).json({
-                success: false,
-                message: `Email này đã đăng ký với ${existingUser.authProvider}. Vui lòng sử dụng ${existingUser.authProvider} để đăng nhập.`
-            });
-            return;
-        }
-
+        // Không block theo authProvider nữa - Firebase tự validate password
+        // Nếu user Google chưa link password, Firebase sẽ trả INVALID_LOGIN_CREDENTIALS
         const response = await fetch(`${FIREBASE_AUTH_URL}:signInWithPassword?key=${FIREBASE_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -612,7 +616,8 @@ export const emailLogin = async (
                         if (linkedProviders.includes('google.com') && !linkedProviders.includes('password')) {
                             res.status(401).json({
                                 success: false,
-                                message: 'Tài khoản của bạn đã bị ảnh hưởng bởi đăng nhập Google. Vui lòng đặt lại mật khẩu.'
+                                message: 'Tài khoản này đăng ký bằng Google và chưa có mật khẩu. Vui lòng đăng nhập bằng Google hoặc thêm mật khẩu trong trang cá nhân.',
+                                needsPasswordLink: true
                             });
                             return;
                         }
@@ -633,7 +638,16 @@ export const emailLogin = async (
             return;
         }
 
-        const user = await User.findOne({ firebaseUId: data.localId });
+        // Tìm user bằng firebaseUId, nếu không có thì tìm bằng email (cross-provider login)
+        let user = await User.findOne({ firebaseUId: data.localId });
+        if (!user) {
+            user = await User.findOne({ email });
+            if (user) {
+                // Cập nhật firebaseUId cho cross-provider login
+                user.firebaseUId = data.localId;
+                await user.save();
+            }
+        }
 
         res.status(200).json({
             success: true,
