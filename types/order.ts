@@ -29,7 +29,7 @@ export const ORDER_TIMEOUTS = {
     DEPOSIT_RESERVATION: 1 * 60 * 60 * 1000,
     FUNDS_RELEASE: 2 * 60 * 1000,              // DEMO: 2 phút (Production: 48 * 60 * 60 * 1000)
     SELLER_CONFIRMATION: 48 * 60 * 60 * 1000,
-    AUTO_COMPLETE: 4 * 60 * 1000               // DEMO: 2 phút (Production: 48 * 60 * 60 * 1000)
+    AUTO_COMPLETE: 10 * 60 * 1000               // DEMO: 10 phút (Production: 48 * 60 * 60 * 1000)
 };
 
 export interface IOrderPricing {
