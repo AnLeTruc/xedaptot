@@ -253,7 +253,28 @@ export const firebaseAuth = async (
             }
         }
 
-        const { uid, email, name, picture } = decodedToken;
+        const uid = decodedToken.uid as string;
+        let email = decodedToken.email as string | undefined;
+        let name = decodedToken.name as string | undefined;
+        let picture = decodedToken.picture as string | undefined;
+
+        if (!email) {
+            try {
+                const userRecord = await auth.getUser(uid);
+                email = userRecord.email || email;
+                name = name || userRecord.displayName || undefined;
+                picture = picture || userRecord.photoURL || undefined;
+            } catch (_) {
+            }
+        }
+
+        if (!email) {
+            res.status(400).json({
+                success: false,
+                message: 'Không lấy được email từ tài khoản Google/Firebase. Vui lòng cấp quyền email hoặc dùng phương thức đăng nhập khác.',
+            });
+            return;
+        }
 
         const signInProvider = decodedToken.firebase?.sign_in_provider || 'password';
         const authProvider = mapFirebaseProvider(signInProvider);
@@ -362,7 +383,7 @@ export const firebaseAuth = async (
         }
         const newUser = await User.create({
             firebaseUId: uid,
-            email: email || '',
+            email,
             fullName: name || '',
             avatarUrl: picture || '',
             roles: ['BUYER'],
