@@ -188,6 +188,10 @@ export const getConversations = async (
                     readStatus: 1,
                     updatedAt: 1,
                     createdAt: 1,
+                    violationCount: 1,
+                    lockedStatus: 1,
+                    lockedUntil: 1,
+                    lockedReason: 1,
                     lastMessage: {
                         _id: '$lastMessageInfo._id',
                         content: '$lastMessageInfo.content',
@@ -864,6 +868,10 @@ export const getHiddenConversations = async (
                     updatedAt: 1,
                     createdAt: 1,
                     hiddenAt: 1,
+                    violationCount: 1,
+                    lockedStatus: 1,
+                    lockedUntil: 1,
+                    lockedReason: 1,
                     lastMessage: {
                         _id: '$lastMessageInfo._id',
                         content: '$lastMessageInfo.content',
