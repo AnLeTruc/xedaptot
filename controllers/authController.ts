@@ -1253,7 +1253,7 @@ export const forgotPassword = async (
         genericOk();
         return;
     }
-    if (!userHasEmailPasswordProvider(user)) {
+    if (user.authProvider !== 'email') {
         genericOk();
         return;
     }
@@ -1308,7 +1308,7 @@ export const verifyResetCode = async (
     })
         .select('+passwordResetCodeHash +passwordResetExpires +passwordResetAttempts +passwordResetVerifiedAt');
 
-    if (!user || !userHasEmailPasswordProvider(user)) {
+    if (!user || user.authProvider !== 'email') {
         res.status(400).json({
             success: false,
             message: 'Mã không hợp lệ'
@@ -1395,7 +1395,7 @@ export const resetPassword = async (
     const user = await User.findOne({ email: String(email).toLowerCase() })
         .select('+passwordResetTokenHash +passwordResetTokenExpires');
 
-    if (!user || !userHasEmailPasswordProvider(user)) {
+    if (!user || user.authProvider !== 'email') {
         res.status(400).json({ success: false, message: 'Token đặt lại không hợp lệ' });
         return;
     }
@@ -1460,37 +1460,14 @@ export const changePassword = async (
             return;
         }
 
-        // Only users with password provider linked can change password
-        if (!userHasEmailPasswordProvider(user)) {
-            try {
-                const firebaseUser = await auth.getUser(user.firebaseUId);
-                const linkedProviders = (firebaseUser.providerData || []).map((p: any) => p?.providerId);
-                const hasPasswordProvider = linkedProviders.includes('password');
-
-                if (hasPasswordProvider) {
-                    await User.findByIdAndUpdate(user._id, {
-                        $set: {
-                            authProviders: mergeAuthProviders(
-                                (user as any).authProviders,
-                                (user as any).authProvider,
-                                'email'
-                            ),
-                        },
-                    });
-                } else {
-                    res.status(400).json({
-                        success: false,
-                        message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
-                    });
-                    return;
-                }
-            } catch (_) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
-                });
-                return;
-            }
+        // Only email-registered users can change password
+        // Google users are managed by Google — no password change allowed
+        if (user.authProvider === 'google') {
+            res.status(400).json({
+                success: false,
+                message: 'Tài khoản đăng ký bằng Google không hỗ trợ đổi mật khẩu. Mật khẩu được quản lý bởi Google.'
+            });
+            return;
         }
 
         // Cooldown: require passwordChangedAt field
