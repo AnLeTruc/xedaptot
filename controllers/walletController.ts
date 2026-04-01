@@ -180,17 +180,17 @@ export const depositToWallet = async (
         const txnRef = generateCode('DEP');
 
         await Transaction.create({
-            transactionCode: txnRef,      
+            transactionCode: txnRef,
             paymentMethod: 'VNPAY',
             walletId: wallet._id,
             type: 'DEPOSIT',
             amount,
             balanceBefore: wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance,
-            balanceAfter: 0,           
+            balanceAfter: 0,
             description: `Deposit ${amount.toLocaleString()} VND to wallet via VNPay`,
             paymentGateway: 'VNPAY',
-            gatewayTransactionId: '',       
-            gatewayResponseCode: '',          
+            gatewayTransactionId: '',
+            gatewayResponseCode: '',
             data: { status: 'PENDING', userId: userId.toString() },
         });
 
@@ -202,10 +202,10 @@ export const depositToWallet = async (
         // Gọi VNPay service tạo URL
         const paymentUrl = createPaymentUrl({
             amount,
-            orderId: txnRef,                     
+            orderId: txnRef,
             orderInfo: `Deposit+${txnRef}`,
             ipAddr,
-            bankCode,                        
+            bankCode,
         });
 
         res.status(200).json({
@@ -514,11 +514,9 @@ export const createWithdrawRequest = async (
         await session.commitTransaction();
 
         if (strategy.isAuto) {
-            setTimeout(() => {
-                notificationService.notifyWithdrawApproved(userId.toString());
-            }, AUTO_TRANSFER_DELAY_MS);
+            notificationService.notifyWithdrawRequestedAuto(userId.toString());
         } else {
-            notificationService.notifyWithdrawRequested(userId.toString());
+            notificationService.notifyWithdrawRequestedManual(userId.toString());
             notificationService.notifyAdminWithdrawRequest(
                 req.user!.fullName || req.user!.email,
                 amount
