@@ -3,9 +3,56 @@ import { AuthRequest } from '../types';
 import BankAccount from '../models/BankAccount';
 import User from '../models/User';
 import { compareNames } from '../utils/nameUtils';
+import { decryptSensitive, encryptSensitive, hashSensitive, maskSensitive } from '../utils/sensitiveData';
 
 
 const MAX_BANK_ACCOUNTS = 10;
+
+const sanitizeBankAccount = (
+    bankAccount: any,
+    opts?: { isAdmin?: boolean; plainAccountNumberForAdmin?: string }
+): any => {
+    if (!bankAccount) return bankAccount;
+    const plain = typeof bankAccount.toObject === 'function' ? bankAccount.toObject() : bankAccount;
+
+    const isAdmin = Boolean(opts?.isAdmin);
+    let fullAccountNumber: string | undefined = opts?.plainAccountNumberForAdmin;
+
+    const looksLikeHash = (value: string): boolean => {
+        const v = `${value ?? ''}`.trim();
+        return /^[a-f0-9]{64}$/i.test(v);
+    };
+
+    if (isAdmin && !fullAccountNumber && plain.accountNumberEncrypted) {
+        try {
+            fullAccountNumber = decryptSensitive(plain.accountNumberEncrypted);
+        } catch (_) {
+        }
+    }
+
+    if (isAdmin && !fullAccountNumber && plain.accountNumber && !looksLikeHash(plain.accountNumber)) {
+        fullAccountNumber = plain.accountNumber;
+    }
+
+    if (isAdmin) {
+        if (fullAccountNumber) {
+            plain.accountNumber = fullAccountNumber;
+        } else if (plain.accountNumberMasked) {
+            plain.accountNumber = plain.accountNumberMasked;
+        }
+    } else {
+        if (plain.accountNumberMasked) {
+            plain.accountNumber = plain.accountNumberMasked;
+        } else if (plain.accountNumber) {
+            plain.accountNumber = maskSensitive(plain.accountNumber, 3);
+        }
+    }
+
+    if (plain.accountNumberEncrypted) delete plain.accountNumberEncrypted;
+    if (plain.accountNumberMasked) delete plain.accountNumberMasked;
+
+    return plain;
+};
 
 
 /**
@@ -17,6 +64,7 @@ export const addBankAccount = async (
     res: Response
 ): Promise<void> => {
     try {
+        const isAdmin = Boolean(req.user?.roles?.includes('ADMIN'));
         const userId = req.user!._id;
         const { bankName, accountNumber, accountOwner, isDefault } = req.body;
 
@@ -67,7 +115,9 @@ export const addBankAccount = async (
         const bankAccount = await BankAccount.create({
             userId,
             bankName,
-            accountNumber,
+            accountNumber: hashSensitive(accountNumber),
+            accountNumberEncrypted: encryptSensitive(accountNumber),
+            accountNumberMasked: maskSensitive(accountNumber, 3),
             accountOwner,
             isDefault: shouldDefault,
             status: 'ACTIVE',
@@ -77,7 +127,7 @@ export const addBankAccount = async (
         res.status(201).json({
             success: true,
             message: 'Thêm tài khoản ngân hàng thành công',
-            data: bankAccount
+            data: sanitizeBankAccount(bankAccount, { isAdmin, plainAccountNumberForAdmin: accountNumber })
         });
     } catch (error: any) {
         // Duplicate key error
@@ -104,18 +154,26 @@ export const getBankAccounts = async (
     res: Response
 ): Promise<void> => {
     try {
+        const isAdmin = Boolean(req.user?.roles?.includes('ADMIN'));
         const userId = req.user!._id;
         const { status } = req.query;
 
         const filter: any = { userId };
         if (status) filter.status = status;
 
-        const bankAccounts = await BankAccount.find(filter)
-            .sort({ isDefault: -1, createdAt: -1 });
+        const query = BankAccount.find(filter)
+            .sort({ isDefault: -1, createdAt: -1 })
+            .select('+accountNumber');
+
+        if (isAdmin) {
+            query.select('+accountNumberEncrypted');
+        }
+
+        const bankAccounts = await query;
 
         res.status(200).json({
             success: true,
-            data: bankAccounts
+            data: bankAccounts.map((b: any) => sanitizeBankAccount(b, { isAdmin }))
         });
     } catch (error: any) {
         res.status(500).json({
@@ -134,10 +192,16 @@ export const getBankAccountById = async (
     res: Response
 ): Promise<void> => {
     try {
+        const isAdmin = Boolean(req.user?.roles?.includes('ADMIN'));
         const userId = req.user!._id;
         const { id } = req.params;
 
-        const bankAccount = await BankAccount.findOne({ _id: id, userId });
+        const query = BankAccount.findOne({ _id: id, userId }).select('+accountNumber');
+        if (isAdmin) {
+            query.select('+accountNumberEncrypted');
+        }
+
+        const bankAccount = await query;
         if (!bankAccount) {
             res.status(404).json({
                 success: false,
@@ -148,7 +212,7 @@ export const getBankAccountById = async (
 
         res.status(200).json({
             success: true,
-            data: bankAccount
+            data: sanitizeBankAccount(bankAccount, { isAdmin })
         });
     } catch (error: any) {
         res.status(500).json({
@@ -169,6 +233,7 @@ export const updateBankAccount = async (
     res: Response
 ): Promise<void> => {
     try {
+        const isAdmin = Boolean(req.user?.roles?.includes('ADMIN'));
         const userId = req.user!._id;
         const { id } = req.params;
         const { bankName, accountNumber, accountOwner, isDefault, status } = req.body;
@@ -208,7 +273,11 @@ export const updateBankAccount = async (
         }
 
         if (bankName !== undefined) bankAccount.bankName = bankName;
-        if (accountNumber !== undefined) bankAccount.accountNumber = accountNumber;
+        if (accountNumber !== undefined) {
+            (bankAccount as any).accountNumber = hashSensitive(accountNumber);
+            (bankAccount as any).accountNumberEncrypted = encryptSensitive(accountNumber);
+            (bankAccount as any).accountNumberMasked = maskSensitive(accountNumber, 3);
+        }
         if (status !== undefined) bankAccount.status = status;
 
         // Handle default flag
@@ -225,7 +294,7 @@ export const updateBankAccount = async (
         res.status(200).json({
             success: true,
             message: 'Cập nhật tài khoản ngân hàng thành công',
-            data: bankAccount
+            data: sanitizeBankAccount(bankAccount, { isAdmin, plainAccountNumberForAdmin: accountNumber })
         });
     } catch (error: any) {
         if (error?.code === 11000) {
@@ -296,10 +365,16 @@ export const setDefaultBankAccount = async (
     res: Response
 ): Promise<void> => {
     try {
+        const isAdmin = Boolean(req.user?.roles?.includes('ADMIN'));
         const userId = req.user!._id;
         const { id } = req.params;
 
-        const bankAccount = await BankAccount.findOne({ _id: id, userId, status: 'ACTIVE' });
+        const query = BankAccount.findOne({ _id: id, userId, status: 'ACTIVE' }).select('+accountNumber');
+        if (isAdmin) {
+            query.select('+accountNumberEncrypted');
+        }
+
+        const bankAccount = await query;
         if (!bankAccount) {
             res.status(404).json({
                 success: false,
@@ -321,7 +396,7 @@ export const setDefaultBankAccount = async (
         res.status(200).json({
             success: true,
             message: 'Đặt tài khoản ngân hàng mặc định thành công',
-            data: bankAccount
+            data: sanitizeBankAccount(bankAccount, { isAdmin })
         });
     } catch (error: any) {
         res.status(500).json({

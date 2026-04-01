@@ -5,7 +5,9 @@ export type BankAccountStatus = 'ACTIVE' | 'INACTIVE';
 export interface IBankAccount {
     userId: Types.ObjectId;
     bankName: string;           // Ví dụ: "Vietcombank"
-    accountNumber: string;      // Ví dụ: "0123456789"
+    accountNumber: string;
+    accountNumberEncrypted: string;
+    accountNumberMasked: string;
     accountOwner: string;       // Phải khớp với tên KYC
     isDefault: boolean;         // Mặc định để rút tiền
     status: BankAccountStatus;

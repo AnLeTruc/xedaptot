@@ -7,7 +7,7 @@ import Wallet from '../../models/Wallet';
 import WithdrawRequest from '../../models/WithdrawRequest';
 import { sendWithdrawApprovedEmail, sendWithdrawRejectedEmail } from '../../services/emailService';
 import { isValidateObjectId } from '../../validations/customValidation';
-import { maskSensitive } from '../../utils/sensitiveData';
+import { decryptSensitive } from '../../utils/sensitiveData';
 
 import * as notificationService from '../../services/notificationService';
 
@@ -34,12 +34,12 @@ const sanitizeWithdrawRequest = (request: any) => {
     }
 
     const plain = typeof request.toObject === 'function' ? request.toObject() : request;
-    const maskedAccountNumber = plain?.bankInfo?.accountNumberMasked;
-
     if (plain?.bankInfo?.accountNumber) {
-        plain.bankInfo.accountNumber = maskedAccountNumber
-            ? maskedAccountNumber
-            : maskSensitive(plain.bankInfo.accountNumber);
+        try {
+            plain.bankInfo.accountNumber = decryptSensitive(plain.bankInfo.accountNumber);
+        } catch (_) {
+            // Legacy/plain data fallback: keep as-is
+        }
     }
 
     if (plain?.bankInfo?.accountNumberMasked) {

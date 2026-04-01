@@ -20,7 +20,21 @@ const bankAccountSchema = new Schema<IBankAccountDocument>(
             type: String,
             required: [true, 'Số tài khoản là bắt buộc'],
             trim: true,
-            maxlength: [30, 'Số tài khoản không vượt quá 30 ký tự']
+            // NOTE: this is stored as a keyed hash (not plaintext)
+            select: false,
+            maxlength: [128, 'Số tài khoản không vượt quá 128 ký tự']
+        },
+        accountNumberEncrypted: {
+            type: String,
+            required: [true, 'Số tài khoản (mã hoá) là bắt buộc'],
+            select: false,
+            trim: true
+        },
+        accountNumberMasked: {
+            type: String,
+            required: [true, 'Số tài khoản (ẩn) là bắt buộc'],
+            trim: true,
+            maxlength: [64, 'Số tài khoản (ẩn) không vượt quá 64 ký tự']
         },
         accountOwner: {
             type: String,
