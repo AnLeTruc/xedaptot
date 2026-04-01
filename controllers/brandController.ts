@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Brand from '../models/Brand';
+import Bicycle from '../models/Bicycle';
 
 //Get all brands
 export const getAllBrands = async (
@@ -131,6 +132,17 @@ export const updateBrand = async (
         const id = req.params.id as string;
         const { name, country, imageUrl, isActive } = req.body;
 
+        if (isActive === false) {
+            const hasBicycles = await Bicycle.exists({ 'brand._id': id });
+            if (hasBicycles) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Không thể ẩn thương hiệu này vì đang có xe đạp gắn với nó'
+                });
+                return;
+            }
+        }
+
         const updateData: any = {};
         if (name !== undefined) updateData.name = name.trim();
         if (country !== undefined) updateData.country = country.trim();
@@ -179,6 +191,15 @@ export const deleteBrand = async (
 ): Promise<void> => {
     try {
         const id = req.params.id as string;
+
+        const hasBicycles = await Bicycle.exists({ 'brand._id': id });
+        if (hasBicycles) {
+            res.status(400).json({
+                success: false,
+                message: 'Không thể xoá thương hiệu này vì đang có xe đạp gắn với nó'
+            });
+            return;
+        }
 
         const deletedBrand = await Brand.findByIdAndDelete(id);
 
