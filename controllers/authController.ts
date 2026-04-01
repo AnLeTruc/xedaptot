@@ -1462,11 +1462,35 @@ export const changePassword = async (
 
         // Only users with password provider linked can change password
         if (!userHasEmailPasswordProvider(user)) {
-            res.status(400).json({
-                success: false,
-                message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
-            });
-            return;
+            try {
+                const firebaseUser = await auth.getUser(user.firebaseUId);
+                const linkedProviders = (firebaseUser.providerData || []).map((p: any) => p?.providerId);
+                const hasPasswordProvider = linkedProviders.includes('password');
+
+                if (hasPasswordProvider) {
+                    await User.findByIdAndUpdate(user._id, {
+                        $set: {
+                            authProviders: mergeAuthProviders(
+                                (user as any).authProviders,
+                                (user as any).authProvider,
+                                'email'
+                            ),
+                        },
+                    });
+                } else {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
+                    });
+                    return;
+                }
+            } catch (_) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Tài khoản của bạn chưa thiết lập mật khẩu. Vui lòng thêm mật khẩu trong phần Cài đặt tài khoản.'
+                });
+                return;
+            }
         }
 
         // Cooldown: require passwordChangedAt field
@@ -1485,6 +1509,22 @@ export const changePassword = async (
         }
 
         const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({
+                success: false,
+                message: 'Mật khẩu hiện tại và mật khẩu mới là bắt buộc'
+            });
+            return;
+        }
+
+        if (String(newPassword).length < 6) {
+            res.status(400).json({
+                success: false,
+                message: 'Mật khẩu phải có ít nhất 6 ký tự'
+            });
+            return;
+        }
 
         // Verify current password via Firebase REST API
         const verifyResponse = await fetch(
