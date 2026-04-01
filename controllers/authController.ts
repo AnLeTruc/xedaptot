@@ -332,7 +332,7 @@ export const firebaseAuth = async (
 
             // Cho phép đăng nhập cross-provider (email user login Google hoặc ngược lại)
             // Firebase đã xác thực token, chỉ cần cập nhật firebaseUId nếu thay đổi
-            if (existingUser.firebaseUId !== uid) {
+            if (existingUser.firebaseUId) {
                 existingUser.firebaseUId = uid;
             }
 
@@ -361,7 +361,7 @@ export const firebaseAuth = async (
                 authProvider
             ) as any;
             // Keep authProvider for backward compatibility (treated as last-used provider)
-            existingUser.authProvider = authProvider;
+            // existingUser.authProvider = authProvider;
             // If user signs in with Google, mark email as verified
             if (authProvider === 'google' && !existingUser.isVerified) {
                 existingUser.isVerified = true;
