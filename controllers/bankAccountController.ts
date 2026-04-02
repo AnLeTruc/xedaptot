@@ -73,6 +73,7 @@ export const addBankAccount = async (
         const accountNumberClean = `${accountNumber ?? ''}`.trim();
         const accountOwnerClean = `${accountOwner ?? ''}`.trim();
         const bankNameNormalized = normalizeBankName(bankNameClean);
+        const accountNumberHash = hashSensitive(accountNumberClean);
 
         // Check KYC status
         const user = await User.findById(userId);
@@ -118,11 +119,24 @@ export const addBankAccount = async (
             );
         }
 
+        // System-wide duplicate guard (in case DB unique index isn't created yet)
+        const alreadyLinked = await BankAccount.exists({
+            bankNameNormalized,
+            accountNumber: accountNumberHash,
+        });
+        if (alreadyLinked) {
+            res.status(400).json({
+                success: false,
+                message: 'Số tài khoản ngân hàng này đã được liên kết bởi người dùng khác.'
+            });
+            return;
+        }
+
         const bankAccount = await BankAccount.create({
             userId,
             bankName: bankNameClean,
             bankNameNormalized,
-            accountNumber: hashSensitive(accountNumberClean),
+            accountNumber: accountNumberHash,
             accountNumberEncrypted: encryptSensitive(accountNumberClean),
             accountNumberMasked: maskSensitive(accountNumberClean, 3),
             accountOwner: accountOwnerClean,
@@ -303,6 +317,26 @@ export const updateBankAccount = async (
                 { $set: { isDefault: false } }
             );
             bankAccount.isDefault = true;
+        }
+
+        // System-wide duplicate guard (in case DB unique index isn't created yet)
+        if (bankName !== undefined || accountNumber !== undefined) {
+            const nextBankNameNormalized = normalizeBankName(`${(bankAccount as any).bankName ?? ''}`);
+            const nextAccountNumberHash = `${(bankAccount as any).accountNumber ?? ''}`;
+
+            const conflict = await BankAccount.exists({
+                _id: { $ne: bankAccount._id },
+                bankNameNormalized: nextBankNameNormalized,
+                accountNumber: nextAccountNumberHash,
+            });
+
+            if (conflict) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Số tài khoản ngân hàng này đã được liên kết bởi người dùng khác.'
+                });
+                return;
+            }
         }
 
         await bankAccount.save();
