@@ -276,13 +276,30 @@ export const packageVnpayReturn = async (req: Request, res: Response): Promise<v
             ? wallet.totalEarn - wallet.totalWithdrawn - wallet.frozenBalance
             : transaction.balanceBefore;
 
-        // Tạo UserPackage
+        // Cộng dồn số lượt đăng chưa xài từ các gói cũ
+        const oldPackages = await UserPackage.find({
+            userId,
+            postRemaining: { $gt: 0 },
+            status: { $in: ['ACTIVE', 'CANCELLED'] }
+        });
+
+        const accumulatedPosts = oldPackages.reduce((sum, pkg) => sum + pkg.postRemaining, 0);
+
+        // Reset số lượt của các gói cũ về 0 để tránh tính trùng
+        if (accumulatedPosts > 0) {
+            await UserPackage.updateMany(
+                { _id: { $in: oldPackages.map(p => p._id) } },
+                { $set: { postRemaining: 0 } }
+            );
+        }
+
+        // Tạo UserPackage mới với tổng lượt đăng (Gói mới + Lượt cũ dồn sang)
         const userPackage = await UserPackage.create({
             userId,
             packageId,
             package: packageSnapshot,
             postedUsed: 0,
-            postRemaining: packageSnapshot.postLimit,
+            postRemaining: packageSnapshot.postLimit + accumulatedPosts,
             status: 'ACTIVE',
             purchasedAt: new Date(),
             transactionId: transaction._id,
