@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types';
 import BankAccount from '../models/BankAccount';
 import User from '../models/User';
-import { compareNames } from '../utils/nameUtils';
+import { compareNames, normalizeBankName } from '../utils/nameUtils';
 import { decryptSensitive, encryptSensitive, hashSensitive, maskSensitive } from '../utils/sensitiveData';
 
 
@@ -50,6 +50,7 @@ const sanitizeBankAccount = (
 
     if (plain.accountNumberEncrypted) delete plain.accountNumberEncrypted;
     if (plain.accountNumberMasked) delete plain.accountNumberMasked;
+    if (plain.bankNameNormalized) delete plain.bankNameNormalized;
 
     return plain;
 };
@@ -68,6 +69,11 @@ export const addBankAccount = async (
         const userId = req.user!._id;
         const { bankName, accountNumber, accountOwner, isDefault } = req.body;
 
+        const bankNameClean = `${bankName ?? ''}`.trim();
+        const accountNumberClean = `${accountNumber ?? ''}`.trim();
+        const accountOwnerClean = `${accountOwner ?? ''}`.trim();
+        const bankNameNormalized = normalizeBankName(bankNameClean);
+
         // Check KYC status
         const user = await User.findById(userId);
         if (!user || user.kycStatus !== 'VERIFIED') {
@@ -79,13 +85,13 @@ export const addBankAccount = async (
         }
 
         // Compare accountOwner with KYC name
-        if (!compareNames(accountOwner, user.kycFullName || '')) {
+        if (!compareNames(accountOwnerClean, user.kycFullName || '')) {
             res.status(400).json({
                 success: false,
                 message: 'Tên chủ tài khoản phải trùng khớp với tên trên CCCD đã xác thực KYC.',
                 data: {
                     kycFullName: user.kycFullName,
-                    inputName: accountOwner
+                    inputName: accountOwnerClean
                 }
             });
             return;
@@ -114,11 +120,12 @@ export const addBankAccount = async (
 
         const bankAccount = await BankAccount.create({
             userId,
-            bankName,
-            accountNumber: hashSensitive(accountNumber),
-            accountNumberEncrypted: encryptSensitive(accountNumber),
-            accountNumberMasked: maskSensitive(accountNumber, 3),
-            accountOwner,
+            bankName: bankNameClean,
+            bankNameNormalized,
+            accountNumber: hashSensitive(accountNumberClean),
+            accountNumberEncrypted: encryptSensitive(accountNumberClean),
+            accountNumberMasked: maskSensitive(accountNumberClean, 3),
+            accountOwner: accountOwnerClean,
             isDefault: shouldDefault,
             status: 'ACTIVE',
             addedAt: new Date()
@@ -132,9 +139,13 @@ export const addBankAccount = async (
     } catch (error: any) {
         // Duplicate key error
         if (error?.code === 11000) {
+            const keyPattern = error?.keyPattern || {};
+            const isGlobalDup = Boolean(keyPattern.bankNameNormalized && keyPattern.accountNumber);
             res.status(400).json({
                 success: false,
-                message: 'Tài khoản ngân hàng này đã được thêm trước đó.'
+                message: isGlobalDup
+                    ? 'Số tài khoản ngân hàng này đã được liên kết bởi người dùng khác.'
+                    : 'Tài khoản ngân hàng này đã được thêm trước đó.'
             });
             return;
         }
@@ -269,14 +280,19 @@ export const updateBankAccount = async (
                 });
                 return;
             }
-            bankAccount.accountOwner = accountOwner;
+            bankAccount.accountOwner = `${accountOwner ?? ''}`.trim();
         }
 
-        if (bankName !== undefined) bankAccount.bankName = bankName;
+        if (bankName !== undefined) {
+            const bankNameClean = `${bankName ?? ''}`.trim();
+            (bankAccount as any).bankName = bankNameClean;
+            (bankAccount as any).bankNameNormalized = normalizeBankName(bankNameClean);
+        }
         if (accountNumber !== undefined) {
-            (bankAccount as any).accountNumber = hashSensitive(accountNumber);
-            (bankAccount as any).accountNumberEncrypted = encryptSensitive(accountNumber);
-            (bankAccount as any).accountNumberMasked = maskSensitive(accountNumber, 3);
+            const accountNumberClean = `${accountNumber ?? ''}`.trim();
+            (bankAccount as any).accountNumber = hashSensitive(accountNumberClean);
+            (bankAccount as any).accountNumberEncrypted = encryptSensitive(accountNumberClean);
+            (bankAccount as any).accountNumberMasked = maskSensitive(accountNumberClean, 3);
         }
         if (status !== undefined) bankAccount.status = status;
 
@@ -298,9 +314,13 @@ export const updateBankAccount = async (
         });
     } catch (error: any) {
         if (error?.code === 11000) {
+            const keyPattern = error?.keyPattern || {};
+            const isGlobalDup = Boolean(keyPattern.bankNameNormalized && keyPattern.accountNumber);
             res.status(400).json({
                 success: false,
-                message: 'Tài khoản ngân hàng này đã tồn tại.'
+                message: isGlobalDup
+                    ? 'Số tài khoản ngân hàng này đã được liên kết bởi người dùng khác.'
+                    : 'Tài khoản ngân hàng này đã tồn tại.'
             });
             return;
         }

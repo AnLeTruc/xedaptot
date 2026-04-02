@@ -36,3 +36,18 @@ export function compareNames(name1: string, name2: string): boolean {
     if (!name1 || !name2) return false;
     return normalizeName(name1) === normalizeName(name2);
 }
+
+/**
+ * Normalize bank name into a stable key for uniqueness checks and indexing.
+ * - Remove diacritics
+ * - Uppercase
+ * - Trim and collapse multiple spaces
+ */
+export function normalizeBankName(bankName: string): string {
+    if (!bankName) return '';
+
+    return removeDiacritics(`${bankName}`)
+        .toUpperCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}

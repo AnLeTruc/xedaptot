@@ -5,6 +5,7 @@ export type BankAccountStatus = 'ACTIVE' | 'INACTIVE';
 export interface IBankAccount {
     userId: Types.ObjectId;
     bankName: string;           // Ví dụ: "Vietcombank"
+    bankNameNormalized: string; // Khóa chuẩn hoá (phục vụ unique toàn hệ thống)
     accountNumber: string;
     accountNumberEncrypted: string;
     accountNumberMasked: string;

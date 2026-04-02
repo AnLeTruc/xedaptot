@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IBankAccountDocument } from '../types/bankAccount';
+import { normalizeBankName } from '../utils/nameUtils';
 
 
 const bankAccountSchema = new Schema<IBankAccountDocument>(
@@ -15,6 +16,14 @@ const bankAccountSchema = new Schema<IBankAccountDocument>(
             required: [true, 'Tên ngân hàng là bắt buộc'],
             trim: true,
             maxlength: [100, 'Tên ngân hàng không vượt quá 100 ký tự']
+        },
+        bankNameNormalized: {
+            type: String,
+            required: [true, 'Tên ngân hàng (chuẩn hoá) là bắt buộc'],
+            trim: true,
+            maxlength: [128, 'Tên ngân hàng (chuẩn hoá) không vượt quá 128 ký tự'],
+            index: true,
+            select: false
         },
         accountNumber: {
             type: String,
@@ -61,9 +70,29 @@ const bankAccountSchema = new Schema<IBankAccountDocument>(
     }
 );
 
-// Unique constraint: same user cannot add same account number at same bank twice
-bankAccountSchema.index({ userId: 1, bankName: 1, accountNumber: 1 }, { unique: true });
+// Unique constraint (GLOBAL): 1 bank account number (per bank) can only belong to 1 user system-wide.
+// Use partial index to avoid index-build failures on older documents that haven't been backfilled yet.
+bankAccountSchema.index(
+    { bankNameNormalized: 1, accountNumber: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            bankNameNormalized: { $type: 'string', $ne: '' },
+            accountNumber: { $type: 'string', $ne: '' }
+        }
+    }
+);
+
+// Keep a user-scoped index for query efficiency (optional; not unique).
+bankAccountSchema.index({ userId: 1, bankNameNormalized: 1, accountNumber: 1 });
 bankAccountSchema.index({ userId: 1, status: 1 });
+
+
+bankAccountSchema.pre('validate', function () {
+    if (this.bankName && (!this.bankNameNormalized || this.isModified('bankName'))) {
+        (this as any).bankNameNormalized = normalizeBankName(this.bankName);
+    }
+});
 
 
 // Pre-save: ensure only 1 default per user
